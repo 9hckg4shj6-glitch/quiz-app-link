@@ -777,7 +777,19 @@
   function loadData(){
     let custom = null;
     try{ const raw = localStorage.getItem(DATA_KEY); if(raw) custom = JSON.parse(raw); }catch(e){}
-    const src = (custom && custom.length) ? custom : (window.QUIZ_DATA || []);
+    const src = [];
+    const pos = new Map();
+    function addSource(list, prefix){
+      (Array.isArray(list) ? list : []).forEach((q,i)=>{
+        if(!q) return;
+        const id = q.id != null ? String(q.id) : `${prefix}_${i}`;
+        const item = Object.assign({}, q, {id});
+        if(pos.has(id)) src[pos.get(id)] = item;
+        else { pos.set(id, src.length); src.push(item); }
+      });
+    }
+    addSource(window.QUIZ_DATA || [], "auto");
+    addSource(custom || [], "custom");
     DATA = src.map((q,i)=>({
       id: q.id != null ? String(q.id) : ("auto_"+i),
       year: q.year || "", field: q.field || "",
