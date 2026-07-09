@@ -271,6 +271,10 @@
     display:grid;place-items:center;font-size:12px;font-weight:900;color:var(--muted)}
   .choice.correct{border-color:var(--good);background:var(--good-bg)} .choice.correct .key{background:var(--good);color:#fff;border-color:var(--good)}
   .choice.wrong{border-color:var(--bad);background:var(--bad-bg)} .choice.wrong .key{background:var(--bad);color:#fff;border-color:var(--bad)}
+  .choice .choiceBody{display:flex;flex-direction:column;gap:4px;flex:1 1 auto;min-width:0}
+  .choice .revealHint{font-size:11px;font-weight:800;color:var(--brand)}
+  .choiceNote{margin:2px 0 0;padding:10px 12px;border-radius:12px;background:var(--card2);
+    border:1px dashed var(--line);font-size:13px;line-height:1.7;color:var(--text)}
   .explain{margin-top:14px;border-radius:14px;padding:15px;border:1px solid var(--line);background:var(--card);animation:pop .25s ease}
   @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .explain .head{font-weight:900;font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
@@ -782,7 +786,8 @@
       question: q.question || "",
       choices: Array.isArray(q.choices) ? q.choices.slice() : [],
       answer: (typeof q.answer==="number") ? q.answer : Number(q.answer)||0,
-      explanation: q.explanation || ""
+      explanation: q.explanation || "",
+      choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null
     })).filter(q=>q.question && q.choices.length>=2);
   }
   function loadReviews(){
@@ -1136,6 +1141,10 @@
     return out.length ? out : null;
   }
   function renderExplainBody(q,cur,chosenIdx){
+    if(Array.isArray(q.choiceNotes)&&q.choiceNotes.length){
+      return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>
+        <p class="explainSummary" style="color:var(--muted);font-size:12.5px;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>`;
+    }
     const parsed=parseChoiceExplanations(q.explanation);
     if(!parsed){
       return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>`;
@@ -1158,12 +1167,32 @@
     updateBookmarkBtn(q.id);
     $("#qtext").textContent=q.question; $("#explainBox").innerHTML=""; $("#nextBtn").classList.add("hidden");
     const keys=["A","B","C","D","E","F"], box=$("#choices"); box.innerHTML="";
-    cur.choices.forEach((ch,idx)=>{ const b=document.createElement("button"); b.className="choice";
-      b.innerHTML=`<span class="key">${keys[idx]}</span><span>${esc(ch.text)}</span>`; b.onclick=()=>answer(idx); box.appendChild(b); });
+    cur.choices.forEach((ch,idx)=>{
+      const b=document.createElement("button"); b.className="choice";
+      b.innerHTML=`<span class="key">${keys[idx]}</span><span class="choiceBody"><span class="choiceText">${esc(ch.text)}</span></span>`;
+      b.onclick=()=>answer(idx); box.appendChild(b);
+      const note=document.createElement("div"); note.className="choiceNote hidden"; box.appendChild(note);
+    });
   }
   function answer(idx){
     const s=session,cur=s.queue[s.i],q=cur.q,chosen=cur.choices[idx],isCorrect=chosen.correct;
-    [...$("#choices").children].forEach((b,i)=>{ b.disabled=true; if(cur.choices[i].correct)b.classList.add("correct"); else if(i===idx)b.classList.add("wrong"); });
+    const hasNotes=Array.isArray(q.choiceNotes)&&q.choiceNotes.length>0;
+    const btns=[...$("#choices").querySelectorAll(".choice")], notes=[...$("#choices").querySelectorAll(".choiceNote")];
+    btns.forEach((b,i)=>{
+      if(cur.choices[i].correct) b.classList.add("correct"); else if(i===idx) b.classList.add("wrong");
+      const noteText=hasNotes?q.choiceNotes[cur.choices[i].idx]:null;
+      if(noteText){
+        const hint=document.createElement("span"); hint.className="revealHint"; hint.textContent="▾ 解説を見る";
+        b.querySelector(".choiceBody").appendChild(hint);
+        const noteEl=notes[i];
+        b.onclick=()=>{
+          const opening=noteEl.classList.contains("hidden");
+          noteEl.classList.toggle("hidden");
+          noteEl.textContent=opening?noteText:"";
+          hint.textContent=opening?"▴ 閉じる":"▾ 解説を見る";
+        };
+      } else { b.disabled=true; }
+    });
     const r=rec(q.id); r.seen++;
     let lvup=0;
     if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); lvup=addXP(XP_CORRECT); }
