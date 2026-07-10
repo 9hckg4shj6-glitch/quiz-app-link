@@ -262,6 +262,11 @@
   .bookmarkToggle.on{background:color-mix(in srgb,var(--gold) 18%,var(--card2));border-color:var(--gold);color:var(--gold)}
   .qtag{display:inline-block;font-size:11px;font-weight:800;color:var(--brand);background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px;margin-bottom:10px}
   .qtext{font-size:17px;font-weight:700;margin:0 0 4px}
+  .qfigure{margin:14px 0 0;padding:10px;background:#fff;border:1px solid var(--line);border-radius:12px;text-align:center}
+  .qfigure.hidden{display:none}
+  .qfigure img{max-width:100%;height:auto;display:block;margin:0 auto;cursor:zoom-in}
+  .qfigure.zoomed img{cursor:zoom-out;max-width:none;width:auto}
+  .qfigure.zoomed{overflow-x:auto}
   .choices{display:grid;gap:10px;margin-top:16px}
   .choice{text-align:left;width:100%;border:1.5px solid var(--line);background:var(--card2);color:var(--text);
     border-radius:13px;padding:13px 14px;font-size:15px;font-family:inherit;cursor:pointer;
@@ -678,6 +683,9 @@
         <button type="button" class="bookmarkToggle" id="bookmarkBtn">☆ 見直す</button>
       </div>
       <p class="qtext" id="qtext"></p>
+      <figure class="qfigure hidden" id="qfigure">
+        <img id="qfigureImg" alt="">
+      </figure>
       <div class="choices" id="choices"></div>
       <div id="explainBox"></div>
     </div>
@@ -799,6 +807,8 @@
       choices: Array.isArray(q.choices) ? q.choices.slice() : [],
       answer: (typeof q.answer==="number") ? q.answer : Number(q.answer)||0,
       explanation: q.explanation || "",
+      image: q.image || null,
+      imageAlt: q.imageAlt || "",
       choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null
     })).filter(q=>q.question && q.choices.length>=2);
   }
@@ -1178,6 +1188,11 @@
     $("#qtag").textContent=[q.year,q.field].filter(Boolean).join(" ・ ")||s.label;
     updateBookmarkBtn(q.id);
     $("#qtext").textContent=q.question; $("#explainBox").innerHTML=""; $("#nextBtn").classList.add("hidden");
+    const fig=$("#qfigure"), figImg=$("#qfigureImg");
+    fig.classList.remove("zoomed");
+    if(q.image){ figImg.src=q.image; figImg.alt=q.imageAlt||"問題の図"; fig.classList.remove("hidden");
+      figImg.onclick=()=>fig.classList.toggle("zoomed"); }
+    else { figImg.removeAttribute("src"); fig.classList.add("hidden"); }
     const keys=["A","B","C","D","E","F"], box=$("#choices"); box.innerHTML="";
     cur.choices.forEach((ch,idx)=>{
       const b=document.createElement("button"); b.className="choice";
