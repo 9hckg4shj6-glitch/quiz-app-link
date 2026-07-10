@@ -231,6 +231,32 @@
   .fbBar{flex:1;height:8px;border-radius:5px;background:var(--card2);overflow:hidden}
   .fbBar i{display:block;height:100%;background:var(--good);border-radius:5px}
   .fbNum{flex:0 0 auto;color:var(--muted);font-weight:800;min-width:38px;text-align:right}
+  /* ===== 問題検索 ===== */
+  .searchEntry{width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;
+    border:1.5px solid var(--line);background:var(--card2);border-radius:14px;padding:14px 16px;color:var(--muted);transition:.15s}
+  .searchEntry:hover{border-color:var(--brand)} .searchEntry:active{transform:scale(.99)}
+  .seIcon{font-size:18px} .seText{font-size:15px;font-weight:700}
+  .searchBar{display:flex;align-items:center;gap:8px;background:var(--card2);border:1.5px solid var(--line);
+    border-radius:14px;padding:4px 12px;margin:14px 0 8px}
+  .searchBar:focus-within{border-color:var(--brand)}
+  .sbIcon{font-size:16px;flex:0 0 auto}
+  #searchInput{flex:1;min-width:0;border:none;background:transparent;color:var(--text);font-family:inherit;
+    font-size:16px;padding:12px 2px;outline:none}
+  .searchClear{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
+    background:var(--card);color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit}
+  .searchClear:hover{border-color:var(--brand);color:var(--brand)}
+  .searchActions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 12px;flex-wrap:wrap}
+  .srCount{font-size:13px;font-weight:800;color:var(--muted)}
+  .btn.small{padding:9px 14px;font-size:13px;width:auto}
+  #searchResults{display:grid;gap:8px}
+  .srItem{width:100%;text-align:left;cursor:pointer;font-family:inherit;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:13px 14px;transition:.12s}
+  .srItem:hover{border-color:var(--brand)} .srItem:active{transform:scale(.995)}
+  .srQ{font-size:14.5px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:6px}
+  .srQ mark{background:color-mix(in srgb,var(--gold) 45%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+  .srMeta{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)}
+  .srOk{color:var(--good);font-weight:800} .srNg{color:var(--bad);font-weight:800}
+  .srMore{text-align:center;color:var(--muted);font-size:12px;padding:8px}
 
   /* ===== heatmap ===== */
   .heat-scroll{overflow-x:auto;padding-bottom:4px}
@@ -624,6 +650,7 @@
     <div class="menuWrap">
       <button class="menuBtn" id="menuBtn" type="button" aria-label="メニュー" aria-expanded="false">☰</button>
       <div class="menuPanel hidden" id="menuPanel">
+        <button type="button" id="menuSearch" data-menu-action="search"><span class="mi">🔍</span>問題検索</button>
         <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">🌓</span>テーマ切替</button>
         <a href="#yearSection" data-menu-target="yearSection"><span class="mi">📅</span>年度別<span class="ms">先頭</span></a>
         <a href="#predictionSection" data-menu-target="predictionSection"><span class="mi">📝</span>予想問題<span class="ms">先頭</span></a>
@@ -667,6 +694,13 @@
         <div class="leadStat"><b id="leadFields">0</b><span>分野</span></div>
         <div class="leadStat"><b id="leadDone">0</b><span>学習済</span></div>
       </div>
+    </div>
+
+    <div class="homeSection" id="searchEntrySection">
+      <button type="button" class="searchEntry" id="searchCard">
+        <span class="seIcon">🔍</span>
+        <span class="seText">問題をキーワードで検索</span>
+      </button>
     </div>
 
     <div class="homeSection dueSection" id="dueSection">
@@ -801,6 +835,21 @@
       <span class="pill">復習ノート</span>
     </div>
     <div id="reviewContent"></div>
+  </section>
+
+  <!-- ===== SEARCH ===== -->
+  <section id="search" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="searchBack">← ホーム</button>
+      <span class="pill">問題検索</span>
+    </div>
+    <div class="searchBar">
+      <span class="sbIcon">🔍</span>
+      <input type="search" id="searchInput" placeholder="キーワード（例：ケトン体、尿素回路）" inputmode="search" autocomplete="off" enterkeyhint="search">
+      <button type="button" id="searchClear" class="searchClear hidden" aria-label="クリア">✕</button>
+    </div>
+    <div class="searchActions hidden" id="searchActions"></div>
+    <div id="searchResults"></div>
   </section>
 
   <!-- ===== RESULT ===== -->
@@ -1103,7 +1152,7 @@
   /* ---------- ホーム ---------- */
   function renderHome(){
     stopExamTimer();
-    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden");
+    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#search").classList.add("hidden");
     renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderReviewList(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
     window.scrollTo(0,0);
   }
@@ -1411,12 +1460,57 @@
     $("#rRetry").onclick=startExam;
     const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),"本番モードの復習");
   }
+  /* ---------- 問題検索・キーワードジャンプ ---------- */
+  let searchDebounce=null;
+  function normQ(s){ return String(s==null?"":s).toLowerCase(); }
+  function searchTerms(query){ return normQ(query).trim().split(/\s+/).filter(Boolean); }
+  function searchMatches(query){
+    const terms=searchTerms(query); if(!terms.length) return [];
+    return DATA.filter(q=>{
+      const hay=normQ((q.question||"")+" "+((q.choices||[]).join(" "))+" "+(q.explanation||"")+" "+(q.field||"")+" "+(q.year||"")+" "+(q.mockTitle||"")+" "+(q.imageAlt||""));
+      return terms.every(t=>hay.includes(t));
+    });
+  }
+  function highlight(text, query){
+    let h=esc(text);
+    [...new Set(searchTerms(query))].forEach(t=>{ if(!t)return; const re=new RegExp("("+t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig"); h=h.replace(re,"<mark>$1</mark>"); });
+    return h;
+  }
+  function openSearch(){
+    stopExamTimer();
+    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden");
+    $("#search").classList.remove("hidden");
+    runSearch();
+    const inp=$("#searchInput"); setTimeout(()=>inp.focus(),60);
+  }
+  function closeSearch(){ $("#search").classList.add("hidden"); renderHome(); }
+  function runSearch(){
+    const q=$("#searchInput").value;
+    $("#searchClear").classList.toggle("hidden", !q);
+    renderSearchResults(q, searchMatches(q));
+  }
+  function renderSearchResults(query, matches){
+    const box=$("#searchResults"), act=$("#searchActions"), qs=String(query||"").trim();
+    if(!qs){ act.classList.add("hidden"); box.innerHTML=`<div class="empty">キーワードを入力すると、該当する問題が一覧表示されます。<br>例：「ケトン体」「尿素回路」「コレステロール」「フェロケラターゼ」<br><br>複数の語をスペースで区切ると絞り込めます（例：脂肪酸 合成）。</div>`; return; }
+    if(!matches.length){ act.classList.add("hidden"); box.innerHTML=`<div class="empty">「${esc(qs)}」に一致する問題は見つかりませんでした。<br>別のキーワードでお試しください。</div>`; return; }
+    act.classList.remove("hidden");
+    act.innerHTML=`<span class="srCount">${matches.length}問 ヒット</span><button type="button" class="btn small" id="srPracticeAll">この${matches.length}問をまとめて演習</button>`;
+    $("#srPracticeAll").onclick=()=>startQuiz(matches, `「${qs}」の検索結果`);
+    const cap=matches.slice(0,80);
+    box.innerHTML=cap.map(q=>{
+      const r=progress[q.id], tag=[q.year||q.mockTitle,q.field].filter(Boolean).join(" ・ ");
+      const status=(r&&r.seen)?(r.correct>=r.wrong?'<span class="srOk">学習済</span>':'<span class="srNg">要復習</span>'):"";
+      return `<button type="button" class="srItem" data-id="${esc(q.id)}"><div class="srQ">${highlight(q.question,qs)}</div><div class="srMeta"><span>${esc(tag)}</span>${status}</div></button>`;
+    }).join("") + (matches.length>cap.length?`<div class="srMore">ほか ${matches.length-cap.length} 問（キーワードを絞ると探しやすくなります）</div>`:"");
+    box.querySelectorAll(".srItem").forEach(el=>{ el.onclick=()=>{ const q=DATA.find(x=>x.id===el.dataset.id); if(q) startQuiz([q], `検索：${qs}`); }; });
+  }
+
   function startQuiz(items,label,catRef,opts){
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const queue=shuffle(items).map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
     session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
-    $("#home").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#quiz").classList.remove("hidden");
+    $("#home").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#search").classList.add("hidden"); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
     const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam);
     if(session.exam) startExamTimer();
@@ -1540,6 +1634,27 @@
   $("#nextBtn").onclick=()=>{ if(session.i+1<session.queue.length){ session.i++; renderQuestion(); } else { if(session.exam) submitExam(); else renderResult(); } };
   $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ stopExamTimer(); renderHome(); } };
   $("#examCard").onclick=()=>{ if(confirm(`本番モードを開始します。\n・分野バランスの${EXAM_N}問\n・制限 ${EXAM_MIN}分\n・1問${EXAM_POINT}点、${EXAM_N*EXAM_POINT}点満点\n・途中で正誤や解説は出ません\nよろしいですか？`)) startExam(); };
+
+  /* 問題検索 */
+  $("#searchCard").onclick=openSearch;
+  $("#searchBack").onclick=closeSearch;
+  $("#searchInput").oninput=()=>{ clearTimeout(searchDebounce); searchDebounce=setTimeout(runSearch,160); };
+  $("#searchInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=searchMatches($("#searchInput").value); if(m.length) startQuiz(m, `「${$("#searchInput").value.trim()}」の検索結果`); } };
+  $("#searchClear").onclick=()=>{ const i=$("#searchInput"); i.value=""; i.focus(); runSearch(); };
+
+  /* キーボードショートカット（PCのみ。スマホの入力欄では無効化） */
+  document.addEventListener("keydown",(e)=>{
+    const tag=(e.target&&e.target.tagName)||"";
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if($("#quiz").classList.contains("hidden") || !session) return;
+    const choices=$("#choices").querySelectorAll(".choice");
+    let idx=-1;
+    if(e.key>="1" && e.key<="9") idx=+e.key-1;
+    else { const k=e.key.toLowerCase(); if(k>="a" && k<="f") idx=k.charCodeAt(0)-97; }
+    if(idx>=0 && idx<choices.length){ e.preventDefault(); choices[idx].click(); return; }
+    if(e.key==="Enter" || e.key===" " || e.key==="ArrowRight"){ const nb=$("#nextBtn"); if(nb && !nb.classList.contains("hidden")){ e.preventDefault(); nb.click(); } }
+    else if(e.key.toLowerCase()==="b"){ const bb=$("#bookmarkBtn"); if(bb){ e.preventDefault(); bb.click(); } }
+  });
 
   /* 今日の復習カード */
   $("#dueCard").onclick=()=>{ const items=dueItems(); if(!items.length){ toast("🎉 今日の復習はありません"); return; } openCountModal({items,label:"今日の復習",key:"__due__"},"due"); };
@@ -1672,6 +1787,7 @@
   }
   menuPanel.addEventListener("click",e=>{
     if(e.target.closest('[data-menu-action="theme"]')) toggleTheme();
+    else if(e.target.closest('[data-menu-action="search"]')){ closeMenu(); openSearch(); }
   });
 
   /* ---------- データ読込 / リセット ---------- */
