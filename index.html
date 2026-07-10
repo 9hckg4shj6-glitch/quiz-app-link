@@ -6,6 +6,18 @@
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="googlebot" content="noindex, nofollow, noarchive">
 <title>代謝演習アプリ</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#147d8f" id="themeColorMeta">
+<meta name="color-scheme" content="light dark">
+<meta name="application-name" content="代謝演習">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="代謝演習">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <style>
   :root{
     --bg:#0d1020; --bg2:#141a30; --card:#1a2140; --card2:#232b4e;
@@ -270,6 +282,23 @@
   .bkBtn:hover{border-color:var(--brand)} .bkBtn:active{transform:scale(.97)}
   .bkReplace{width:100%;margin-top:8px;border:none;background:transparent;color:var(--bad);font-family:inherit;
     font-weight:800;font-size:12.5px;padding:8px;cursor:pointer;text-decoration:underline}
+  /* ===== PWA バナー（インストール / 更新） ===== */
+  .pwaBanner{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:260;
+    display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);padding:12px 14px;animation:pwaUp .28s ease}
+  @keyframes pwaUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .pwaBanner.update{border-color:color-mix(in srgb,var(--brand) 55%,var(--line));background:color-mix(in srgb,var(--brand) 8%,var(--card))}
+  .pwaIcon{font-size:24px;flex:0 0 auto}
+  .pwaBody{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+  .pwaBody b{font-size:14px;font-weight:900;color:var(--text)}
+  .pwaBody span{font-size:11.5px;color:var(--muted)}
+  .pwaBtn{flex:0 0 auto;border:none;background:var(--brand);color:#fff;font-family:inherit;font-weight:900;
+    font-size:14px;padding:10px 18px;border-radius:11px;cursor:pointer;transition:.12s}
+  .pwaBtn:hover{filter:brightness(1.05)} .pwaBtn:active{transform:scale(.97)}
+  .pwaClose{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
+    background:var(--card2);color:var(--muted);cursor:pointer;font-size:12px;font-family:inherit}
+  .pwaClose:hover{border-color:var(--brand);color:var(--brand)}
+  @media(max-width:400px){ .pwaBody span{display:none} }
 
   /* ===== heatmap ===== */
   .heat-scroll{overflow-x:auto;padding-bottom:4px}
@@ -623,6 +652,18 @@
 </style>
 </head>
 <body>
+<div class="pwaBanner hidden" id="installBanner" role="dialog" aria-label="ホーム画面に追加">
+  <span class="pwaIcon">📲</span>
+  <div class="pwaBody"><b>ホーム画面に追加</b><span id="installText">アプリのように全画面・オフラインで使えます</span></div>
+  <button type="button" class="pwaBtn" id="installYes">追加</button>
+  <button type="button" class="pwaClose" id="installNo" aria-label="閉じる">✕</button>
+</div>
+<div class="pwaBanner update hidden" id="updateBanner" role="dialog" aria-label="更新">
+  <span class="pwaIcon">✨</span>
+  <div class="pwaBody"><b>新しいバージョンがあります</b><span>タップで最新に更新します</span></div>
+  <button type="button" class="pwaBtn" id="updateYes">更新</button>
+  <button type="button" class="pwaClose" id="updateNo" aria-label="閉じる">✕</button>
+</div>
 <div class="countModalBackdrop hidden" id="countModal">
   <div class="countModal" role="dialog" aria-modal="true" aria-labelledby="countTitle">
     <button type="button" class="countModalClose" id="countClose" aria-label="閉じる">✕</button>
@@ -1881,7 +1922,8 @@
   }
 
   /* ---------- テーマ切替 ---------- */
-  function applyTheme(mode){ if(mode) document.documentElement.setAttribute("data-theme",mode); else document.documentElement.removeAttribute("data-theme"); }
+  function applyTheme(mode){ if(mode) document.documentElement.setAttribute("data-theme",mode); else document.documentElement.removeAttribute("data-theme"); updateThemeColor(); }
+  function updateThemeColor(){ try{ const cur=document.documentElement.getAttribute("data-theme"); const isDark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches; const m=document.getElementById("themeColorMeta"); if(m) m.setAttribute("content", isDark?"#0b1220":"#147d8f"); }catch(e){} }
   (function(){ try{ const t=localStorage.getItem(THEME_KEY); if(t) applyTheme(t); }catch(e){} })();
   function toggleTheme(){
     const cur=document.documentElement.getAttribute("data-theme");
@@ -1942,6 +1984,61 @@
     renderHome();
   }
   if(!firstLaunch && unreadUpdatesCount()>0) openUpdatesModal();
+
+  /* ---------- PWA：Service Worker / 更新通知 / インストール導線 ---------- */
+  updateThemeColor();
+  (function pwa(){
+    if("serviceWorker" in navigator){
+      let hadController = !!navigator.serviceWorker.controller, refreshing=false;
+      navigator.serviceWorker.addEventListener("controllerchange",()=>{
+        if(!hadController){ hadController=true; return; }  /* 初回claimではリロードしない */
+        if(refreshing) return; refreshing=true; location.reload();
+      });
+      window.addEventListener("load",async()=>{
+        try{
+          const reg=await navigator.serviceWorker.register("sw.js");
+          if(reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg);
+          reg.addEventListener("updatefound",()=>{
+            const nw=reg.installing; if(!nw) return;
+            nw.addEventListener("statechange",()=>{ if(nw.state==="installed" && navigator.serviceWorker.controller) showUpdateBanner(reg); });
+          });
+          setInterval(()=>{ reg.update().catch(()=>{}); }, 60*60*1000);
+        }catch(e){}
+      });
+    }
+    function showUpdateBanner(reg){
+      const b=$("#updateBanner"); if(!b) return; b.classList.remove("hidden");
+      $("#updateYes").onclick=()=>{ if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING"); b.classList.add("hidden"); };
+      $("#updateNo").onclick=()=>b.classList.add("hidden");
+    }
+    /* インストール導線 */
+    const DKEY="quizInstallDismiss_v1";
+    const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone===true;
+    let deferred=null;
+    const dismissed=()=>{ try{ return localStorage.getItem(DKEY)==="1"; }catch(e){ return false; } };
+    const hideInstall=(remember)=>{ const b=$("#installBanner"); if(b) b.classList.add("hidden"); if(remember){ try{ localStorage.setItem(DKEY,"1"); }catch(e){} } };
+    const showInstall=(text)=>{ if(standalone||dismissed()) return; const b=$("#installBanner"); if(!b) return; if(text) $("#installText").textContent=text; b.classList.remove("hidden"); };
+    window.addEventListener("beforeinstallprompt",(e)=>{ e.preventDefault(); deferred=e; showInstall(); });
+    window.addEventListener("appinstalled",()=>{ hideInstall(true); toast("🎉 ホーム画面に追加しました"); });
+    $("#installYes").onclick=async()=>{
+      if(deferred){ deferred.prompt(); try{ await deferred.userChoice; }catch(e){} deferred=null; hideInstall(false); }
+      else { alert("ホーム画面に追加するには：\n1) 画面の「共有」ボタンをタップ\n2)「ホーム画面に追加」を選ぶ"); }
+    };
+    $("#installNo").onclick=()=>hideInstall(true);
+    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent), isSafari=/^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+    if(isIOS && isSafari && !standalone && !dismissed()){ setTimeout(()=>{ if(!deferred) showInstall("共有ボタン →「ホーム画面に追加」でアプリになります"); }, 3500); }
+  })();
+
+  /* ---------- ショートカット（?action=）起動 ---------- */
+  (function handleAction(){
+    try{
+      const a=new URLSearchParams(location.search).get("action");
+      if(a){
+        setTimeout(()=>{ if(a==="review"){ const c=$("#dueCard"); if(c) c.click(); } else if(a==="exam"){ const c=$("#examCard"); if(c) c.click(); } else if(a==="search"){ openSearch(); } }, 150);
+        if(history.replaceState) history.replaceState(null,"", location.pathname);
+      }
+    }catch(e){}
+  })();
 })();
 </script>
 </body>
