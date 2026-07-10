@@ -173,12 +173,36 @@
   .qbtn.q-weak{border-color:rgba(255,93,108,.5)} .qbtn.q-weak .qi{filter:none}
   .qbtn.q-bookmark{border-color:rgba(255,209,102,.5)}
   @media(max-width:460px){ .quick{grid-template-columns:1fr} .qbtn{flex-direction:row;justify-content:center;gap:10px} .qbtn .qs{margin-left:2px} }
-  .limitChips{display:flex;gap:8px;flex-wrap:wrap}
-  .limitChip{border:1.5px solid var(--line);background:var(--card2);color:var(--text);
-    border-radius:999px;padding:9px 18px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
-  .limitChip:hover{border-color:var(--brand)} .limitChip:active{transform:scale(.97)}
-  .limitChip.on{background:var(--brand);border-color:var(--brand);color:#fff}
-  .limitHint{font-size:11.5px;color:var(--muted);margin:8px 2px 0}
+  /* ===== 出題数モーダル ===== */
+  .countModalBackdrop{position:fixed;inset:0;z-index:210;background:rgba(10,14,24,.55);
+    backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px}
+  .countModal{position:relative;width:min(400px,100%);background:var(--card);border:1px solid var(--line);
+    border-radius:22px;box-shadow:var(--shadow);padding:24px 22px 20px;animation:pop .2s ease}
+  .countModalClose{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--line);background:var(--card2);color:var(--muted);cursor:pointer;font-size:15px;
+    display:grid;place-items:center;font-family:inherit}
+  .countModalClose:hover{border-color:var(--brand);color:var(--brand)}
+  .cmKicker{font-size:11px;font-weight:900;color:var(--brand);letter-spacing:.04em}
+  .countModal h3{margin:2px 0 4px;font-size:19px;font-weight:900;padding-right:28px}
+  .cmSub{font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.6}
+  .cmSub b{color:var(--text);font-size:15px}
+  .countChips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .countChip{flex:1;min-width:60px;border:1.5px solid var(--line);background:var(--card2);color:var(--text);
+    border-radius:12px;padding:10px 6px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+  .countChip:hover{border-color:var(--brand)} .countChip:active{transform:scale(.97)}
+  .countChip.disabled{opacity:.35;pointer-events:none}
+  .countInputRow{display:flex;align-items:center;gap:10px;margin-bottom:18px;justify-content:center}
+  .stepBtn{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);
+    color:var(--text);font-size:22px;font-weight:800;cursor:pointer;font-family:inherit;flex:0 0 auto}
+  .stepBtn:hover{border-color:var(--brand);color:var(--brand)} .stepBtn:active{transform:scale(.95)}
+  #countInput{width:110px;text-align:center;font-size:26px;font-weight:900;font-family:inherit;color:var(--text);
+    background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:8px 6px;-moz-appearance:textfield}
+  #countInput:focus{outline:none;border-color:var(--brand)}
+  #countInput::-webkit-outer-spin-button,#countInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .countUnit{font-size:15px;font-weight:800;color:var(--muted)}
+  .cmStart{width:100%;border:none;background:var(--brand);color:#fff;font-family:inherit;font-weight:900;
+    font-size:16px;padding:14px;border-radius:14px;cursor:pointer;transition:.15s}
+  .cmStart:hover{filter:brightness(1.05)} .cmStart:active{transform:scale(.98)}
 
   /* ===== heatmap ===== */
   .heat-scroll{overflow-x:auto;padding-bottom:4px}
@@ -532,6 +556,27 @@
 </style>
 </head>
 <body>
+<div class="countModalBackdrop hidden" id="countModal">
+  <div class="countModal" role="dialog" aria-modal="true" aria-labelledby="countTitle">
+    <button type="button" class="countModalClose" id="countClose" aria-label="閉じる">✕</button>
+    <div class="cmKicker" id="countKicker">演習</div>
+    <h3 id="countTitle">範囲</h3>
+    <p class="cmSub">この範囲は <b id="countTotal">0</b> 問。<br>何問解きますか？</p>
+    <div class="countChips" id="countChips">
+      <button type="button" class="countChip" data-n="10">10問</button>
+      <button type="button" class="countChip" data-n="20">20問</button>
+      <button type="button" class="countChip" data-n="50">50問</button>
+      <button type="button" class="countChip" data-n="all">全部</button>
+    </div>
+    <div class="countInputRow">
+      <button type="button" class="stepBtn" id="countMinus" aria-label="減らす">−</button>
+      <input type="number" id="countInput" inputmode="numeric" min="1" value="20" aria-label="問題数">
+      <button type="button" class="stepBtn" id="countPlus" aria-label="増やす">＋</button>
+      <span class="countUnit">問</span>
+    </div>
+    <button type="button" class="cmStart" id="countStart">この数で開始 →</button>
+  </div>
+</div>
 <div class="updatesModalBackdrop hidden" id="updatesModalBackdrop">
   <div class="updatesModal" role="dialog" aria-modal="true" aria-labelledby="updatesModalTitle">
     <button type="button" class="updatesModalClose" id="updatesModalClose" aria-label="閉じる">✕</button>
@@ -594,17 +639,6 @@
         <div class="leadStat"><b id="leadFields">0</b><span>分野</span></div>
         <div class="leadStat"><b id="leadDone">0</b><span>学習済</span></div>
       </div>
-    </div>
-
-    <div class="homeSection limitSection" id="limitSection">
-      <div class="sectlabel">1回の出題数</div>
-      <div class="limitChips" id="limitChips" role="group" aria-label="1回の出題数">
-        <button type="button" class="limitChip" data-limit="10">10問</button>
-        <button type="button" class="limitChip" data-limit="20">20問</button>
-        <button type="button" class="limitChip" data-limit="50">50問</button>
-        <button type="button" class="limitChip" data-limit="0">すべて</button>
-      </div>
-      <p class="limitHint">年度別・予想問題・分野別を選ぶと、この数だけランダムに出題します。</p>
     </div>
 
     <div class="homeSection rangeSection" id="yearSection">
@@ -874,19 +908,36 @@
   const $ = s=>document.querySelector(s);
   function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];} return a; }
 
-  /* ---------- 1回の出題数（セッション上限） ---------- */
-  let sessionLimit = 0;   // 0 = すべて
-  function loadLimit(){ try{ const v=parseInt(localStorage.getItem(LIMIT_KEY),10); return (v===10||v===20||v===50)?v:0; }catch(e){ return 0; } }
-  function saveLimit(v){ try{ localStorage.setItem(LIMIT_KEY, String(v)); }catch(e){} }
-  function capItems(items){ return (sessionLimit>0 && items.length>sessionLimit) ? shuffle(items).slice(0,sessionLimit) : items; }
-  function renderLimitChips(){
-    const box=$("#limitChips"); if(!box) return;
-    box.querySelectorAll(".limitChip").forEach(el=>{
-      const v=parseInt(el.dataset.limit,10)||0;
-      el.classList.toggle("on", v===sessionLimit);
-      el.onclick=()=>{ sessionLimit=v; saveLimit(v); renderLimitChips();
-        toast(v>0?`1回の出題数を ${v}問 に設定しました`:"1回の出題数を「すべて」に設定しました"); };
+  /* ---------- 1回の出題数（タップ時に入力するモーダル） ---------- */
+  let pendingSel = null;   // {items,label,mode,key,total}
+  function loadLastCount(){ try{ const v=parseInt(localStorage.getItem(LIMIT_KEY),10); return (isNaN(v)||v<0)?0:v; }catch(e){ return 0; } }
+  function saveLastCount(v){ try{ localStorage.setItem(LIMIT_KEY, String(v)); }catch(e){} }
+  function clampCount(v,total){ v=Math.floor(v); if(isNaN(v)||v<1) v=1; if(v>total) v=total; return v; }
+  function openCountModal(g, mode){
+    const total=g.items.length;
+    pendingSel={items:g.items,label:g.label,mode,key:g.key,total};
+    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":"演習");
+    $("#countTitle").textContent=g.label;
+    $("#countTotal").textContent=total;
+    const last=loadLastCount();
+    const inp=$("#countInput"); inp.max=total; inp.value=(last>0?Math.min(last,total):total);
+    $("#countChips").querySelectorAll(".countChip").forEach(c=>{
+      const num=(c.dataset.n==="all")?total:parseInt(c.dataset.n,10);
+      c.classList.toggle("disabled", c.dataset.n!=="all" && num>total);
     });
+    $("#countModal").classList.remove("hidden");
+    setTimeout(()=>{ inp.focus(); inp.select&&inp.select(); },60);
+  }
+  function closeCountModal(){ $("#countModal").classList.add("hidden"); pendingSel=null; }
+  function startFromCountModal(){
+    if(!pendingSel) return;
+    const total=pendingSel.total;
+    const n=clampCount(parseInt($("#countInput").value,10), total);
+    saveLastCount(n===total?0:n);
+    const items=shuffle(pendingSel.items).slice(0,n);
+    const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key};
+    closeCountModal();
+    startQuiz(items,label,ref);
   }
   function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function toast(msg,ms){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),ms||1700); }
@@ -960,7 +1011,7 @@
   /* ---------- ホーム ---------- */
   function renderHome(){
     $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden");
-    renderBadge(); renderLead(); renderLimitChips(); renderScopeLists(); renderReviewList(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
+    renderBadge(); renderLead(); renderScopeLists(); renderReviewList(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
     window.scrollTo(0,0);
   }
 
@@ -1152,7 +1203,7 @@
         <div class="rt">${right}<span class="chev">開始</span></div>
       </button>`;
     }).join("");
-    list.querySelectorAll(".cat").forEach(el=>{ el.onclick=()=>{ const g=groups(mode).find(x=>String(x.key)===el.dataset.key); if(!g) return; const items=(mode==="year"||mode==="prediction"||mode==="field")?capItems(g.items):g.items; startQuiz(items,g.label,{mode,key:g.key}); }; });
+    list.querySelectorAll(".cat").forEach(el=>{ el.onclick=()=>{ const g=groups(mode).find(x=>String(x.key)===el.dataset.key); if(!g) return; if((mode==="year"||mode==="prediction"||mode==="field") && g.items.length>1){ openCountModal(g,mode); } else { startQuiz(g.items,g.label,{mode,key:g.key}); } }; });
   }
 
   const ACH=[
@@ -1293,6 +1344,15 @@
   };
   $("#nextBtn").onclick=()=>{ if(session.i+1<session.queue.length){ session.i++; renderQuestion(); } else renderResult(); };
   $("#quitBtn").onclick=()=>{ if(confirm("この演習を中断してホームに戻りますか？")) renderHome(); };
+
+  /* 出題数モーダルのイベント（1回だけ登録） */
+  $("#countClose").onclick=closeCountModal;
+  $("#countModal").onclick=(e)=>{ if(e.target.id==="countModal") closeCountModal(); };
+  $("#countStart").onclick=startFromCountModal;
+  $("#countInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); startFromCountModal(); } };
+  $("#countMinus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)-1, pendingSel?pendingSel.total:1); };
+  $("#countPlus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)+1, pendingSel?pendingSel.total:1); };
+  $("#countChips").querySelectorAll(".countChip").forEach(c=>{ c.onclick=()=>{ if(c.classList.contains("disabled")||!pendingSel) return; const n=c.dataset.n==="all"?pendingSel.total:parseInt(c.dataset.n,10); $("#countInput").value=clampCount(n, pendingSel.total); }; });
 
   /* ---------- 結果 ---------- */
   function renderResult(){
@@ -1451,7 +1511,7 @@
 
   /* ---------- 起動 ---------- */
   const firstLaunch = isFirstEverLaunch();
-  loadProgress(); loadMeta(); loadData(); loadReviews(); loadUpdates(); sessionLimit=loadLimit();
+  loadProgress(); loadMeta(); loadData(); loadReviews(); loadUpdates();
   if(firstLaunch) markUpdatesSeen();
   renderUpdatesPanel(); renderUpdatesHome(); refreshUpdateDot();
   if(!DATA.length){
