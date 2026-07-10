@@ -217,6 +217,20 @@
   .dueCount{font-size:30px;font-weight:900;color:var(--brand);line-height:1}
   .dueCard.dueEmpty .dueCount{color:var(--muted)}
   .dueUnit{font-size:13px;font-weight:800;color:var(--muted)}
+  .examCard{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));background:color-mix(in srgb,var(--gold) 12%,var(--card))}
+  .examCard:hover{border-color:var(--gold)}
+  .examCard .dueCount{color:var(--gold)}
+  /* 本番モード：タイマー・選択済み・分野別内訳 */
+  .pill.timer{background:color-mix(in srgb,var(--brand) 16%,var(--card2));color:var(--brand);font-variant-numeric:tabular-nums}
+  .pill.timer.danger{background:color-mix(in srgb,var(--bad) 20%,var(--card2));color:var(--bad);animation:pulseT 1s infinite}
+  @keyframes pulseT{50%{opacity:.55}}
+  .choice.selected{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 14%,var(--card2));box-shadow:0 0 0 1px var(--brand) inset}
+  .fieldBreak{text-align:left;margin:6px 0 4px}
+  .fbRow{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:12.5px}
+  .fbName{flex:0 0 40%;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fbBar{flex:1;height:8px;border-radius:5px;background:var(--card2);overflow:hidden}
+  .fbBar i{display:block;height:100%;background:var(--good);border-radius:5px}
+  .fbNum{flex:0 0 auto;color:var(--muted);font-weight:800;min-width:38px;text-align:right}
 
   /* ===== heatmap ===== */
   .heat-scroll{overflow-x:auto;padding-bottom:4px}
@@ -666,6 +680,17 @@
       </button>
     </div>
 
+    <div class="homeSection examSection" id="examSection">
+      <button type="button" class="dueCard examCard" id="examCard">
+        <span class="dueIcon">📝</span>
+        <span class="dueBody">
+          <span class="dueTitle">本番モード</span>
+          <span class="dueSub">分野バランスの50問・制限50分・100点満点で採点</span>
+        </span>
+        <span class="dueRight"><b class="dueCount">100</b><span class="dueUnit">点</span></span>
+      </button>
+    </div>
+
     <div class="homeSection rangeSection" id="yearSection">
       <button type="button" class="sectToggle" data-toggle="yearList" aria-expanded="false" style="--accent:#147d8f">
         <span class="stMain"><span class="stLabel">年度別</span><span class="stHint">タップして表示</span></span>
@@ -752,6 +777,7 @@
       <div class="prog"><i id="progBar"></i></div>
       <span class="pill" id="counter">1 / 10</span>
       <span class="pill streak" id="streakPill">🔥 0</span>
+      <span class="pill timer hidden" id="examTimer">⏱ 50:00</span>
     </div>
     <div class="qcard">
       <div class="qhead">
@@ -803,6 +829,9 @@
   const XP_WRONG    = 3;       // 挑戦したこと自体に少しXP
   const DAILY_GOAL  = 20;      // 1日の目標問題数
   const RANDOM_N    = 10;      // ランダム演習の問題数
+  const EXAM_N      = 50;      // 本番モードの問題数
+  const EXAM_POINT  = 2;       // 1問の配点（50問×2点=100点満点）
+  const EXAM_MIN    = 50;      // 本番モードの制限時間（分）
   // 分野別カードの配色(dataviz カテゴリ順)
   const ACCENTS = ["#147d8f","#1f8a62","#be7c18","#2f7bdc","#8a6f2a","#c5525a","#8369c9","#c7672f"];
 
@@ -1073,6 +1102,7 @@
 
   /* ---------- ホーム ---------- */
   function renderHome(){
+    stopExamTimer();
     $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden");
     renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderReviewList(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
     window.scrollTo(0,0);
@@ -1295,11 +1325,101 @@
 
   /* ---------- クイズ ---------- */
   let session=null;
-  function startQuiz(items,label,catRef){
+  /* ---------- 本番モード（分野バランス50問・100点満点・制限時間つき） ---------- */
+  let examTimer=null;
+  function buildExamSet(n){
+    n=n||EXAM_N;
+    const byField={};
+    DATA.forEach(q=>{ (byField[q.field]=byField[q.field]||[]).push(q); });
+    const fields=Object.keys(byField), pool=DATA.length;
+    // 分野サイズに比例して割り当て、最大剰余法で合計をちょうど n にする
+    let alloc=fields.map(f=>{ const exact=n*byField[f].length/pool; return {f,k:Math.floor(exact),frac:exact-Math.floor(exact)}; });
+    let used=alloc.reduce((s,a)=>s+a.k,0);
+    alloc.sort((a,b)=>b.frac-a.frac);
+    for(let i=0; used<n && alloc.length; i++,used++){ alloc[i%alloc.length].k++; }
+    let picked=[];
+    alloc.forEach(a=>{ picked=picked.concat(shuffle(byField[a.f]).slice(0,Math.min(a.k,byField[a.f].length))); });
+    if(picked.length<n){ const chosen=new Set(picked.map(q=>q.id)); picked=picked.concat(shuffle(DATA.filter(q=>!chosen.has(q.id))).slice(0,n-picked.length)); }
+    return shuffle(picked).slice(0,n);
+  }
+  function startExam(){
+    const items=buildExamSet(EXAM_N);
+    startQuiz(items,`本番モード（${items.length}問）`,{mode:"exam",key:"__exam__"},{exam:true});
+  }
+  function stopExamTimer(){ if(examTimer){ clearInterval(examTimer); examTimer=null; } }
+  function startExamTimer(){ stopExamTimer(); session.deadline=Date.now()+EXAM_MIN*60*1000; tickExamTimer(); examTimer=setInterval(tickExamTimer,1000); }
+  function tickExamTimer(){
+    if(!session||!session.exam){ stopExamTimer(); return; }
+    const remain=Math.max(0,Math.round((session.deadline-Date.now())/1000));
+    const el=$("#examTimer");
+    if(el){ el.textContent=`⏱ ${Math.floor(remain/60)}:${String(remain%60).padStart(2,"0")}`; el.classList.toggle("danger",remain<=60); }
+    if(remain<=0){ stopExamTimer(); toast("⏰ 時間切れ。採点します"); submitExam(); }
+  }
+  function submitExam(){
+    stopExamTimer();
+    const s=session; if(!s||!s.exam) return;
+    let correct=0, run=0, maxRun=0;
+    s.queue.forEach((cur,i)=>{
+      const chosenIdx=(s.answers[i]===undefined?null:s.answers[i]);
+      const isCorrect = chosenIdx!==null && cur.choices[chosenIdx] && cur.choices[chosenIdx].correct;
+      const r=rec(cur.q.id); r.seen++;
+      if(isCorrect){ r.correct++; r.streak++; correct++; run++; maxRun=Math.max(maxRun,run); }
+      else { r.wrong++; r.streak=0; run=0; s.wrongList.push({q:cur.q, chosen: chosenIdx===null?"（未回答）":cur.choices[chosenIdx].text}); }
+      syncWeak(r); scheduleSRS(r,isCorrect);
+    });
+    s.correct=correct; s.maxStreak=maxRun;
+    s.elapsedSec=Math.min(EXAM_MIN*60, Math.round((Date.now()-s.startedAt)/1000));
+    const gained=correct*XP_CORRECT + (s.queue.length-correct)*XP_WRONG;
+    s.leveledUp=addXP(gained); s.xpStart=meta.xp-gained;
+    meta.bestRunStreak=Math.max(meta.bestRunStreak,maxRun);
+    markStudied(); saveProgress(); saveMeta(); checkAch();
+    renderExamResult();
+  }
+  function renderExamResult(){
+    const s=session, total=s.queue.length, correct=s.correct, score=correct*EXAM_POINT, pct=Math.round(correct/total*100);
+    const gained=meta.xp-s.xpStart, el=s.elapsedSec||0, mm=Math.floor(el/60), ss=el%60;
+    // 分野別内訳
+    const byF={};
+    s.queue.forEach((cur,i)=>{ const f=cur.q.field||"その他"; const ci=s.answers[i]; const ok=ci!=null&&cur.choices[ci]&&cur.choices[ci].correct;
+      (byF[f]=byF[f]||{c:0,n:0}); byF[f].n++; if(ok)byF[f].c++; });
+    const fieldRows=Object.keys(byF).sort((a,b)=>(byF[a].c/byF[a].n)-(byF[b].c/byF[b].n)).map(f=>{
+      const o=byF[f], p=Math.round(o.c/o.n*100);
+      return `<div class="fbRow"><span class="fbName">${esc(f)}</span><span class="fbBar"><i style="width:${p}%"></i></span><span class="fbNum">${o.c}/${o.n}</span></div>`;
+    }).join("");
+    const wrong=s.wrongList.map(w=>{ const ans=w.q.choices[w.q.answer];
+      return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">あなた: ${esc(w.chosen)}</div><div class="a ans">正解: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${esc(w.q.explanation)}</div>`:""}</div>`; }).join("");
+    const msg=score>=90?"🏆 素晴らしい！":score>=70?"🎉 合格ライン！":score>=50?"💪 あと一歩！":"📚 復習しよう！";
+    $("#quiz").classList.add("hidden"); $("#review").classList.add("hidden");
+    $("#result").innerHTML=`
+      <div class="result">
+        <div class="score">${score} <span style="font-size:24px;color:var(--muted)">/ 100点</span></div>
+        <div class="sub">本番モード ・ ${correct}/${total}問正解 ・ 正答率 ${pct}% ${msg}</div>
+        <div><span class="xpgain">⭐ +${gained} XP ${s.leveledUp?` ・ 🎉 Lv.${s.leveledUp}`:''} ・ ⏱ 所要 ${mm}:${String(ss).padStart(2,"0")}</span></div>
+        <div class="stats">
+          <div class="stat"><b style="color:var(--good)">${correct}</b><span>正解</span></div>
+          <div class="stat"><b style="color:var(--bad)">${total-correct}</b><span>不正解</span></div>
+          <div class="stat"><b style="color:var(--warn)">${s.maxStreak}</b><span>最大連続</span></div>
+        </div>
+        <div class="fieldBreak"><div class="lead" style="margin-bottom:8px">分野別の正答</div>${fieldRows}</div>
+        <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度（新しい50問）</button></div>
+        ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:''}
+      </div>
+      ${wrong?`<div class="review"><h4>間違えた問題（${s.wrongList.length}問）</h4>${wrong}</div>`:''}`;
+    $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
+    if(score>=90||s.leveledUp) confetti();
+    $("#rHome").onclick=renderHome;
+    $("#rRetry").onclick=startExam;
+    const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),"本番モードの復習");
+  }
+  function startQuiz(items,label,catRef,opts){
+    opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const queue=shuffle(items).map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
-    session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0};
+    session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
     $("#home").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#quiz").classList.remove("hidden");
+    const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
+    const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam);
+    if(session.exam) startExamTimer();
     renderQuestion();
   }
   function parseChoiceExplanations(text){
@@ -1332,7 +1452,7 @@
     $("#progBar").style.width=(s.i/s.queue.length*100)+"%";
     $("#counter").textContent=`${s.i+1} / ${s.queue.length}`;
     $("#streakPill").textContent=`🔥 ${s.streak}`;
-    $("#qtag").textContent=[q.year,q.field].filter(Boolean).join(" ・ ")||s.label;
+    $("#qtag").textContent=s.exam ? s.label : ([q.year,q.field].filter(Boolean).join(" ・ ")||s.label);
     updateBookmarkBtn(q.id);
     $("#qtext").textContent=q.question; $("#explainBox").innerHTML=""; $("#nextBtn").classList.add("hidden");
     const fig=$("#qfigure"), figImg=$("#qfigureImg");
@@ -1347,9 +1467,20 @@
       b.onclick=()=>answer(idx); box.appendChild(b);
       const note=document.createElement("div"); note.className="choiceNote hidden"; box.appendChild(note);
     });
+    if(s.exam){
+      const sel=s.answers[s.i];
+      if(sel!==undefined){ const bs=box.querySelectorAll(".choice"); if(bs[sel]) bs[sel].classList.add("selected"); }
+      const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"採点する →"; nb.classList.remove("hidden");
+    }
   }
   function answer(idx){
     const s=session,cur=s.queue[s.i],q=cur.q,chosen=cur.choices[idx],isCorrect=chosen.correct;
+    if(s.exam){
+      s.answers[s.i]=idx;
+      [...$("#choices").querySelectorAll(".choice")].forEach((b,i)=>b.classList.toggle("selected",i===idx));
+      const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"採点する →"; nb.classList.remove("hidden");
+      return;
+    }
     const hasNotes=Array.isArray(q.choiceNotes)&&q.choiceNotes.length>0;
     const btns=[...$("#choices").querySelectorAll(".choice")], notes=[...$("#choices").querySelectorAll(".choiceNote")];
     btns.forEach((b,i)=>{
@@ -1406,8 +1537,9 @@
     updateBookmarkBtn(q.id);
     toast(on ? "🔖 見直したい問題に保存しました" : "保存を解除しました");
   };
-  $("#nextBtn").onclick=()=>{ if(session.i+1<session.queue.length){ session.i++; renderQuestion(); } else renderResult(); };
-  $("#quitBtn").onclick=()=>{ if(confirm("この演習を中断してホームに戻りますか？")) renderHome(); };
+  $("#nextBtn").onclick=()=>{ if(session.i+1<session.queue.length){ session.i++; renderQuestion(); } else { if(session.exam) submitExam(); else renderResult(); } };
+  $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ stopExamTimer(); renderHome(); } };
+  $("#examCard").onclick=()=>{ if(confirm(`本番モードを開始します。\n・分野バランスの${EXAM_N}問\n・制限 ${EXAM_MIN}分\n・1問${EXAM_POINT}点、${EXAM_N*EXAM_POINT}点満点\n・途中で正誤や解説は出ません\nよろしいですか？`)) startExam(); };
 
   /* 今日の復習カード */
   $("#dueCard").onclick=()=>{ const items=dueItems(); if(!items.length){ toast("🎉 今日の復習はありません"); return; } openCountModal({items,label:"今日の復習",key:"__due__"},"due"); };
