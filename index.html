@@ -257,6 +257,19 @@
   .srMeta{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)}
   .srOk{color:var(--good);font-weight:800} .srNg{color:var(--bad);font-weight:800}
   .srMore{text-align:center;color:var(--muted);font-size:12px;padding:8px}
+  /* ===== バックアップ・引き継ぎモーダル ===== */
+  .bkCard{width:min(440px,100%);max-height:88vh;overflow-y:auto}
+  .bkBlock{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px 12px 14px;margin-top:12px}
+  .bkLabel{font-size:13px;font-weight:900;color:var(--text);margin-bottom:8px}
+  .bkArea{width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;line-height:1.5;color:var(--text);
+    background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;resize:vertical;word-break:break-all}
+  .bkArea:focus{outline:none;border-color:var(--brand)}
+  .bkBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .bkBtn{flex:1;min-width:90px;border:1.5px solid var(--line);background:var(--card);color:var(--text);
+    border-radius:10px;padding:11px 8px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+  .bkBtn:hover{border-color:var(--brand)} .bkBtn:active{transform:scale(.97)}
+  .bkReplace{width:100%;margin-top:8px;border:none;background:transparent;color:var(--bad);font-family:inherit;
+    font-weight:800;font-size:12.5px;padding:8px;cursor:pointer;text-decoration:underline}
 
   /* ===== heatmap ===== */
   .heat-scroll{overflow-x:auto;padding-bottom:4px}
@@ -631,6 +644,33 @@
     <button type="button" class="cmStart" id="countStart">この数で開始 →</button>
   </div>
 </div>
+<div class="countModalBackdrop hidden" id="backupModal">
+  <div class="countModal bkCard" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+    <button type="button" class="countModalClose" id="backupClose" aria-label="閉じる">✕</button>
+    <div class="cmKicker">学習記録</div>
+    <h3 id="bkTitle">引き継ぎ・バックアップ</h3>
+    <p class="cmSub">別の端末へ記録を移したり、バックアップとして保存できます。</p>
+    <div class="bkBlock">
+      <div class="bkLabel">📤 書き出す（この端末 → 別端末）</div>
+      <textarea id="bkExport" class="bkArea" readonly rows="2" aria-label="書き出した記録"></textarea>
+      <div class="bkBtns">
+        <button type="button" class="bkBtn" id="bkCopy">📋 コピー</button>
+        <button type="button" class="bkBtn hidden" id="bkShare">📤 共有</button>
+        <button type="button" class="bkBtn" id="bkDownload">💾 ファイル</button>
+      </div>
+    </div>
+    <div class="bkBlock">
+      <div class="bkLabel">📥 取り込む（別端末 → この端末）</div>
+      <textarea id="bkImport" class="bkArea" rows="2" placeholder="コピーした記録をここに貼り付け" aria-label="取り込む記録"></textarea>
+      <div class="bkBtns">
+        <button type="button" class="bkBtn" id="bkFile">📁 ファイルから読む</button>
+      </div>
+      <button type="button" class="cmStart" id="bkMerge" style="margin-top:6px">この端末の記録に統合する</button>
+      <button type="button" class="bkReplace" id="bkReplace">置き換える（今の記録を消して入れ替え）</button>
+      <input type="file" id="bkFileInput" accept=".json,.txt" style="display:none">
+    </div>
+  </div>
+</div>
 <div class="updatesModalBackdrop hidden" id="updatesModalBackdrop">
   <div class="updatesModal" role="dialog" aria-modal="true" aria-labelledby="updatesModalTitle">
     <button type="button" class="updatesModalClose" id="updatesModalClose" aria-label="閉じる">✕</button>
@@ -798,6 +838,7 @@
 
     <div class="foot homeSection" id="dataSection">
       学習記録はこの端末に自動保存されます。&nbsp;·&nbsp;
+      <a id="backupBtn">記録の引き継ぎ・バックアップ</a> &nbsp;·&nbsp;
       <a id="importBtn">データ読込</a> &nbsp;·&nbsp;
       <a id="resetBtn">記録リセット</a>
       <input type="file" id="fileInput" accept=".json,.csv,.txt">
@@ -1505,6 +1546,59 @@
     box.querySelectorAll(".srItem").forEach(el=>{ el.onclick=()=>{ const q=DATA.find(x=>x.id===el.dataset.id); if(q) startQuiz([q], `検索：${qs}`); }; });
   }
 
+  /* ---------- 学習記録の引き継ぎ・バックアップ ---------- */
+  function buildExportString(){ return JSON.stringify({ app:"metabolism-quiz", v:1, exportedAt:new Date().toISOString(), progress:progress, meta:meta }); }
+  function openBackupModal(){ $("#bkExport").value=buildExportString(); $("#bkImport").value=""; $("#backupModal").classList.remove("hidden"); }
+  function closeBackupModal(){ $("#backupModal").classList.add("hidden"); }
+  function copyText(str){
+    const ok=()=>toast("📋 コピーしました");
+    const fb=()=>{ const ta=$("#bkExport"); ta.focus(); ta.select(); try{ document.execCommand("copy"); ok(); }catch(e){ toast("コピーできません。手動で選択してコピーしてください"); } };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(str).then(ok).catch(fb); } else fb();
+  }
+  function downloadText(str,filename){
+    try{ const url=URL.createObjectURL(new Blob([str],{type:"application/json"})); const a=document.createElement("a");
+      a.href=url; a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },500); }
+    catch(e){ toast("ファイルの作成に失敗しました"); }
+  }
+  function parseImport(text){
+    const t=(text||"").trim(); if(!t){ toast("取り込む記録を貼り付けてください"); return null; }
+    let obj; try{ obj=JSON.parse(t); }catch(e){ toast("記録の形式が正しくありません（貼り付け内容を確認してください）"); return null; }
+    if(!obj || obj.app!=="metabolism-quiz" || typeof obj.progress!=="object"){ toast("このアプリの記録データではないようです"); return null; }
+    return obj;
+  }
+  function mergeProgress(cur,inc){
+    const out=Object.assign({},cur);
+    Object.keys(inc||{}).forEach(id=>{
+      const a=out[id], b=inc[id]; if(!b||typeof b!=="object") return;
+      if(!a){ out[id]=b; return; }
+      const later=(x,y)=>(x&&y)?(x>y?x:y):(x||y);
+      out[id]={ seen:Math.max(a.seen||0,b.seen||0), correct:Math.max(a.correct||0,b.correct||0), wrong:Math.max(a.wrong||0,b.wrong||0),
+        streak:Math.max(a.streak||0,b.streak||0), weak:!!(a.weak||b.weak), bookmarked:!!(a.bookmarked||b.bookmarked),
+        reps:Math.max(a.reps||0,b.reps||0), interval:Math.max(a.interval||0,b.interval||0), ease:Math.max(a.ease||2.5,b.ease||2.5),
+        due:later(a.due,b.due), lastReviewed:later(a.lastReviewed,b.lastReviewed) };
+    });
+    return out;
+  }
+  function mergeMeta(cur,inc){
+    inc=inc||{}; const out=Object.assign({},cur);
+    out.xp=Math.max(cur.xp||0,inc.xp||0); out.streakDays=Math.max(cur.streakDays||0,inc.streakDays||0);
+    out.bestStreakDays=Math.max(cur.bestStreakDays||0,inc.bestStreakDays||0); out.bestRunStreak=Math.max(cur.bestRunStreak||0,inc.bestRunStreak||0);
+    out.lastStudyDate=(cur.lastStudyDate&&inc.lastStudyDate)?(cur.lastStudyDate>inc.lastStudyDate?cur.lastStudyDate:inc.lastStudyDate):(cur.lastStudyDate||inc.lastStudyDate);
+    out.achievements=[...new Set([...(cur.achievements||[]),...(inc.achievements||[])])];
+    out.activity=Object.assign({},cur.activity||{}); const ia=inc.activity||{};
+    Object.keys(ia).forEach(d=>{ out.activity[d]=Math.max(out.activity[d]||0, ia[d]||0); });
+    return out;
+  }
+  function applyImport(obj,replace){
+    if(replace){ progress=obj.progress||{}; meta=obj.meta||{}; }
+    else { progress=mergeProgress(progress,obj.progress||{}); meta=mergeMeta(meta,obj.meta||{}); }
+    Object.keys(progress).forEach(id=>{ if(progress[id]&&typeof progress[id]==="object") syncWeak(progress[id]); });
+    saveProgress();
+    localStorage.setItem(META_KEY, JSON.stringify(meta)); loadMeta(); saveMeta();
+    closeBackupModal(); renderHome();
+    toast(replace?"✅ 記録を置き換えました":"✅ 記録を統合しました");
+  }
+
   function startQuiz(items,label,catRef,opts){
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
@@ -1641,6 +1735,18 @@
   $("#searchInput").oninput=()=>{ clearTimeout(searchDebounce); searchDebounce=setTimeout(runSearch,160); };
   $("#searchInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=searchMatches($("#searchInput").value); if(m.length) startQuiz(m, `「${$("#searchInput").value.trim()}」の検索結果`); } };
   $("#searchClear").onclick=()=>{ const i=$("#searchInput"); i.value=""; i.focus(); runSearch(); };
+
+  /* 記録の引き継ぎ・バックアップ */
+  $("#backupBtn").onclick=openBackupModal;
+  $("#backupClose").onclick=closeBackupModal;
+  $("#backupModal").onclick=(e)=>{ if(e.target.id==="backupModal") closeBackupModal(); };
+  $("#bkCopy").onclick=()=>copyText($("#bkExport").value);
+  $("#bkDownload").onclick=()=>downloadText($("#bkExport").value, `代謝演習_記録_${todayStr()}.json`);
+  if(navigator.share){ $("#bkShare").classList.remove("hidden"); $("#bkShare").onclick=async()=>{ try{ await navigator.share({title:"代謝演習アプリ 学習記録", text:$("#bkExport").value}); }catch(e){} }; }
+  $("#bkFile").onclick=()=>$("#bkFileInput").click();
+  $("#bkFileInput").onchange=(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ $("#bkImport").value=String(rd.result||""); toast("読み込みました。「統合」か「置き換え」を押してください"); }; rd.readAsText(f); e.target.value=""; };
+  $("#bkMerge").onclick=()=>{ const obj=parseImport($("#bkImport").value); if(obj) applyImport(obj,false); };
+  $("#bkReplace").onclick=()=>{ const obj=parseImport($("#bkImport").value); if(!obj) return; if(confirm("現在の学習記録をすべて消して、取り込む記録で置き換えます。よろしいですか？")) applyImport(obj,true); };
 
   /* キーボードショートカット（PCのみ。スマホの入力欄では無効化） */
   document.addEventListener("keydown",(e)=>{
