@@ -215,6 +215,9 @@
   .cmStart{width:100%;border:none;background:var(--brand);color:#fff;font-family:inherit;font-weight:900;
     font-size:16px;padding:14px;border-radius:14px;cursor:pointer;transition:.15s}
   .cmStart:hover{filter:brightness(1.05)} .cmStart:active{transform:scale(.98)}
+  .cmStartAlt{width:100%;margin-top:8px;border:1.5px solid color-mix(in srgb,#8369c9 50%,var(--line));background:var(--card2);
+    color:var(--text);font-family:inherit;font-weight:900;font-size:14px;padding:12px;border-radius:14px;cursor:pointer;transition:.12s}
+  .cmStartAlt:hover{border-color:#8369c9} .cmStartAlt:active{transform:scale(.98)}
   /* ===== 今日の復習カード ===== */
   .dueCard{width:100%;display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;font-family:inherit;
     border:1.5px solid color-mix(in srgb,var(--brand) 45%,var(--line));border-radius:16px;padding:16px 18px;
@@ -299,6 +302,60 @@
     background:var(--card2);color:var(--muted);cursor:pointer;font-size:12px;font-family:inherit}
   .pwaClose:hover{border-color:var(--brand);color:var(--brand)}
   @media(max-width:400px){ .pwaBody span{display:none} }
+  /* ===== 弱点プレイリスト ===== */
+  .plGrid{display:grid;gap:10px}
+  .plCard{width:100%;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;font-family:inherit;
+    border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:13px 15px;transition:.14s}
+  .plCard:hover{border-color:var(--brand);transform:translateY(-1px)} .plCard:active{transform:scale(.99)}
+  .plCard.plEmpty{opacity:.5;cursor:default} .plCard.plEmpty:hover{border-color:var(--line);transform:none}
+  .plIcon{font-size:22px;flex:0 0 auto}
+  .plBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .plName{font-size:15px;font-weight:900;color:var(--text)}
+  .plDesc{font-size:11.5px;color:var(--muted)}
+  .plCount{flex:0 0 auto;font-size:22px;font-weight:900;color:var(--brand)}
+  .plCount small{font-size:11px;font-weight:800;color:var(--muted);margin-left:1px}
+  .plCard.plEmpty .plCount{color:var(--muted)}
+  .flashEntry{border-color:color-mix(in srgb,#8369c9 50%,var(--line));background:color-mix(in srgb,#8369c9 10%,var(--card))}
+  .flashEntry:hover{border-color:#8369c9}
+  /* ===== フラッシュカード ===== */
+  .flashWrap{display:flex;justify-content:center;margin-top:14px}
+  .flashCard{width:100%;min-height:56vh;max-height:66vh;overflow-y:auto;box-sizing:border-box;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
+    background:var(--card);border:1.5px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
+    padding:26px 20px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform .16s ease,opacity .16s ease;will-change:transform}
+  .flashCard.isBack{background:color-mix(in srgb,var(--brand) 6%,var(--card));border-color:color-mix(in srgb,var(--brand) 30%,var(--line))}
+  .fcTag{font-size:11px;font-weight:900;color:var(--brand);letter-spacing:.03em;background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
+  .fcText{font-size:20px;font-weight:800;color:var(--text);line-height:1.6}
+  .fcText.small{font-size:13px;font-weight:700;color:var(--muted);line-height:1.5}
+  .fcImg{max-width:100%;max-height:30vh;height:auto;border-radius:10px;background:#fff;padding:6px}
+  .fcAnswer{font-size:19px;font-weight:900;color:var(--good);line-height:1.6}
+  .fcExpl{font-size:14.5px;font-weight:600;color:var(--text);line-height:1.7;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .fcTapHint{font-size:12px;color:var(--muted)}
+  .fcDivider{width:36px;height:3px;border-radius:2px;background:var(--line)}
+  .flashBtns{display:flex;gap:10px;align-items:stretch;margin-top:14px}
+  .fcGrade{flex:1;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;
+    padding:15px 8px;font-size:15px;font-weight:900;font-family:inherit;cursor:pointer;transition:.12s}
+  .fcGrade:active{transform:scale(.97)}
+  .fcNg{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))} .fcNg:hover{border-color:var(--bad);color:var(--bad)}
+  .fcOk{border-color:color-mix(in srgb,var(--good) 45%,var(--line))} .fcOk:hover{border-color:var(--good);color:var(--good)}
+  .fcFlip{flex:0 0 auto;border:none;background:var(--brand);color:#fff;border-radius:14px;padding:15px 18px;
+    font-size:14px;font-weight:900;font-family:inherit;cursor:pointer;transition:.12s}
+  .fcFlip:active{transform:scale(.96)}
+  .flashFoot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+  /* チューザ */
+  .fcDecks{display:grid;gap:8px;margin-bottom:6px}
+  .fcDeck{width:100%;display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;font-family:inherit;
+    border:1.5px solid var(--line);background:var(--card2);border-radius:12px;padding:12px 14px;transition:.12s}
+  .fcDeck:hover{border-color:var(--brand)} .fcDeck:active{transform:scale(.99)}
+  .fcDeck.disabled{opacity:.45;pointer-events:none}
+  .fcDeckIcon{font-size:20px;flex:0 0 auto}
+  .fcDeckName{flex:1;font-size:14.5px;font-weight:800;color:var(--text)}
+  .fcDeckN{flex:0 0 auto;font-size:13px;font-weight:900;color:var(--brand)}
+  .fcFieldLabel{font-size:12px;font-weight:900;color:var(--muted);margin:14px 2px 8px}
+  .fcFieldChips{display:flex;flex-wrap:wrap;gap:7px}
+  .fcFieldChip{border:1.5px solid var(--line);background:var(--card2);color:var(--text);border-radius:999px;
+    padding:8px 13px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+  .fcFieldChip:hover{border-color:var(--brand)} .fcFieldChip:active{transform:scale(.96)}
 
   /* ===== heatmap ===== */
   .heat-scroll{overflow-x:auto;padding-bottom:4px}
@@ -683,6 +740,7 @@
       <span class="countUnit">問</span>
     </div>
     <button type="button" class="cmStart" id="countStart">この数で開始 →</button>
+    <button type="button" class="cmStartAlt" id="countStartFlash">🎴 カードでめくる</button>
   </div>
 </div>
 <div class="countModalBackdrop hidden" id="backupModal">
@@ -710,6 +768,17 @@
       <button type="button" class="bkReplace" id="bkReplace">置き換える（今の記録を消して入れ替え）</button>
       <input type="file" id="bkFileInput" accept=".json,.txt" style="display:none">
     </div>
+  </div>
+</div>
+<div class="countModalBackdrop hidden" id="flashChooser">
+  <div class="countModal" role="dialog" aria-modal="true" aria-labelledby="fcChooserTitle">
+    <button type="button" class="countModalClose" id="flashChooserClose" aria-label="閉じる">✕</button>
+    <div class="cmKicker">フラッシュカード</div>
+    <h3 id="fcChooserTitle">どのカードをめくる？</h3>
+    <p class="cmSub">選択肢なしで表↔裏をめくる暗記モード。「わかった／微妙」が今日の復習（間隔反復）に反映されます。</p>
+    <div class="fcDecks" id="fcDecks"></div>
+    <div class="fcFieldLabel">分野からめくる</div>
+    <div class="fcFieldChips" id="fcFieldChips"></div>
   </div>
 </div>
 <div class="updatesModalBackdrop hidden" id="updatesModalBackdrop">
@@ -806,6 +875,17 @@
       </button>
     </div>
 
+    <div class="homeSection examSection" id="flashSection">
+      <button type="button" class="dueCard flashEntry" id="flashCardBtn">
+        <span class="dueIcon">🎴</span>
+        <span class="dueBody">
+          <span class="dueTitle">フラッシュカード</span>
+          <span class="dueSub">選択肢なしで表↔裏を素早くめくる暗記モード</span>
+        </span>
+        <span class="dueRight"><span class="dueUnit" style="font-size:15px">めくる →</span></span>
+      </button>
+    </div>
+
     <div class="homeSection rangeSection" id="yearSection">
       <button type="button" class="sectToggle" data-toggle="yearList" aria-expanded="false" style="--accent:#147d8f">
         <span class="stMain"><span class="stLabel">年度別</span><span class="stHint">タップして表示</span></span>
@@ -851,6 +931,11 @@
     <div class="homeSection" id="weakSection">
       <div class="sectlabel">苦手問題</div>
       <div id="weakList" class="grid"></div>
+    </div>
+
+    <div class="homeSection" id="playlistSection">
+      <div class="sectlabel">弱点プレイリスト</div>
+      <div id="playlistList" class="plGrid"></div>
     </div>
 
     <div class="homeSection" id="dashboardSection">
@@ -934,6 +1019,24 @@
     <div id="searchResults"></div>
   </section>
 
+  <!-- ===== FLASHCARD ===== -->
+  <section id="flash" class="hidden">
+    <div class="qtop">
+      <button class="btn ghost small" id="flashQuit">← 中断</button>
+      <div class="prog"><i id="flashProg"></i></div>
+      <span class="pill" id="flashCounter">1 / 20</span>
+    </div>
+    <div class="flashWrap">
+      <div class="flashCard" id="fcCard" role="button" tabindex="0" aria-label="カード（タップで裏返す）"></div>
+    </div>
+    <div class="flashBtns">
+      <button type="button" class="fcGrade fcNg" id="fcNg">👎&nbsp;微妙</button>
+      <button type="button" class="fcFlip" id="fcFlip">🔄&nbsp;裏返す</button>
+      <button type="button" class="fcGrade fcOk" id="fcOk">👍&nbsp;わかった</button>
+    </div>
+    <div class="flashFoot">タップで裏返す ・ 左右スワイプで「微妙／わかった」</div>
+  </section>
+
   <!-- ===== RESULT ===== -->
   <section id="result" class="hidden"></section>
 </div>
@@ -941,6 +1044,7 @@
 <script src="questions.js"></script>
 <script src="review.js"></script>
 <script src="updates.js"></script>
+<script src="terms.js"></script>
 <script>
 (function(){
   "use strict";
@@ -1101,7 +1205,7 @@
   function openCountModal(g, mode){
     const total=g.items.length;
     pendingSel={items:g.items,label:g.label,mode,key:g.key,total};
-    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":"演習");
+    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
     $("#countTotal").textContent=total;
     const last=loadLastCount();
@@ -1165,6 +1269,31 @@
       sub.textContent = nx ? `今日はOK。次は ${nx.date.slice(5).replace("-","/")}（${nx.n}問）` : "問題を解くと、最適な時期に復習が出ます";
       card.classList.add("dueEmpty");
     }
+  }
+
+  /* ---------- 弱点プレイリスト（学習記録から自動生成） ---------- */
+  function daysAgoStr(n){ const d=new Date(); d.setDate(d.getDate()-n); return dstr(d); }
+  function plWeakFields(){
+    const agg={};
+    DATA.forEach(q=>{ const r=progress[q.id]; if(!r) return; const a=(r.correct||0)+(r.wrong||0); if(!a) return; const f=q.field||"その他"; (agg[f]=agg[f]||{c:0,a:0}); agg[f].c+=(r.correct||0); agg[f].a+=a; });
+    const weak=new Set(Object.keys(agg).filter(f=>agg[f].a>=4 && (agg[f].c/agg[f].a)<0.5));
+    return weak.size ? DATA.filter(q=>weak.has(q.field||"その他")) : [];
+  }
+  function plNeverCorrect(){ return DATA.filter(q=>{ const r=progress[q.id]; return r && r.seen>0 && (r.correct||0)===0; }); }
+  function plRecentWrong(){ const cut=daysAgoStr(7); return DATA.filter(q=>{ const r=progress[q.id]; return r && r.lastWrong && r.lastWrong>=cut; }); }
+  const PLAYLISTS=[
+    {kind:"weakfield",    icon:"📉", name:"弱点分野",         desc:"正答率50%未満の分野を集中特訓", fn:plWeakFields},
+    {kind:"nevercorrect", icon:"❌", name:"まだ正解していない", desc:"解いたけれど未正解の問題",       fn:plNeverCorrect},
+    {kind:"recentwrong",  icon:"🕐", name:"最近間違えた",       desc:"7日以内に間違えた問題",         fn:plRecentWrong}
+  ];
+  function renderPlaylists(){
+    const box=$("#playlistList"); if(!box) return;
+    box.innerHTML=PLAYLISTS.map(p=>{ const n=p.fn().length;
+      return `<button type="button" class="plCard ${n===0?'plEmpty':''}" data-kind="${p.kind}"${n===0?' disabled':''}>
+        <span class="plIcon">${p.icon}</span>
+        <span class="plBody"><span class="plName">${esc(p.name)}</span><span class="plDesc">${esc(p.desc)}</span></span>
+        <span class="plCount">${n}<small>問</small></span></button>`; }).join("");
+    box.querySelectorAll(".plCard").forEach(el=>{ el.onclick=()=>{ const p=PLAYLISTS.find(x=>x.kind===el.dataset.kind); if(!p) return; const items=p.fn(); if(!items.length){ toast("該当する問題はありません"); return; } openCountModal({items,label:p.name,key:"__pl_"+p.kind},"playlist"); }; });
   }
 
   /* ---------- レベル / XP ---------- */
@@ -1234,8 +1363,8 @@
   /* ---------- ホーム ---------- */
   function renderHome(){
     stopExamTimer();
-    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#search").classList.add("hidden");
-    renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderReviewList(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
+    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#search").classList.add("hidden"); $("#flash").classList.add("hidden");
+    renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderReviewList(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
     window.scrollTo(0,0);
   }
 
@@ -1375,7 +1504,7 @@
     const note=REVIEWS.find(r=>r.id===id);
     if(!note){ toast("復習ノートが見つかりません"); return; }
     const related=relatedQuestions(note);
-    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.remove("hidden");
+    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#review").classList.remove("hidden");
     $("#reviewContent").innerHTML=`
       <div class="reviewHero">
         <div class="eyebrow">${esc(note.date || "Review Note")}</div>
@@ -1489,13 +1618,14 @@
   function submitExam(){
     stopExamTimer();
     const s=session; if(!s||!s.exam) return;
+    const t=todayStr();
     let correct=0, run=0, maxRun=0;
     s.queue.forEach((cur,i)=>{
       const chosenIdx=(s.answers[i]===undefined?null:s.answers[i]);
       const isCorrect = chosenIdx!==null && cur.choices[chosenIdx] && cur.choices[chosenIdx].correct;
       const r=rec(cur.q.id); r.seen++;
       if(isCorrect){ r.correct++; r.streak++; correct++; run++; maxRun=Math.max(maxRun,run); }
-      else { r.wrong++; r.streak=0; run=0; s.wrongList.push({q:cur.q, chosen: chosenIdx===null?"（未回答）":cur.choices[chosenIdx].text}); }
+      else { r.wrong++; r.streak=0; r.lastWrong=t; run=0; s.wrongList.push({q:cur.q, chosen: chosenIdx===null?"（未回答）":cur.choices[chosenIdx].text}); }
       syncWeak(r); scheduleSRS(r,isCorrect);
     });
     s.correct=correct; s.maxStreak=maxRun;
@@ -1560,7 +1690,7 @@
   }
   function openSearch(){
     stopExamTimer();
-    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden");
+    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#flash").classList.add("hidden");
     $("#search").classList.remove("hidden");
     runSearch();
     const inp=$("#searchInput"); setTimeout(()=>inp.focus(),60);
@@ -1640,12 +1770,111 @@
     toast(replace?"✅ 記録を置き換えました":"✅ 記録を統合しました");
   }
 
+  /* ---------- フラッシュカード ---------- */
+  let flashSession=null, flashTouch=null, lastFlashTouch=0, flashAnimating=false;
+  function questionToCard(q){ return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:q.choices[q.answer],expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""}; }
+  function termToCard(t,i){ return {id:t.id||("term-"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:null,imageAlt:""}; }
+  function fcBackHTML(c){
+    if(c.kind==="term") return `<div class="fcDivider"></div><div class="fcExpl">${esc(c.desc||"(説明なし)")}</div>`;
+    return `<div class="fcDivider"></div><div class="fcAnswer">正解：${esc(c.answer||"")}</div>${c.expl?`<div class="fcExpl">${esc(c.expl)}</div>`:""}`;
+  }
+  function paintFace(){
+    const s=flashSession, c=s.deck[s.i], card=$("#fcCard");
+    if(!s.flipped){
+      card.classList.remove("isBack");
+      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${esc(c.front)}</div>${c.image?`<img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}">`:""}<div class="fcTapHint">タップで答えを見る</div>`;
+    } else {
+      card.classList.add("isBack");
+      card.innerHTML=`<div class="fcText small">${esc(c.front)}</div>${fcBackHTML(c)}`;
+    }
+  }
+  function renderCard(){
+    const s=flashSession; if(!s) return;
+    s.flipped=false; flashAnimating=false;
+    $("#flashProg").style.width=(s.i/s.deck.length*100)+"%";
+    $("#flashCounter").textContent=`${s.i+1} / ${s.deck.length}`;
+    const card=$("#fcCard"); card.style.transition="none"; card.style.transform=""; card.style.opacity=""; void card.offsetWidth; card.style.transition="";
+    paintFace();
+  }
+  function flipCard(){
+    const s=flashSession; if(!s||flashAnimating) return;
+    flashAnimating=true; const card=$("#fcCard");
+    card.style.transform="perspective(900px) rotateY(88deg)";
+    setTimeout(()=>{ s.flipped=!s.flipped; paintFace(); card.style.transform="perspective(900px) rotateY(0deg)";
+      setTimeout(()=>{ card.style.transform=""; flashAnimating=false; },170); },155);
+  }
+  function gradeFlash(known){
+    const s=flashSession; if(!s||flashAnimating) return;
+    flashAnimating=true;
+    const c=s.deck[s.i], r=rec(c.id); r.seen=(r.seen||0)+1;
+    scheduleSRS(r,known);
+    if(known){ s.ok++; addXP(XP_CORRECT); } else { s.ng++; s.ngList.push(c); addXP(XP_WRONG); }
+    markStudied(); saveProgress(); saveMeta();
+    const card=$("#fcCard");
+    card.style.transform=`translateX(${known?540:-540}px) rotate(${known?16:-16}deg)`; card.style.opacity="0";
+    setTimeout(()=>{ if(s.i+1<s.deck.length){ s.i++; renderCard(); } else renderFlashResult(); },200);
+  }
+  function showFlashView(){
+    stopExamTimer();
+    ["#home","#quiz","#result","#review","#search"].forEach(id=>$(id).classList.add("hidden"));
+    $("#flash").classList.remove("hidden"); window.scrollTo(0,0);
+  }
+  function startFlash(cards,label){
+    if(!cards || !cards.length){ toast("カードがありません"); return; }
+    closeFlashChooser();
+    flashSession={label,deck:shuffle(cards),i:0,ok:0,ng:0,ngList:[]};
+    showFlashView(); renderCard();
+  }
+  function renderFlashResult(){
+    const s=flashSession, total=s.deck.length, pct=Math.round(s.ok/total*100);
+    $("#flash").classList.add("hidden");
+    const msg=pct>=90?"🏆 バッチリ！":pct>=60?"🎉 いい調子！":"📚 もう一周しよう！";
+    $("#result").innerHTML=`
+      <div class="result">
+        <div class="score">${s.ok} / ${total}</div>
+        <div class="sub">${esc(s.label)} ・ わかった ${pct}% ${msg}</div>
+        <div class="stats">
+          <div class="stat"><b style="color:var(--good)">${s.ok}</b><span>わかった</span></div>
+          <div class="stat"><b style="color:var(--bad)">${s.ng}</b><span>微妙</span></div>
+        </div>
+        <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度</button></div>
+        ${s.ng?`<button class="btn ghost" id="rNg" style="margin-top:10px">👎 微妙だけ もう一周</button>`:''}
+      </div>`;
+    $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
+    if(pct>=90) confetti();
+    const deckCopy=s.deck.slice(), ngCopy=s.ngList.slice(), lbl=s.label;
+    $("#rHome").onclick=renderHome;
+    $("#rRetry").onclick=()=>startFlash(deckCopy,lbl);
+    const rn=$("#rNg"); if(rn) rn.onclick=()=>startFlash(ngCopy,lbl+"（微妙）");
+  }
+  function openFlashChooser(){ renderFlashChooser(); $("#flashChooser").classList.remove("hidden"); }
+  function closeFlashChooser(){ const m=$("#flashChooser"); if(m) m.classList.add("hidden"); }
+  function renderFlashChooser(){
+    const due=dueItems();
+    const weak=DATA.filter(q=>{ const r=progress[q.id]; return r && r.wrong>=WEAK_WRONGS && r.streak<MASTER_HITS; });
+    const terms=Array.isArray(window.TERM_CARDS)?window.TERM_CARDS:[];
+    const decks=[
+      {icon:"🔁",name:"今日の復習",n:due.length,go:()=>startFlash(due.map(questionToCard),"今日の復習カード")},
+      {icon:"🔥",name:"苦手",n:weak.length,go:()=>startFlash(weak.map(questionToCard),"苦手カード")},
+      {icon:"🎲",name:"ランダム30",n:Math.min(30,DATA.length),go:()=>startFlash(shuffle(DATA).slice(0,30).map(questionToCard),"ランダムカード")}
+    ];
+    if(terms.length) decks.push({icon:"📖",name:"用語カード",n:terms.length,go:()=>startFlash(terms.map(termToCard),"用語カード")});
+    const box=$("#fcDecks");
+    box.innerHTML=decks.map((d,i)=>`<button type="button" class="fcDeck ${d.n===0?'disabled':''}" data-i="${i}"><span class="fcDeckIcon">${d.icon}</span><span class="fcDeckName">${esc(d.name)}</span><span class="fcDeckN">${d.n}枚</span></button>`).join("");
+    box.querySelectorAll(".fcDeck").forEach(el=>{ el.onclick=()=>{ const d=decks[+el.dataset.i]; if(d && d.n>0) d.go(); }; });
+    const byField={}; DATA.forEach(q=>{ byField[q.field]=(byField[q.field]||0)+1; });
+    const fields=Object.keys(byField).sort((a,b)=>byField[b]-byField[a]);
+    const chips=$("#fcFieldChips");
+    chips.innerHTML=fields.map(f=>`<button type="button" class="fcFieldChip" data-f="${esc(f)}">${esc(f)}</button>`).join("");
+    chips.querySelectorAll(".fcFieldChip").forEach(el=>{ el.onclick=()=>{ const f=el.dataset.f, items=DATA.filter(q=>q.field===f); startFlash(items.map(questionToCard), f+"（カード）"); }; });
+  }
+
   function startQuiz(items,label,catRef,opts){
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const queue=shuffle(items).map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
     session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
-    $("#home").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#search").classList.add("hidden"); $("#quiz").classList.remove("hidden");
+    $("#home").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
     const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam);
     if(session.exam) startExamTimer();
@@ -1730,7 +1959,7 @@
     const r=rec(q.id); r.seen++;
     let lvup=0;
     if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); lvup=addXP(XP_CORRECT); }
-    else { r.wrong++; r.streak=0; syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text}); lvup=addXP(XP_WRONG); }
+    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text}); lvup=addXP(XP_WRONG); }
     scheduleSRS(r,isCorrect);
     meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
     markStudied(); saveProgress(); saveMeta();
@@ -1789,10 +2018,32 @@
   $("#bkMerge").onclick=()=>{ const obj=parseImport($("#bkImport").value); if(obj) applyImport(obj,false); };
   $("#bkReplace").onclick=()=>{ const obj=parseImport($("#bkImport").value); if(!obj) return; if(confirm("現在の学習記録をすべて消して、取り込む記録で置き換えます。よろしいですか？")) applyImport(obj,true); };
 
+  /* フラッシュカード */
+  $("#flashCardBtn").onclick=openFlashChooser;
+  $("#flashChooserClose").onclick=closeFlashChooser;
+  $("#flashChooser").onclick=(e)=>{ if(e.target.id==="flashChooser") closeFlashChooser(); };
+  $("#flashQuit").onclick=()=>{ if(confirm("フラッシュカードを中断してホームに戻りますか？")){ flashSession=null; renderHome(); } };
+  $("#fcFlip").onclick=flipCard;
+  $("#fcOk").onclick=()=>gradeFlash(true);
+  $("#fcNg").onclick=()=>gradeFlash(false);
+  (function(){
+    const fcEl=$("#fcCard");
+    fcEl.onclick=()=>{ if(Date.now()-lastFlashTouch<500) return; flipCard(); };
+    fcEl.addEventListener("touchstart",(e)=>{ if(e.touches.length!==1||flashAnimating) return; flashTouch={x:e.touches[0].clientX,y:e.touches[0].clientY,moved:false}; fcEl.style.transition="none"; },{passive:true});
+    fcEl.addEventListener("touchmove",(e)=>{ if(!flashTouch) return; const dx=e.touches[0].clientX-flashTouch.x, dy=e.touches[0].clientY-flashTouch.y; if(Math.abs(dx)>10||Math.abs(dy)>10) flashTouch.moved=true; if(Math.abs(dx)>Math.abs(dy) && flashTouch.moved){ e.preventDefault(); fcEl.style.transform=`translateX(${dx}px) rotate(${dx*0.04}deg)`; fcEl.style.opacity=String(Math.max(0.35,1-Math.abs(dx)/380)); } },{passive:false});
+    fcEl.addEventListener("touchend",(e)=>{ if(!flashTouch) return; const t=flashTouch; flashTouch=null; lastFlashTouch=Date.now(); fcEl.style.transition=""; const dx=e.changedTouches[0].clientX-t.x, dy=e.changedTouches[0].clientY-t.y; if(Math.abs(dx)>85 && Math.abs(dx)>Math.abs(dy)){ gradeFlash(dx>0); } else { fcEl.style.transform=""; fcEl.style.opacity=""; if(!t.moved) flipCard(); } });
+  })();
+
   /* キーボードショートカット（PCのみ。スマホの入力欄では無効化） */
   document.addEventListener("keydown",(e)=>{
     const tag=(e.target&&e.target.tagName)||"";
     if(/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if(!$("#flash").classList.contains("hidden") && flashSession){
+      if(e.key===" "||e.key==="Enter"){ e.preventDefault(); flipCard(); }
+      else if(e.key==="ArrowRight"){ e.preventDefault(); gradeFlash(true); }
+      else if(e.key==="ArrowLeft"){ e.preventDefault(); gradeFlash(false); }
+      return;
+    }
     if($("#quiz").classList.contains("hidden") || !session) return;
     const choices=$("#choices").querySelectorAll(".choice");
     let idx=-1;
@@ -1810,6 +2061,7 @@
   $("#countClose").onclick=closeCountModal;
   $("#countModal").onclick=(e)=>{ if(e.target.id==="countModal") closeCountModal(); };
   $("#countStart").onclick=startFromCountModal;
+  $("#countStartFlash").onclick=()=>{ if(!pendingSel) return; const total=pendingSel.total; const n=clampCount(parseInt($("#countInput").value,10),total); saveLastCount(n===total?0:n); const items=shuffle(pendingSel.items).slice(0,n).map(questionToCard); const lbl=pendingSel.label; closeCountModal(); startFlash(items, lbl+"（カード）"); };
   $("#countInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); startFromCountModal(); } };
   $("#countMinus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)-1, pendingSel?pendingSel.total:1); };
   $("#countPlus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)+1, pendingSel?pendingSel.total:1); };
