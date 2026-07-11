@@ -327,7 +327,13 @@
   .fcTag{font-size:11px;font-weight:900;color:var(--brand);letter-spacing:.03em;background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
   .fcText{font-size:20px;font-weight:800;color:var(--text);line-height:1.6}
   .fcText.small{font-size:13px;font-weight:700;color:var(--muted);line-height:1.5}
-  .fcImg{max-width:100%;max-height:30vh;height:auto;border-radius:10px;background:#fff;padding:6px}
+  .fcImgWrap{position:relative;display:inline-block;max-width:100%}
+  .fcImg{max-width:100%;max-height:34vh;height:auto;border-radius:10px;background:#fff;padding:6px;cursor:zoom-in;display:block}
+  .fcZoom{position:absolute;right:8px;bottom:8px;background:rgba(15,23,42,.78);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;pointer-events:none}
+  .fcLightbox{position:fixed;inset:0;background:rgba(2,6,23,.94);z-index:1200;overflow:auto;padding:14px;display:flex;align-items:flex-start;justify-content:center}
+  .fcLightbox.hidden{display:none}
+  .fcLightbox img{width:100%;max-width:1000px;height:auto;border-radius:8px;background:#fff}
+  .fcLightboxClose{position:fixed;top:12px;right:14px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:20px;font-weight:800;cursor:pointer;z-index:1201}
   .fcAnswer{font-size:19px;font-weight:900;color:var(--good);line-height:1.6}
   .fcExpl{font-size:14.5px;font-weight:600;color:var(--text);line-height:1.7;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
   .fcTapHint{font-size:12px;color:var(--muted)}
@@ -1034,8 +1040,14 @@
       <button type="button" class="fcFlip" id="fcFlip">🔄&nbsp;裏返す</button>
       <button type="button" class="fcGrade fcOk" id="fcOk">👍&nbsp;わかった</button>
     </div>
-    <div class="flashFoot">タップで裏返す ・ 左右スワイプで「微妙／わかった」</div>
+    <div class="flashFoot">タップで裏返す ・ 左右スワイプで「微妙／わかった」・ 図はタップで拡大</div>
   </section>
+
+  <!-- ===== 図の拡大（フラッシュカード用ライトボックス） ===== -->
+  <div id="fcLightbox" class="fcLightbox hidden">
+    <button type="button" class="fcLightboxClose" id="fcLightboxClose" aria-label="閉じる">✕</button>
+    <img id="fcLightboxImg" alt="">
+  </div>
 
   <!-- ===== RESULT ===== -->
   <section id="result" class="hidden"></section>
@@ -1773,21 +1785,24 @@
   /* ---------- フラッシュカード ---------- */
   let flashSession=null, flashTouch=null, lastFlashTouch=0, flashAnimating=false;
   function questionToCard(q){ return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:q.choices[q.answer],expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""}; }
-  function termToCard(t,i){ return {id:t.id||("term-"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:null,imageAlt:""}; }
+  function termToCard(t,i){ return {id:t.id||("term-"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:t.image||null,imageAlt:t.imageAlt||""}; }
+  function fcImgHTML(c){ return c.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:""; }
   function fcBackHTML(c){
-    if(c.kind==="term") return `<div class="fcDivider"></div><div class="fcExpl">${esc(c.desc||"(説明なし)")}</div>`;
+    if(c.kind==="term") return `${fcImgHTML(c)}<div class="fcDivider"></div><div class="fcExpl">${esc(c.desc||"(説明なし)")}</div>`;
     return `<div class="fcDivider"></div><div class="fcAnswer">正解：${esc(c.answer||"")}</div>${c.expl?`<div class="fcExpl">${esc(c.expl)}</div>`:""}`;
   }
   function paintFace(){
     const s=flashSession, c=s.deck[s.i], card=$("#fcCard");
     if(!s.flipped){
       card.classList.remove("isBack");
-      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${esc(c.front)}</div>${c.image?`<img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}">`:""}<div class="fcTapHint">タップで答えを見る</div>`;
+      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${esc(c.front)}</div>${fcImgHTML(c)}<div class="fcTapHint">タップで答えを見る</div>`;
     } else {
       card.classList.add("isBack");
       card.innerHTML=`<div class="fcText small">${esc(c.front)}</div>${fcBackHTML(c)}`;
     }
   }
+  function openFcLightbox(src,alt){ const lb=$("#fcLightbox"); if(!lb) return; $("#fcLightboxImg").src=src; $("#fcLightboxImg").alt=alt||""; lb.classList.remove("hidden"); }
+  function closeFcLightbox(){ const lb=$("#fcLightbox"); if(lb){ lb.classList.add("hidden"); $("#fcLightboxImg").src=""; } }
   function renderCard(){
     const s=flashSession; if(!s) return;
     s.flipped=false; flashAnimating=false;
@@ -1815,7 +1830,7 @@
     setTimeout(()=>{ if(s.i+1<s.deck.length){ s.i++; renderCard(); } else renderFlashResult(); },200);
   }
   function showFlashView(){
-    stopExamTimer();
+    stopExamTimer(); closeFcLightbox();
     ["#home","#quiz","#result","#review","#search"].forEach(id=>$(id).classList.add("hidden"));
     $("#flash").classList.remove("hidden"); window.scrollTo(0,0);
   }
@@ -1858,7 +1873,14 @@
       {icon:"🔥",name:"苦手",n:weak.length,go:()=>startFlash(weak.map(questionToCard),"苦手カード")},
       {icon:"🎲",name:"ランダム30",n:Math.min(30,DATA.length),go:()=>startFlash(shuffle(DATA).slice(0,30).map(questionToCard),"ランダムカード")}
     ];
-    if(terms.length) decks.push({icon:"📖",name:"用語カード",n:terms.length,go:()=>startFlash(terms.map(termToCard),"用語カード")});
+    // 用語・図カードは stable id を確保（SRSの記録が保たれるように）
+    terms.forEach((t,i)=>{ if(!t.id) t.id="tc"+i; });
+    // 出典（授業回）ごとにデッキを作る
+    const bySrc={};
+    terms.forEach(t=>{ const s=t.src||"用語カード"; (bySrc[s]=bySrc[s]||[]).push(t); });
+    const srcKeys=Object.keys(bySrc).sort();
+    const lecIcons=["📘","📗","📙","📕","📓","📔"];
+    srcKeys.forEach((s,idx)=>{ const arr=bySrc[s]; decks.push({icon:lecIcons[idx%lecIcons.length],name:s,n:arr.length,go:()=>startFlash(arr.map((t,i)=>termToCard(t,i)),s)}); });
     const box=$("#fcDecks");
     box.innerHTML=decks.map((d,i)=>`<button type="button" class="fcDeck ${d.n===0?'disabled':''}" data-i="${i}"><span class="fcDeckIcon">${d.icon}</span><span class="fcDeckName">${esc(d.name)}</span><span class="fcDeckN">${d.n}枚</span></button>`).join("");
     box.querySelectorAll(".fcDeck").forEach(el=>{ el.onclick=()=>{ const d=decks[+el.dataset.i]; if(d && d.n>0) d.go(); }; });
@@ -2022,16 +2044,19 @@
   $("#flashCardBtn").onclick=openFlashChooser;
   $("#flashChooserClose").onclick=closeFlashChooser;
   $("#flashChooser").onclick=(e)=>{ if(e.target.id==="flashChooser") closeFlashChooser(); };
-  $("#flashQuit").onclick=()=>{ if(confirm("フラッシュカードを中断してホームに戻りますか？")){ flashSession=null; renderHome(); } };
+  $("#flashQuit").onclick=()=>{ closeFcLightbox(); if(confirm("フラッシュカードを中断してホームに戻りますか？")){ flashSession=null; renderHome(); } };
+  $("#fcLightboxClose").onclick=closeFcLightbox;
+  $("#fcLightbox").onclick=(e)=>{ if(e.target.id==="fcLightbox"||e.target.id==="fcLightboxImg") closeFcLightbox(); };
   $("#fcFlip").onclick=flipCard;
   $("#fcOk").onclick=()=>gradeFlash(true);
   $("#fcNg").onclick=()=>gradeFlash(false);
   (function(){
     const fcEl=$("#fcCard");
-    fcEl.onclick=()=>{ if(Date.now()-lastFlashTouch<500) return; flipCard(); };
-    fcEl.addEventListener("touchstart",(e)=>{ if(e.touches.length!==1||flashAnimating) return; flashTouch={x:e.touches[0].clientX,y:e.touches[0].clientY,moved:false}; fcEl.style.transition="none"; },{passive:true});
+    const zoomFromTarget=(target)=>{ const w=target&&target.closest&&target.closest(".fcImgWrap"); if(w){ const img=w.querySelector("img"); if(img){ openFcLightbox(img.getAttribute("src"),img.getAttribute("alt")); return true; } } return false; };
+    fcEl.onclick=(e)=>{ if(zoomFromTarget(e.target)) return; if(Date.now()-lastFlashTouch<500) return; flipCard(); };
+    fcEl.addEventListener("touchstart",(e)=>{ if(e.touches.length!==1||flashAnimating) return; flashTouch={x:e.touches[0].clientX,y:e.touches[0].clientY,moved:false,target:e.target}; fcEl.style.transition="none"; },{passive:true});
     fcEl.addEventListener("touchmove",(e)=>{ if(!flashTouch) return; const dx=e.touches[0].clientX-flashTouch.x, dy=e.touches[0].clientY-flashTouch.y; if(Math.abs(dx)>10||Math.abs(dy)>10) flashTouch.moved=true; if(Math.abs(dx)>Math.abs(dy) && flashTouch.moved){ e.preventDefault(); fcEl.style.transform=`translateX(${dx}px) rotate(${dx*0.04}deg)`; fcEl.style.opacity=String(Math.max(0.35,1-Math.abs(dx)/380)); } },{passive:false});
-    fcEl.addEventListener("touchend",(e)=>{ if(!flashTouch) return; const t=flashTouch; flashTouch=null; lastFlashTouch=Date.now(); fcEl.style.transition=""; const dx=e.changedTouches[0].clientX-t.x, dy=e.changedTouches[0].clientY-t.y; if(Math.abs(dx)>85 && Math.abs(dx)>Math.abs(dy)){ gradeFlash(dx>0); } else { fcEl.style.transform=""; fcEl.style.opacity=""; if(!t.moved) flipCard(); } });
+    fcEl.addEventListener("touchend",(e)=>{ if(!flashTouch) return; const t=flashTouch; flashTouch=null; lastFlashTouch=Date.now(); fcEl.style.transition=""; const dx=e.changedTouches[0].clientX-t.x, dy=e.changedTouches[0].clientY-t.y; if(Math.abs(dx)>85 && Math.abs(dx)>Math.abs(dy)){ gradeFlash(dx>0); } else { fcEl.style.transform=""; fcEl.style.opacity=""; if(!t.moved){ if(zoomFromTarget(t.target)) return; flipCard(); } } });
   })();
 
   /* キーボードショートカット（PCのみ。スマホの入力欄では無効化） */
@@ -2130,7 +2155,7 @@
   menuBtn.onclick=()=>{ closeUpdates(); menuPanel.classList.contains("hidden") ? openMenu() : closeMenu(); };
   updatesBtn.onclick=()=>{ closeMenu(); updatesPanel.classList.contains("hidden") ? openUpdates() : closeUpdates(); };
   menuBackdrop.onclick=()=>{ closeMenu(); closeUpdates(); };
-  document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeMenu(); closeUpdates(); closeUpdatesModal(); } });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal(); } });
 
   /* ---------- 更新情報モーダル(自動表示) ---------- */
   $("#updatesModalClose").onclick=closeUpdatesModal;
