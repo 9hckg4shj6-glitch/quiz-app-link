@@ -5,7 +5,7 @@
    - revalidate は cache:"no-cache" でGitHub PagesのHTTPキャッシュを迂回し常に最新化
    - キャッシュは世代管理し、activate 時に旧世代を削除
 */
-const VERSION = "v1.0.0";
+const VERSION = "v1.1.0";
 const CACHE = "metaquiz-" + VERSION;
 
 const CORE = [
@@ -14,6 +14,7 @@ const CORE = [
   "questions.js",
   "review.js",
   "updates.js",
+  "terms.js",
   "manifest.json",
   "icons/icon-192.png",
   "icons/icon-512.png",
