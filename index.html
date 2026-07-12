@@ -337,6 +337,7 @@
   .fcAnswer{font-size:19px;font-weight:900;color:var(--good);line-height:1.6}
   .fcExpl{font-size:14.5px;font-weight:600;color:var(--text);line-height:1.7;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
   .fcTapHint{font-size:12px;color:var(--muted)}
+  .fcFigHint{display:inline-block;margin:6px auto 0;font-size:12px;font-weight:700;color:var(--muted);background:rgba(148,163,184,.16);padding:3px 10px;border-radius:999px}
   .fcDivider{width:36px;height:3px;border-radius:2px;background:var(--line)}
   .flashBtns{display:flex;gap:10px;align-items:stretch;margin-top:14px}
   .fcGrade{flex:1;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;
@@ -1785,7 +1786,7 @@
   /* ---------- フラッシュカード ---------- */
   let flashSession=null, flashTouch=null, lastFlashTouch=0, flashAnimating=false;
   function questionToCard(q){ return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:q.choices[q.answer],expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""}; }
-  function termToCard(t,i){ return {id:t.id||("term-"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:t.image||null,imageAlt:t.imageAlt||""}; }
+  function termToCard(t,i){ return {id:t.id||("term-"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:t.image||null,imageAlt:t.imageAlt||"",backImageOnly:!!t.backImageOnly}; }
   function fcImgHTML(c){ return c.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:""; }
   function fcBackHTML(c){
     if(c.kind==="term") return `${fcImgHTML(c)}<div class="fcDivider"></div><div class="fcExpl">${esc(c.desc||"(説明なし)")}</div>`;
@@ -1795,7 +1796,9 @@
     const s=flashSession, c=s.deck[s.i], card=$("#fcCard");
     if(!s.flipped){
       card.classList.remove("isBack");
-      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${esc(c.front)}</div>${fcImgHTML(c)}<div class="fcTapHint">タップで答えを見る</div>`;
+      const frontImg=c.backImageOnly?"":fcImgHTML(c);
+      const figHint=(c.backImageOnly&&c.image)?`<div class="fcFigHint">🖼 答えに図あり</div>`:"";
+      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${esc(c.front)}</div>${frontImg}${figHint}<div class="fcTapHint">タップで答えを見る</div>`;
     } else {
       card.classList.add("isBack");
       card.innerHTML=`<div class="fcText small">${esc(c.front)}</div>${fcBackHTML(c)}`;
