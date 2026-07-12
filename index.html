@@ -401,29 +401,8 @@
   .bookmarkcat{border-color:rgba(255,209,102,.55)} .bookmarkcat::before{background:var(--gold)}
   .empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:14px}
 
-  /* ===== review notes ===== */
-  .review-grid{display:grid;grid-template-columns:1fr;gap:11px}
-  .review-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;
-    cursor:pointer;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;transition:transform .08s,border-color .15s}
-  .review-card:hover{border-color:var(--brand)} .review-card:active{transform:scale(.99)}
-  .review-card h3{font-size:16px;margin:0 0 4px;font-weight:900;line-height:1.35}
-  .review-card p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.6}
-  .review-card .rmeta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-  .review-card .rmeta span{font-size:10.5px;font-weight:900;padding:3px 8px;border-radius:999px;background:var(--card2);color:var(--muted)}
+  /* 戻るバー（検索画面などで共用） */
   .reviewTop{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-  .reviewHero{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
-  .reviewHero .eyebrow{font-size:11px;font-weight:900;color:var(--brand);margin-bottom:5px}
-  .reviewHero h2{font-size:22px;line-height:1.28;margin:0 0 6px;font-weight:900}
-  .reviewHero p{margin:0;color:var(--muted);font-size:13px}
-  .reviewContent{display:grid;gap:12px}
-  .reviewSection{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
-  .reviewSection h3{margin:0 0 10px;font-size:16px;line-height:1.35;font-weight:900;color:var(--text)}
-  .reviewSection p{margin:9px 0;color:var(--text);font-size:14px;line-height:1.85}
-  .reviewSection ul{margin:8px 0 0;padding-left:1.25em;color:var(--text);font-size:14px;line-height:1.75}
-  .reviewSection li+li{margin-top:5px}
-  .reviewSection .noteList{list-style:none;padding-left:0;display:grid;gap:7px}
-  .reviewSection .noteList li{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0}
-  .reviewActions{display:grid;gap:10px;margin-top:14px}
 
   /* ===== achievements ===== */
   .ach-scroll{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px}
@@ -812,7 +791,6 @@
         <a href="#yearSection" data-menu-target="yearSection"><span class="mi">📅</span>年度別<span class="ms">先頭</span></a>
         <a href="#predictionSection" data-menu-target="predictionSection"><span class="mi">📝</span>予想問題<span class="ms">先頭</span></a>
         <a href="#bookmarkSection" data-menu-target="bookmarkSection"><span class="mi">🔖</span>見直したい問題</a>
-        <a href="#reviewSection" data-menu-target="reviewSection"><span class="mi">📖</span>復習ノート<span class="ms">先頭</span></a>
         <a href="#fieldSection" data-menu-target="fieldSection"><span class="mi">🧬</span>分野別<span class="ms">先頭</span></a>
         <a href="#quickSection" data-menu-target="quickSection"><span class="mi">⚡</span>クイック演習</a>
         <a href="#weakSection" data-menu-target="weakSection"><span class="mi">🔥</span>苦手問題</a>
@@ -844,7 +822,7 @@
       <div class="leadCopy">
         <div class="leadEyebrow">人体物質代謝学 / Practice</div>
         <h2>今日解く範囲を選ぶ</h2>
-        <p>年度別・予想問題・分野別から演習を選び、復習ノートで講義内容を確認できます。クイック演習や学習状況は左上メニューから開けます。</p>
+        <p>年度別・予想問題・分野別から演習を選べます。クイック演習や学習状況は左上メニューから開けます。</p>
       </div>
       <div class="leadStats" aria-label="問題データの概要">
         <div class="leadStat"><b id="leadTotal">0</b><span>総問題</span></div>
@@ -912,14 +890,6 @@
     <div class="homeSection" id="bookmarkSection">
       <div class="sectlabel">見直したい問題</div>
       <div id="bookmarkList" class="grid"></div>
-    </div>
-
-    <div class="homeSection rangeSection" id="reviewSection">
-      <button type="button" class="sectToggle" data-toggle="reviewList" aria-expanded="false" style="--accent:#8369c9">
-        <span class="stMain"><span class="stLabel">復習ノート</span><span class="stHint">タップして表示</span></span>
-        <span class="stCount"></span><span class="stChev">›</span>
-      </button>
-      <div id="reviewList" class="review-grid hidden"></div>
     </div>
 
     <div class="homeSection rangeSection" id="fieldSection">
@@ -1002,15 +972,6 @@
     <button class="btn hidden" id="nextBtn">次の問題 →</button>
   </section>
 
-  <!-- ===== REVIEW NOTE ===== -->
-  <section id="review" class="hidden">
-    <div class="reviewTop">
-      <button class="btn ghost small" id="reviewBack">← ホーム</button>
-      <span class="pill">復習ノート</span>
-    </div>
-    <div id="reviewContent"></div>
-  </section>
-
   <!-- ===== SEARCH ===== -->
   <section id="search" class="hidden">
     <div class="reviewTop">
@@ -1055,7 +1016,6 @@
 </div>
 
 <script src="questions.js"></script>
-<script src="review.js"></script>
 <script src="updates.js"></script>
 <script src="terms.js"></script>
 <script>
@@ -1085,7 +1045,6 @@
 
   /* ---------- データ読み込み ---------- */
   let DATA = [];
-  let REVIEWS = [];
   let UPDATES = [];
   function loadUpdates(){
     const src = window.APP_UPDATES || [];
@@ -1166,19 +1125,6 @@
       choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null
     })).filter(q=>q.question && q.choices.length>=2);
   }
-  function loadReviews(){
-    const src = window.REVIEW_DATA || [];
-    REVIEWS = src.map((r,i)=>({
-      id: r.id || ("review_"+i),
-      title: r.title || "復習ノート",
-      subtitle: r.subtitle || "",
-      date: r.date || "",
-      icon: r.icon || "📖",
-      sections: Array.isArray(r.sections) ? r.sections : [],
-      relatedQuestionIds: Array.isArray(r.relatedQuestionIds) ? r.relatedQuestionIds.slice() : []
-    })).filter(r=>r.sections.length);
-  }
-
   /* ---------- ストレージ ---------- */
   let progress = {};
   let meta = {};
@@ -1376,8 +1322,8 @@
   /* ---------- ホーム ---------- */
   function renderHome(){
     stopExamTimer();
-    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#search").classList.add("hidden"); $("#flash").classList.add("hidden");
-    renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderReviewList(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
+    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden");$("#search").classList.add("hidden"); $("#flash").classList.add("hidden");
+    renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
     window.scrollTo(0,0);
   }
 
@@ -1469,75 +1415,6 @@
     renderGroupList("field", "#fieldList");
     renderGroupList("weak", "#weakList");
     renderGroupList("bookmark", "#bookmarkList");
-  }
-  function relatedQuestions(note){
-    return note.relatedQuestionIds.map(id=>DATA.find(q=>q.id===id)).filter(Boolean);
-  }
-  function renderReviewList(){
-    const list=$("#reviewList");
-    if(!list) return;
-    updateSectionCount("reviewList", REVIEWS.length);
-    if(!REVIEWS.length){
-      list.innerHTML=`<div class="empty">復習ノートがまだ登録されていません。<br>review.js に教材データを追加してください。</div>`;
-      return;
-    }
-    list.innerHTML=REVIEWS.map(note=>{
-      const related=relatedQuestions(note).length;
-      return `<button type="button" class="review-card" data-review-id="${esc(note.id)}">
-        <div>
-          <h3>${esc(note.title)}</h3>
-          <p>${esc(note.subtitle || "講義内容を章別に復習できます。")}</p>
-          <div class="rmeta">
-            ${note.date?`<span>${esc(note.date)}</span>`:''}
-            <span>${note.sections.length}セクション</span>
-            <span>関連問題 ${related}問</span>
-          </div>
-        </div>
-      </button>`;
-    }).join("");
-    list.querySelectorAll("[data-review-id]").forEach(btn=>{
-      btn.onclick=()=>openReview(btn.dataset.reviewId);
-    });
-  }
-  function renderReviewBlock(block){
-    if(!block) return "";
-    if(block.type==="list" || block.type==="noteList"){
-      const cls=block.type==="noteList" ? ' class="noteList"' : "";
-      return `<ul${cls}>${(block.items||[]).map(item=>`<li>${esc(item)}</li>`).join("")}</ul>`;
-    }
-    return `<p>${esc(block.text||"")}</p>`;
-  }
-  function renderReviewSection(section){
-    return `<article class="reviewSection">
-      <h3>${esc(section.heading||"復習")}</h3>
-      ${(section.blocks||[]).map(renderReviewBlock).join("")}
-    </article>`;
-  }
-  function openReview(id){
-    const note=REVIEWS.find(r=>r.id===id);
-    if(!note){ toast("復習ノートが見つかりません"); return; }
-    const related=relatedQuestions(note);
-    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#review").classList.remove("hidden");
-    $("#reviewContent").innerHTML=`
-      <div class="reviewHero">
-        <div class="eyebrow">${esc(note.date || "Review Note")}</div>
-        <h2>${note.icon} ${esc(note.title)}</h2>
-        <p>${esc(note.subtitle)}</p>
-        <div class="reviewActions">
-          <button class="btn" id="reviewQuizBtn" ${related.length?'':'disabled'}>関連問題を解く（${related.length}問）</button>
-        </div>
-      </div>
-      <div class="reviewContent">${note.sections.map(renderReviewSection).join("")}</div>
-      <div class="reviewActions">
-        <button class="btn" id="reviewQuizBottom" ${related.length?'':'disabled'}>関連問題を解く（${related.length}問）</button>
-        <button class="btn ghost" id="reviewHomeBottom">ホームに戻る</button>
-      </div>`;
-    $("#reviewBack").onclick=renderHome;
-    $("#reviewHomeBottom").onclick=renderHome;
-    const startRelated=()=>{ if(related.length) startQuiz(related, note.title, {mode:"review", key:note.id}); else toast("関連問題が見つかりません"); };
-    $("#reviewQuizBtn").onclick=startRelated;
-    $("#reviewQuizBottom").onclick=startRelated;
-    window.scrollTo(0,0);
   }
   function renderGroupList(mode, selector){
     const gs=groups(mode), list=$(selector);
@@ -1663,7 +1540,7 @@
     const wrong=s.wrongList.map(w=>{ const ans=w.q.choices[w.q.answer];
       return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">あなた: ${esc(w.chosen)}</div><div class="a ans">正解: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${esc(w.q.explanation)}</div>`:""}</div>`; }).join("");
     const msg=score>=90?"🏆 素晴らしい！":score>=70?"🎉 合格ライン！":score>=50?"💪 あと一歩！":"📚 復習しよう！";
-    $("#quiz").classList.add("hidden"); $("#review").classList.add("hidden");
+    $("#quiz").classList.add("hidden");
     $("#result").innerHTML=`
       <div class="result">
         <div class="score">${score} <span style="font-size:24px;color:var(--muted)">/ 100点</span></div>
@@ -1703,7 +1580,7 @@
   }
   function openSearch(){
     stopExamTimer();
-    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#flash").classList.add("hidden");
+    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden");$("#flash").classList.add("hidden");
     $("#search").classList.remove("hidden");
     runSearch();
     const inp=$("#searchInput"); setTimeout(()=>inp.focus(),60);
@@ -1834,7 +1711,7 @@
   }
   function showFlashView(){
     stopExamTimer(); closeFcLightbox();
-    ["#home","#quiz","#result","#review","#search"].forEach(id=>$(id).classList.add("hidden"));
+    ["#home","#quiz","#result","#search"].forEach(id=>$(id).classList.add("hidden"));
     $("#flash").classList.remove("hidden"); window.scrollTo(0,0);
   }
   function startFlash(cards,label){
@@ -1899,7 +1776,7 @@
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const queue=shuffle(items).map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
     session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
-    $("#home").classList.add("hidden"); $("#result").classList.add("hidden"); $("#review").classList.add("hidden"); $("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#quiz").classList.remove("hidden");
+    $("#home").classList.add("hidden"); $("#result").classList.add("hidden");$("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
     const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam);
     if(session.exam) startExamTimer();
@@ -2098,7 +1975,7 @@
   /* ---------- 結果 ---------- */
   function renderResult(){
     const s=session,total=s.queue.length,pct=Math.round(s.correct/total*100),gained=meta.xp-s.xpStart;
-    $("#quiz").classList.add("hidden"); $("#review").classList.add("hidden");
+    $("#quiz").classList.add("hidden");
     const msg=pct===100?"🏆 全問正解！完璧です！":pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
     const wrong=s.wrongList.map(w=>{ const ans=w.q.choices[w.q.answer];
       return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">あなた: ${esc(w.chosen)}</div><div class="a ans">正解: ${esc(ans)}</div></div>`; }).join("");
@@ -2254,7 +2131,7 @@
 
   /* ---------- 起動 ---------- */
   const firstLaunch = isFirstEverLaunch();
-  loadProgress(); loadMeta(); loadData(); loadReviews(); loadUpdates();
+  loadProgress(); loadMeta(); loadData(); loadUpdates();
   if(firstLaunch) markUpdatesSeen();
   renderUpdatesPanel(); renderUpdatesHome(); refreshUpdateDot();
   if(!DATA.length){
