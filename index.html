@@ -1665,8 +1665,9 @@
   function questionToCard(q){ return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:q.choices[q.answer],expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""}; }
   function termToCard(t,i){ return {id:t.id||("term-"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:t.image||null,imageAlt:t.imageAlt||"",backImageOnly:!!t.backImageOnly}; }
   function fcImgHTML(c){ return c.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:""; }
+  function escML(s){ return esc(s).replace(/\n/g,"<br>"); }
   function fcBackHTML(c){
-    if(c.kind==="term") return `${fcImgHTML(c)}<div class="fcDivider"></div><div class="fcExpl">${esc(c.desc||"(説明なし)")}</div>`;
+    if(c.kind==="term") return `${fcImgHTML(c)}<div class="fcDivider"></div><div class="fcExpl">${escML(c.desc||"(説明なし)")}</div>`;
     return `<div class="fcDivider"></div><div class="fcAnswer">正解：${esc(c.answer||"")}</div>${c.expl?`<div class="fcExpl">${esc(c.expl)}</div>`:""}`;
   }
   function paintFace(){
