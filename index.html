@@ -1794,7 +1794,7 @@
     // 出典（授業回）ごとにデッキを作る
     const bySrc={};
     terms.forEach(t=>{ const s=t.src||"用語カード"; (bySrc[s]=bySrc[s]||[]).push(t); });
-    const srcKeys=Object.keys(bySrc).sort();
+    const srcKeys=Object.keys(bySrc).sort((a,b)=>a.localeCompare(b,"ja",{numeric:true}));
     const lecIcons=["📘","📗","📙","📕","📓","📔"];
     srcKeys.forEach((s,idx)=>{ const arr=bySrc[s]; decks.push({icon:lecIcons[idx%lecIcons.length],name:s,n:arr.length,go:()=>startFlash(arr.map((t,i)=>termToCard(t,i)),s)}); });
     const box=$("#fcDecks");
