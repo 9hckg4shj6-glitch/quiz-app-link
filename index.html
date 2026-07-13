@@ -1138,7 +1138,8 @@
   let progress = {};
   let meta = {};
   function loadProgress(){ try{ progress = JSON.parse(localStorage.getItem(STORE_KEY))||{}; }catch(e){ progress={}; } }
-  function saveProgress(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(progress)); }catch(e){} }
+  function saveProgress(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(progress)); }catch(e){}
+    try{ window.STUDY_CORE && window.STUDY_CORE.saveLegacyProgress && window.STUDY_CORE.saveLegacyProgress(progress); }catch(e){} }
   function loadMeta(){
     try{ meta = JSON.parse(localStorage.getItem(META_KEY))||{}; }catch(e){ meta={}; }
     meta.xp = meta.xp||0; meta.streakDays = meta.streakDays||0; meta.bestStreakDays = meta.bestStreakDays||0;
@@ -2185,7 +2186,7 @@
     renderHome();
   }
   if(!firstLaunch && unreadUpdatesCount()>0) openUpdatesModal();
-  window.__legacyAppRefresh=()=>{ loadData(); renderHome(); };
+  window.__legacyAppRefresh=()=>{ loadProgress(); loadData(); renderHome(); };
 
   /* ---------- PWA：Service Worker / 更新通知 / インストール導線 ---------- */
   updateThemeColor();

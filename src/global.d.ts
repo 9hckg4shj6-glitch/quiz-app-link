@@ -10,6 +10,7 @@ declare global {
     STUDY_CORE?: {
       scheduleReview: (progress: Record<string, unknown>, rating: 1 | 2 | 3 | 4, cardId: string) => Record<string, unknown>;
       refreshCustomCards: () => Promise<void>;
+      saveLegacyProgress: (progress: Record<string, unknown>) => void;
       openCardManager: () => Promise<void>;
       syncNow: () => Promise<SyncStatus>;
       undoLastReview: (cardId: string) => Promise<StoredSchedule | null>;
