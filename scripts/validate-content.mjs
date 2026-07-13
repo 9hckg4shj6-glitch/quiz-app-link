@@ -34,7 +34,7 @@ for (const [index, term] of terms.entries()) {
 }
 
 if (questions.length !== 790) errors.push(`問題数が想定と異なります: ${questions.length} / 790`);
-if (terms.length !== 174) errors.push(`用語カード数が想定と異なります: ${terms.length} / 174`);
+if (terms.length !== 215) errors.push(`用語カード数が想定と異なります: ${terms.length} / 215`);
 if (errors.length) {
   console.error(errors.slice(0, 50).join("\n"));
   process.exit(1);

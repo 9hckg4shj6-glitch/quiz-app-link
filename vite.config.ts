@@ -35,7 +35,7 @@ export default defineConfig({
             handler: "CacheFirst",
             options: {
               cacheName: "study-images-v2",
-              expiration: { maxEntries: 220, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 90 },
               cacheableResponse: { statuses: [0, 200] }
             }
           }
