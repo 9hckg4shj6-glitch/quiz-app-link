@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="googlebot" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <title>代謝演習アプリ</title>
 <!-- PWA -->
-<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#147d8f" id="themeColorMeta">
 <meta name="color-scheme" content="light dark">
 <meta name="application-name" content="代謝演習">
@@ -761,7 +762,7 @@
     <button type="button" class="countModalClose" id="flashChooserClose" aria-label="閉じる">✕</button>
     <div class="cmKicker">フラッシュカード</div>
     <h3 id="fcChooserTitle">どのカードをめくる？</h3>
-    <p class="cmSub">選択肢なしで表↔裏をめくる暗記モード。「わかった／微妙」が今日の復習（間隔反復）に反映されます。</p>
+    <p class="cmSub">選択肢なしで表↔裏をめくる暗記モード。4段階の理解度がFSRSの復習予定に反映されます。</p>
     <div class="fcDecks" id="fcDecks"></div>
     <div class="fcFieldLabel">分野からめくる</div>
     <div class="fcFieldChips" id="fcFieldChips"></div>
@@ -998,11 +999,13 @@
       <div class="flashCard" id="fcCard" role="button" tabindex="0" aria-label="カード（タップで裏返す）"></div>
     </div>
     <div class="flashBtns">
-      <button type="button" class="fcGrade fcNg" id="fcNg">👎&nbsp;微妙</button>
       <button type="button" class="fcFlip" id="fcFlip">🔄&nbsp;裏返す</button>
-      <button type="button" class="fcGrade fcOk" id="fcOk">👍&nbsp;わかった</button>
+      <button type="button" class="fcGrade fcAgain" id="fcAgain">1&nbsp;もう一度</button>
+      <button type="button" class="fcGrade fcHard" id="fcHard">2&nbsp;難しい</button>
+      <button type="button" class="fcGrade fcGood" id="fcGood">3&nbsp;できた</button>
+      <button type="button" class="fcGrade fcEasy" id="fcEasy">4&nbsp;簡単</button>
     </div>
-    <div class="flashFoot">タップで裏返す ・ 左右スワイプで「微妙／わかった」・ 図はタップで拡大</div>
+    <div class="flashFoot">タップで裏返す ・ 左右スワイプは「もう一度／できた」・ 数字キー1〜4でも評価できます</div>
   </section>
 
   <!-- ===== 図の拡大（フラッシュカード用ライトボックス） ===== -->
@@ -1126,7 +1129,7 @@
     })).filter(q=>q.question && q.choices.length>=2);
   }
   function termSources(){
-    const terms=Array.isArray(window.TERM_CARDS)?window.TERM_CARDS:[];
+    const terms=(Array.isArray(window.TERM_CARDS)?window.TERM_CARDS:[]).concat(Array.isArray(window.__CUSTOM_TERM_CARDS)?window.__CUSTOM_TERM_CARDS:[]);
     // ID未指定カードにも安定したIDを付け、復習記録が再読み込み後もつながるようにする
     terms.forEach((t,i)=>{ if(t && !t.id) t.id="tc"+i; });
     return terms.filter(t=>t && t.term);
@@ -1198,8 +1201,13 @@
   function dstr(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
   function todayStr(){ return dstr(new Date()); }
 
-  /* ---------- 今日の復習（スペースド・リピティション / SM-2簡易版） ---------- */
-  function scheduleSRS(r, correct){
+  /* ---------- 今日の復習（FSRS v6。モジュール未読込時のみ互換計算） ---------- */
+  function scheduleSRS(r, rating, cardId){
+    if(window.STUDY_CORE && window.STUDY_CORE.scheduleReview){
+      window.STUDY_CORE.scheduleReview(r, rating, cardId);
+      return;
+    }
+    const correct=rating>=3;
     if(correct){
       if(!r.reps || r.reps<=0){ r.interval=1; }
       else if(r.reps===1){ r.interval=3; }
@@ -1718,11 +1726,12 @@
     setTimeout(()=>{ s.flipped=!s.flipped; paintFace(); card.style.transform="perspective(900px) rotateY(0deg)";
       setTimeout(()=>{ card.style.transform=""; flashAnimating=false; },170); },155);
   }
-  function gradeFlash(known){
+  function gradeFlash(rating){
     const s=flashSession; if(!s||flashAnimating) return;
     flashAnimating=true;
     const c=s.deck[s.i], r=rec(c.id); r.seen=(r.seen||0)+1;
-    scheduleSRS(r,known);
+    const known=rating>=3;
+    scheduleSRS(r,rating,c.id);
     if(known){ s.ok++; addXP(XP_CORRECT); } else { s.ng++; s.ngList.push(c); addXP(XP_WRONG); }
     markStudied(); saveProgress(); saveMeta();
     const card=$("#fcCard");
@@ -1753,6 +1762,7 @@
           <div class="stat"><b style="color:var(--bad)">${s.ng}</b><span>微妙</span></div>
         </div>
         <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度</button></div>
+        <button class="btn ghost" id="rUndo" style="margin-top:10px">↩ 直前の評価を取り消す</button>
         ${s.ng?`<button class="btn ghost" id="rNg" style="margin-top:10px">👎 微妙だけ もう一周</button>`:''}
       </div>`;
     $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
@@ -1760,6 +1770,13 @@
     const deckCopy=s.deck.slice(), ngCopy=s.ngList.slice(), lbl=s.label;
     $("#rHome").onclick=renderHome;
     $("#rRetry").onclick=()=>startFlash(deckCopy,lbl);
+    const undo=$("#rUndo"); if(undo) undo.onclick=async()=>{
+      const card=s.deck[s.i], restored=window.STUDY_CORE&&window.STUDY_CORE.undoLastReview ? await window.STUDY_CORE.undoLastReview(card.id) : null;
+      if(!restored){ toast("取り消せる復習記録がありません"); return; }
+      const r=rec(card.id); r.fsrs=restored; r.reps=restored.reps; r.interval=restored.scheduledDays;
+      r.due=dstr(new Date(restored.due)); r.lastReviewed=restored.lastReview?dstr(new Date(restored.lastReview)):null;
+      saveProgress(); undo.disabled=true; undo.textContent="✓ 評価を取り消しました"; toast("直前の評価を取り消しました");
+    };
     const rn=$("#rNg"); if(rn) rn.onclick=()=>startFlash(ngCopy,lbl+"（微妙）");
   }
   function openFlashChooser(){ renderFlashChooser(); $("#flashChooser").classList.remove("hidden"); }
@@ -1946,15 +1963,17 @@
   $("#fcLightboxClose").onclick=closeFcLightbox;
   $("#fcLightbox").onclick=(e)=>{ if(e.target.id==="fcLightbox"||e.target.id==="fcLightboxImg") closeFcLightbox(); };
   $("#fcFlip").onclick=flipCard;
-  $("#fcOk").onclick=()=>gradeFlash(true);
-  $("#fcNg").onclick=()=>gradeFlash(false);
+  $("#fcAgain").onclick=()=>gradeFlash(1);
+  $("#fcHard").onclick=()=>gradeFlash(2);
+  $("#fcGood").onclick=()=>gradeFlash(3);
+  $("#fcEasy").onclick=()=>gradeFlash(4);
   (function(){
     const fcEl=$("#fcCard");
     const zoomFromTarget=(target)=>{ const w=target&&target.closest&&target.closest(".fcImgWrap"); if(w){ const img=w.querySelector("img"); if(img){ openFcLightbox(img.getAttribute("src"),img.getAttribute("alt")); return true; } } return false; };
     fcEl.onclick=(e)=>{ if(zoomFromTarget(e.target)) return; if(Date.now()-lastFlashTouch<500) return; flipCard(); };
     fcEl.addEventListener("touchstart",(e)=>{ if(e.touches.length!==1||flashAnimating) return; flashTouch={x:e.touches[0].clientX,y:e.touches[0].clientY,moved:false,target:e.target}; fcEl.style.transition="none"; },{passive:true});
     fcEl.addEventListener("touchmove",(e)=>{ if(!flashTouch) return; const dx=e.touches[0].clientX-flashTouch.x, dy=e.touches[0].clientY-flashTouch.y; if(Math.abs(dx)>10||Math.abs(dy)>10) flashTouch.moved=true; if(Math.abs(dx)>Math.abs(dy) && flashTouch.moved){ e.preventDefault(); fcEl.style.transform=`translateX(${dx}px) rotate(${dx*0.04}deg)`; fcEl.style.opacity=String(Math.max(0.35,1-Math.abs(dx)/380)); } },{passive:false});
-    fcEl.addEventListener("touchend",(e)=>{ if(!flashTouch) return; const t=flashTouch; flashTouch=null; lastFlashTouch=Date.now(); fcEl.style.transition=""; const dx=e.changedTouches[0].clientX-t.x, dy=e.changedTouches[0].clientY-t.y; if(Math.abs(dx)>85 && Math.abs(dx)>Math.abs(dy)){ gradeFlash(dx>0); } else { fcEl.style.transform=""; fcEl.style.opacity=""; if(!t.moved){ if(zoomFromTarget(t.target)) return; flipCard(); } } });
+    fcEl.addEventListener("touchend",(e)=>{ if(!flashTouch) return; const t=flashTouch; flashTouch=null; lastFlashTouch=Date.now(); fcEl.style.transition=""; const dx=e.changedTouches[0].clientX-t.x, dy=e.changedTouches[0].clientY-t.y; if(Math.abs(dx)>85 && Math.abs(dx)>Math.abs(dy)){ gradeFlash(dx>0?3:1); } else { fcEl.style.transform=""; fcEl.style.opacity=""; if(!t.moved){ if(zoomFromTarget(t.target)) return; flipCard(); } } });
   })();
 
   /* キーボードショートカット（PCのみ。スマホの入力欄では無効化） */
@@ -1963,8 +1982,9 @@
     if(/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
     if(!$("#flash").classList.contains("hidden") && flashSession){
       if(e.key===" "||e.key==="Enter"){ e.preventDefault(); flipCard(); }
-      else if(e.key==="ArrowRight"){ e.preventDefault(); gradeFlash(true); }
-      else if(e.key==="ArrowLeft"){ e.preventDefault(); gradeFlash(false); }
+      else if(e.key==="ArrowRight"){ e.preventDefault(); gradeFlash(3); }
+      else if(e.key==="ArrowLeft"){ e.preventDefault(); gradeFlash(1); }
+      else if(/^[1-4]$/.test(e.key)){ e.preventDefault(); gradeFlash(Number(e.key)); }
       return;
     }
     if($("#quiz").classList.contains("hidden") || !session) return;
@@ -2165,33 +2185,11 @@
     renderHome();
   }
   if(!firstLaunch && unreadUpdatesCount()>0) openUpdatesModal();
+  window.__legacyAppRefresh=()=>{ loadData(); renderHome(); };
 
   /* ---------- PWA：Service Worker / 更新通知 / インストール導線 ---------- */
   updateThemeColor();
   (function pwa(){
-    if("serviceWorker" in navigator){
-      let hadController = !!navigator.serviceWorker.controller, refreshing=false;
-      navigator.serviceWorker.addEventListener("controllerchange",()=>{
-        if(!hadController){ hadController=true; return; }  /* 初回claimではリロードしない */
-        if(refreshing) return; refreshing=true; location.reload();
-      });
-      window.addEventListener("load",async()=>{
-        try{
-          const reg=await navigator.serviceWorker.register("sw.js");
-          if(reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg);
-          reg.addEventListener("updatefound",()=>{
-            const nw=reg.installing; if(!nw) return;
-            nw.addEventListener("statechange",()=>{ if(nw.state==="installed" && navigator.serviceWorker.controller) showUpdateBanner(reg); });
-          });
-          setInterval(()=>{ reg.update().catch(()=>{}); }, 60*60*1000);
-        }catch(e){}
-      });
-    }
-    function showUpdateBanner(reg){
-      const b=$("#updateBanner"); if(!b) return; b.classList.remove("hidden");
-      $("#updateYes").onclick=()=>{ if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING"); b.classList.add("hidden"); };
-      $("#updateNo").onclick=()=>b.classList.add("hidden");
-    }
     /* インストール導線 */
     const DKEY="quizInstallDismiss_v1";
     const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone===true;
@@ -2222,5 +2220,6 @@
   })();
 })();
 </script>
+<script type="module" src="/src/main.ts"></script>
 </body>
 </html>
