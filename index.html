@@ -368,8 +368,30 @@
   /* ===== カード一覧（ライブラリ） ===== */
   .browseEntry{border-color:color-mix(in srgb,#2f9e7d 52%,var(--line));background:color-mix(in srgb,#2f9e7d 10%,var(--card))}
   .browseEntry:hover{border-color:#2f9e7d}
-  #browseDeckGrid.fcDecks{margin-top:6px}
-  #browseDeckGrid .fcDeck{padding:15px 15px}
+  #browseDeckGrid{display:grid;gap:9px;margin-top:6px}
+  .browseCert{font-size:12.5px;font-weight:800;color:var(--muted);margin:0 2px 4px}
+  .browseCert b{color:var(--gold)}
+  .brDeck2{display:flex;flex-direction:column;gap:8px;text-align:left;font-family:inherit;cursor:pointer;color:var(--text);
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--glow);transition:.14s}
+  .brDeck2:hover{border-color:var(--brand);transform:translateY(-1px)} .brDeck2:active{transform:scale(.99)}
+  .brDeck2.certified{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));background:color-mix(in srgb,var(--gold) 8%,var(--card))}
+  .brDeckHead{display:flex;align-items:center;gap:10px}
+  .brDeckTitle{flex:1;min-width:0;font-size:15px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brDeckN{flex:0 0 auto;font-size:12px;font-weight:900;color:var(--brand)}
+  .brCert{flex:0 0 auto;font-size:11px;font-weight:900;color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,var(--card2));
+    border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));padding:2px 9px;border-radius:999px}
+  .brDeckSub{font-size:11.5px;color:var(--muted);font-weight:700}
+  .brDeckBar{height:7px;border-radius:999px;background:var(--card2);overflow:hidden;border:1px solid var(--line)}
+  .brDeckBar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:999px;transition:width .4s}
+  .brDeck2.certified .brDeckBar i{background:linear-gradient(90deg,var(--gold),#ffe08a)}
+  .brJudgeBtn{border:1.5px solid color-mix(in srgb,var(--gold) 50%,var(--line));background:color-mix(in srgb,var(--gold) 10%,var(--card2));
+    color:var(--text);border-radius:10px;padding:9px 13px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;white-space:nowrap}
+  .brJudgeBtn:hover{border-color:var(--gold)} .brJudgeBtn:active{transform:scale(.97)}
+  .judgeBanner{border-radius:16px;padding:15px;margin-bottom:14px;border:1px solid var(--line);text-align:center;font-size:14.5px;font-weight:800;line-height:1.6}
+  .judgeBanner.ok{background:var(--good-bg);border-color:var(--good);color:var(--good)}
+  .judgeBanner.ng{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+  .judgeBanner.cert{background:color-mix(in srgb,var(--gold) 14%,var(--card));border-color:var(--gold);color:var(--gold)}
+  .pill.combo{background:color-mix(in srgb,var(--warn) 22%,var(--card2));color:var(--warn)}
   .browseList{display:grid;gap:8px;margin-top:6px}
   .brItem{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.12s}
   .brItem:hover{border-color:var(--brand)}
@@ -1249,6 +1271,8 @@
     meta.xp = meta.xp||0; meta.streakDays = meta.streakDays||0; meta.bestStreakDays = meta.bestStreakDays||0;
     meta.bestRunStreak = meta.bestRunStreak||0; meta.activity = meta.activity||{}; meta.achievements = meta.achievements||[];
     meta.lastStudyDate = meta.lastStudyDate||null; meta.lastCategory = meta.lastCategory||null;
+    meta.freezes = meta.freezes||0;                 // ストリークフリーズ所持数
+    meta.mastery = meta.mastery||{};                // { [出典名]: {passes:[日付], certified:bool, certifiedAt:日付} }
   }
   function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(meta)); }catch(e){} }
   function syncWeak(r){
@@ -1400,13 +1424,70 @@
     const after=levelInfo(meta.xp).level;
     return after>before ? after : 0;   // returns new level if leveled up, else 0
   }
+
+  /* ---------- ゲーム要素のヘルパー ---------- */
+  // 医療テーマの称号ランク（レベル帯で決まる）
+  const RANKS=[
+    {min:1, icon:"🩹", name:"医学生（見習い）"},
+    {min:3, icon:"📖", name:"医学生"},
+    {min:5, icon:"🩺", name:"研修医"},
+    {min:8, icon:"💉", name:"専攻医"},
+    {min:12,icon:"🏥", name:"専門医"},
+    {min:16,icon:"🎓", name:"指導医"},
+    {min:21,icon:"🧪", name:"講師"},
+    {min:26,icon:"⚗️", name:"准教授"},
+    {min:31,icon:"👑", name:"教授"}
+  ];
+  function rankInfo(level){ let r=RANKS[0]; for(const x of RANKS){ if(level>=x.min) r=x; } return r; }
+  // コンボ倍率：セッション中の連続正解でXPが増える
+  function comboMult(streak){ return streak>=8?3 : streak>=5?2 : streak>=3?1.5 : 1; }
+  // 日付文字列(YYYY-MM-DD)の差（b - a、日数）
+  function daysBetweenStr(a,b){ if(!a||!b) return 0; return Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/86400000); }
+  // カードの「修得」判定（FSRSの反復・間隔で判定）
+  function cardMastered(id){ const r=progress[id]; return !!(r && ((r.reps||0)>=2 || (r.interval||0)>=21)); }
+  function deckMastery(cards){ let m=0; cards.forEach(c=>{ if(cardMastered(c.id)) m++; }); const total=cards.length; return {total, mastered:m, pct: total?Math.round(m/total*100):0}; }
+  function isCertified(src){ const x=meta.mastery&&meta.mastery[src]; return !!(x&&x.certified); }
+  // 修了判定テストの記録・認定（別日で2回合格 → 修了）
+  const JUDGE_PASS=0.9;        // 合格ライン（できた率）
+  const JUDGE_GAP_DAYS=1;      // 認定に必要な合格どうしの最小日数差（別日）
+  function recordJudge(src, passed){
+    const m=meta.mastery[src]=meta.mastery[src]||{passes:[],certified:false};
+    if(m.certified) return "already";
+    if(!passed) return "fail";
+    const today=todayStr();
+    if(!m.passes.includes(today)) m.passes.push(today);
+    const days=[...new Set(m.passes)].sort();
+    let cert=false;
+    for(let i=0;i<days.length&&!cert;i++) for(let j=i+1;j<days.length;j++){ if(daysBetweenStr(days[i],days[j])>=JUDGE_GAP_DAYS){ cert=true; break; } }
+    if(cert){ m.certified=true; m.certifiedAt=today; }
+    saveMeta();
+    return cert?"certified":"pass1";
+  }
+  const STREAK_MILESTONES=[7,14,30,50,100,200,365];
   function markStudied(){
     const t=todayStr();
     if(meta.lastStudyDate !== t){
-      const y=new Date(); y.setDate(y.getDate()-1);
-      meta.streakDays = (meta.lastStudyDate===dstr(y)) ? meta.streakDays+1 : 1;
-      meta.lastStudyDate = t;
-      meta.bestStreakDays = Math.max(meta.bestStreakDays, meta.streakDays);
+      const prev=meta.lastStudyDate;
+      let usedFreeze=false;
+      if(!prev){ meta.streakDays=1; }
+      else {
+        const gap=daysBetweenStr(prev,t);          // 前回学習日から今日までの日数
+        if(gap<=1){ meta.streakDays+=1; }          // 昨日学習済み → 継続
+        else {
+          const missed=gap-1;                      // 休んだ日数
+          if((meta.freezes||0)>=missed){ meta.freezes-=missed; meta.streakDays+=1; usedFreeze=true; }
+          else { meta.streakDays=1; }              // フリーズ不足 → リセット
+        }
+      }
+      meta.lastStudyDate=t;
+      meta.bestStreakDays=Math.max(meta.bestStreakDays, meta.streakDays);
+      // 7日ごとにストリークフリーズを付与（最大3個）
+      let earnedFreeze=false;
+      if(meta.streakDays>0 && meta.streakDays%7===0 && (meta.freezes||0)<3){ meta.freezes=(meta.freezes||0)+1; earnedFreeze=true; }
+      // 演出（1日1回だけ走る）
+      if(usedFreeze) toast("🧊 ストリークフリーズで連続記録を守りました");
+      if(STREAK_MILESTONES.includes(meta.streakDays)){ setTimeout(()=>{ toast(`🔥 ${meta.streakDays}日連続 達成！`); confetti(); }, 350); }
+      else if(earnedFreeze) toast("🧊 ストリークフリーズ +1（休んでも1日守れます）");
     }
     meta.activity[t] = (meta.activity[t]||0)+1;
   }
@@ -1447,8 +1528,8 @@
   function renderBadge(){
     const li=levelInfo(meta.xp);
     $("#lvDot").textContent=li.level; $("#lvNum").textContent="Lv."+li.level; $("#lvXp").textContent=meta.xp+" XP";
-    const o=overall();
-    $("#subtitle").textContent=`全${o.total}問 ・ 学習済 ${o.seenQ}問 ・ 苦手 ${o.weak}問`;
+    const o=overall(), rk=rankInfo(li.level);
+    $("#subtitle").textContent=`${rk.icon} ${rk.name} ・ 学習済 ${o.seenQ}問 ・ 苦手 ${o.weak}問`;
   }
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
@@ -1512,7 +1593,7 @@
         stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>`;
   }
   function renderHero(){
-    const li=levelInfo(meta.xp), o=overall();
+    const li=levelInfo(meta.xp), o=overall(), rk=rankInfo(li.level);
     const todayN=meta.activity[todayStr()]||0;
     const goalPct=Math.min(100, Math.round(todayN/DAILY_GOAL*100));
     $("#heroGrid").innerHTML=`
@@ -1520,9 +1601,9 @@
         <div class="lc"><div class="lv">LEVEL</div><div class="num">${li.level}</div><div class="xp">${li.into}/${li.span} XP</div></div>
       </div>
       <div class="hero-info">
-        <div class="hi">👋 おかえりなさい！今日も続けましょう</div>
+        <div class="hi">👋 ${rk.icon} ${esc(rk.name)}</div>
         <div class="metric"><div class="mi">🔥</div><div class="mt"><div class="k">連続学習</div>
-          <div class="v"><b>${meta.streakDays}</b>日連続 <span style="color:var(--muted);font-weight:700;font-size:12px">（最長 ${meta.bestStreakDays}日）</span></div></div></div>
+          <div class="v"><b>${meta.streakDays}</b>日連続 <span style="color:var(--muted);font-weight:700;font-size:12px">（最長 ${meta.bestStreakDays}日 ・ 🧊×${meta.freezes||0}）</span></div></div></div>
         <div class="metric"><div class="mi">🎯</div><div class="mt"><div class="k">今日の目標</div>
           <div class="v">${todayN} / ${DAILY_GOAL} 問 ${todayN>=DAILY_GOAL?'✅':''}</div>
           <div class="goalbar"><i style="width:${goalPct}%"></i></div></div></div>
@@ -1816,6 +1897,10 @@
     out.achievements=[...new Set([...(cur.achievements||[]),...(inc.achievements||[])])];
     out.activity=Object.assign({},cur.activity||{}); const ia=inc.activity||{};
     Object.keys(ia).forEach(d=>{ out.activity[d]=Math.max(out.activity[d]||0, ia[d]||0); });
+    out.freezes=Math.max(cur.freezes||0, inc.freezes||0);
+    out.mastery=Object.assign({}, cur.mastery||{}); const im=inc.mastery||{};
+    Object.keys(im).forEach(s=>{ const a=out.mastery[s], b=im[s]; if(!b) return;
+      out.mastery[s]=a?{ certified:!!(a.certified||b.certified), certifiedAt:a.certifiedAt||b.certifiedAt, passes:[...new Set([...(a.passes||[]),...(b.passes||[])])] }:b; });
     return out;
   }
   function applyImport(obj,replace){
@@ -1884,17 +1969,36 @@
     hideAllScreens();
     $("#flash").classList.remove("hidden"); window.scrollTo(0,0);
   }
-  function startFlash(cards,label){
+  function startFlash(cards,label,opts){
     if(!cards || !cards.length){ toast("カードがありません"); return; }
+    opts=opts||{};
     closeFlashChooser();
-    flashSession={label,deck:shuffle(cards),i:0,ok:0,ng:0,ngList:[]};
+    flashSession={label,deck:shuffle(cards),i:0,ok:0,ng:0,ngList:[],judge:opts.judge?opts.judgeSrc:null};
     showFlashView(); renderCard();
+  }
+  function startJudge(src){
+    const cards=browseAllCards().filter(c=>c.src===src);
+    if(cards.length<5){ toast("この回はカードが少なく、修了判定できません"); return; }
+    if(isCertified(src) && !confirm(`「${src}」はすでに修了認定ずみです。もう一度判定テストに挑戦しますか？`)) return;
+    startFlash(cards, src+"｜修了判定テスト", {judge:true, judgeSrc:src});
   }
   function renderFlashResult(){
     const s=flashSession, total=s.deck.length, pct=Math.round(s.ok/total*100);
     $("#flash").classList.add("hidden");
     const msg=pct>=90?"🏆 バッチリ！":pct>=60?"🎉 いい調子！":"📚 もう一周しよう！";
+    // 修了判定テストの評価
+    let judgeHTML="", certified=false;
+    if(s.judge){
+      const passed=(s.ok/total)>=JUDGE_PASS, res=recordJudge(s.judge, passed);
+      const passLine=Math.round(JUDGE_PASS*100);
+      if(res==="certified"){ certified=true; addXP(50); saveMeta();
+        judgeHTML=`<div class="judgeBanner cert">🎓 「${esc(s.judge)}」を修了認定！おめでとう（+50XP）</div>`; }
+      else if(res==="pass1") judgeHTML=`<div class="judgeBanner ok">✅ 合格（${pct}%）！別の日にもう一度合格すると修了認定です。</div>`;
+      else if(res==="already") judgeHTML=`<div class="judgeBanner cert">🎓 この回はすでに修了ずみです（今回 ${pct}%）。</div>`;
+      else judgeHTML=`<div class="judgeBanner ng">あと少し！ ${pct}%（合格ライン ${passLine}%）。もう一周して再挑戦しよう。</div>`;
+    }
     $("#result").innerHTML=`
+      ${judgeHTML}
       <div class="result">
         <div class="score">${s.ok} / ${total}</div>
         <div class="sub">${esc(s.label)} ・ わかった ${pct}% ${msg}</div>
@@ -1907,7 +2011,7 @@
         ${s.ng?`<button class="btn ghost" id="rNg" style="margin-top:10px">👎 微妙だけ もう一周</button>`:''}
       </div>`;
     $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
-    if(pct>=90) confetti();
+    if(certified||pct>=90) confetti();
     const deckCopy=s.deck.slice(), ngCopy=s.ngList.slice(), lbl=s.label;
     $("#rHome").onclick=renderHome;
     $("#rRetry").onclick=()=>startFlash(deckCopy,lbl);
@@ -1980,13 +2084,21 @@
     $("#browseResultsWrap").classList.add("hidden");
     const grid=$("#browseDeckGrid"); grid.classList.remove("hidden");
     const cards=browseAllCards(), srcs=browseSrcKeys(cards);
-    grid.innerHTML=srcs.map((s,idx)=>{
-      const n=cards.filter(c=>c.src===s).length;
-      return `<button type="button" class="fcDeck" data-src="${esc(s)}">
-        <span class="fcDeckIcon">${BROWSE_ICONS[idx%BROWSE_ICONS.length]}</span>
-        <span class="fcDeckName">${esc(s)}</span><span class="fcDeckN">${n}枚</span></button>`;
+    const certN=srcs.filter(isCertified).length;
+    grid.innerHTML=`<div class="browseCert">🎓 修了 <b>${certN}</b> / ${srcs.length} 回 ・ タップで授業回を開く</div>`+
+    srcs.map((s,idx)=>{
+      const list=cards.filter(c=>c.src===s), dm=deckMastery(list), cert=isCertified(s);
+      return `<button type="button" class="brDeck2 ${cert?'certified':''}" data-src="${esc(s)}">
+        <span class="brDeckHead">
+          <span class="fcDeckIcon">${cert?'🎓':BROWSE_ICONS[idx%BROWSE_ICONS.length]}</span>
+          <span class="brDeckTitle">${esc(s)}</span>
+          ${cert?'<span class="brCert">修了</span>':`<span class="brDeckN">${dm.pct}%</span>`}
+        </span>
+        <span class="brDeckSub">修得 ${dm.mastered}/${dm.total}枚${cert?' ・ 修了認定ずみ':''}</span>
+        <span class="brDeckBar"><i style="width:${dm.pct}%"></i></span>
+      </button>`;
     }).join("");
-    grid.querySelectorAll(".fcDeck").forEach(el=>{ el.onclick=()=>{
+    grid.querySelectorAll(".brDeck2").forEach(el=>{ el.onclick=()=>{
       browseState.deck=el.dataset.src; browseState.q=""; $("#browseInput").value="";
       renderBrowse(); window.scrollTo(0,0);
     }; });
@@ -2005,8 +2117,13 @@
       return;
     }
     act.classList.remove("hidden");
-    act.innerHTML=`<span class="srCount">${matches.length}枚</span><button type="button" class="btn small" id="browseFlipAll">🎴 この${matches.length}枚をめくる</button>`;
+    const deckSrc=browseState.deck;
+    act.innerHTML=`<span class="srCount">${matches.length}枚</span>`+
+      `<span style="display:flex;gap:8px">`+
+      (deckSrc?`<button type="button" class="brJudgeBtn" id="browseJudge">🎓 修了判定</button>`:"")+
+      `<button type="button" class="btn small" id="browseFlipAll">🎴 めくる</button></span>`;
     $("#browseFlipAll").onclick=()=>startFlash(matches.slice(), flipLabel);
+    if(deckSrc){ const jb=$("#browseJudge"); if(jb) jb.onclick=()=>startJudge(deckSrc); }
     const cap=matches.slice(0,BROWSE_CAP);
     box.innerHTML=cap.map((c,i)=>{
       const figHint=c.image?`<span class="brFig">🖼 図</span>`:"";
@@ -2129,9 +2246,9 @@
       } else { b.disabled=true; }
     });
     const r=rec(q.id); r.seen++;
-    let lvup=0;
-    if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); lvup=addXP(XP_CORRECT); }
-    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text}); lvup=addXP(XP_WRONG); }
+    let lvup=0, gainXP=0, mult=1;
+    if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
+    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text}); gainXP=XP_WRONG; lvup=addXP(gainXP); }
     scheduleSRS(r,isCorrect);
     meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
     markStudied(); saveProgress(); saveMeta();
@@ -2148,11 +2265,11 @@
     }
     else if(r.weak&&remain>0) note=`<div class="lead">👍 あと ${remain} 回連続正解で苦手を克服できます。</div>`;
     $("#explainBox").innerHTML=`<div class="explain ${isCorrect?'ok':'ng'}">
-        <div class="head">${isCorrect?'⭕ 正解！ +'+XP_CORRECT+'XP':'❌ 不正解 +'+XP_WRONG+'XP'}</div>
+        <div class="head">${isCorrect?`⭕ 正解！ +${gainXP}XP${mult>1?` <span style="color:var(--warn)">🔥コンボ×${mult}</span>`:''}`:'❌ 不正解 +'+XP_WRONG+'XP'}</div>
         ${note}
         ${!isCorrect?`<div class="body" style="margin-bottom:8px"><b>正解：</b>${esc(correctText)}</div>`:''}
         <div class="body">${renderExplainBody(q,cur,idx)}</div></div>`;
-    $("#streakPill").textContent=`🔥 ${s.streak}`;
+    const sp=$("#streakPill"); sp.textContent=mult>1?`🔥 ${s.streak} ×${mult}`:`🔥 ${s.streak}`; sp.classList.toggle("combo", mult>1);
     const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"結果を見る →"; nb.classList.remove("hidden");
     nb.scrollIntoView({behavior:"smooth",block:"nearest"});
   }
