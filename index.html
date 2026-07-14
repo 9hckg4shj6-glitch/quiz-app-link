@@ -1765,7 +1765,7 @@
       const r=rec(cur.q.id); r.seen++;
       if(isCorrect){ r.correct++; r.streak++; correct++; run++; maxRun=Math.max(maxRun,run); }
       else { r.wrong++; r.streak=0; r.lastWrong=t; run=0; s.wrongList.push({q:cur.q, chosen: chosenIdx===null?"（未回答）":cur.choices[chosenIdx].text}); }
-      syncWeak(r); scheduleSRS(r,isCorrect);
+      syncWeak(r); scheduleSRS(r, isCorrect?3:1, cur.q.id);
     });
     s.correct=correct; s.maxStreak=maxRun;
     s.elapsedSec=Math.min(EXAM_MIN*60, Math.round((Date.now()-s.startedAt)/1000));
@@ -2249,7 +2249,7 @@
     let lvup=0, gainXP=0, mult=1;
     if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
     else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text}); gainXP=XP_WRONG; lvup=addXP(gainXP); }
-    scheduleSRS(r,isCorrect);
+    scheduleSRS(r, isCorrect?3:1, q.id);   // FSRSには1〜4の評価値を渡す（正解=できた/不正解=もう一度）
     meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
     markStudied(); saveProgress(); saveMeta();
     if(lvup){ s.leveledUp=lvup; toast(`🎉 レベルアップ！ Lv.${lvup} に到達`); }
