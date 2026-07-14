@@ -393,6 +393,22 @@
     padding:8px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
   .brFlipOne:hover{border-color:var(--brand);color:var(--brand)} .brFlipOne:active{transform:scale(.97)}
 
+  /* ===== ホームのハブ（カテゴリボタン） ===== */
+  .hubGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:4px}
+  .hubBtn{display:flex;align-items:center;gap:13px;text-align:left;font-family:inherit;cursor:pointer;color:var(--text);
+    background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);
+    transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+  .hubBtn:hover{transform:translateY(-2px);border-color:var(--brand);box-shadow:0 24px 60px rgba(29,45,68,.18)}
+  .hubBtn:active{transform:scale(.99)}
+  .hubBtn:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 42%,transparent);outline-offset:3px}
+  .hubIcon{flex:0 0 auto;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:24px;
+    background:var(--card2);border:1px solid var(--line)}
+  .hubBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .hubName{font-size:16px;font-weight:900}
+  .hubSub{font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hubChev{flex:0 0 auto;color:var(--brand);font-size:16px;font-weight:900}
+  @media(max-width:560px){ .hubGrid{grid-template-columns:1fr} }
+
   /* ===== heatmap ===== */
   .heat-scroll{overflow-x:auto;padding-bottom:4px}
   .heat{display:flex;gap:4px;min-width:max-content}
@@ -819,17 +835,11 @@
         <button type="button" id="menuSearch" data-menu-action="search"><span class="mi">🔍</span>問題検索</button>
         <button type="button" id="menuBrowse" data-menu-action="browse"><span class="mi">🗂</span>カード一覧</button>
         <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">🌓</span>テーマ切替</button>
-        <a href="#yearSection" data-menu-target="yearSection"><span class="mi">📅</span>年度別<span class="ms">先頭</span></a>
-        <a href="#predictionSection" data-menu-target="predictionSection"><span class="mi">📝</span>予想問題<span class="ms">先頭</span></a>
-        <a href="#bookmarkSection" data-menu-target="bookmarkSection"><span class="mi">🔖</span>見直したい問題</a>
-        <a href="#fieldSection" data-menu-target="fieldSection"><span class="mi">🧬</span>分野別<span class="ms">先頭</span></a>
-        <a href="#quickSection" data-menu-target="quickSection"><span class="mi">⚡</span>クイック演習</a>
-        <a href="#weakSection" data-menu-target="weakSection"><span class="mi">🔥</span>苦手問題</a>
-        <a href="#dashboardSection" data-menu-target="dashboardSection"><span class="mi">📊</span>学習状況</a>
-        <a href="#activitySection" data-menu-target="activitySection"><span class="mi">🗓</span>アクティビティ</a>
-        <a href="#achSection" data-menu-target="achSection"><span class="mi">🏆</span>実績</a>
-        <a href="#updatesSection" data-menu-target="updatesSection"><span class="mi">📢</span>更新履歴</a>
-        <a href="#dataSection" data-menu-target="dataSection"><span class="mi">⚙️</span>データ管理</a>
+        <a href="#practiceView" data-menu-view="practiceView"><span class="mi">📚</span>問題演習</a>
+        <a href="#cardsView" data-menu-view="cardsView"><span class="mi">🎴</span>カード</a>
+        <a href="#reviewView" data-menu-view="reviewView"><span class="mi">🔥</span>復習・苦手</a>
+        <a href="#statsView" data-menu-view="statsView"><span class="mi">📊</span>学習状況</a>
+        <a href="#moreView" data-menu-view="moreView"><span class="mi">⚙️</span>設定・データ</a>
       </div>
     </div>
     <div class="logo">🧠</div>
@@ -847,26 +857,19 @@
     </div>
   </header>
 
-  <!-- ===== HOME ===== -->
+  <!-- ===== HOME（ハブ） ===== -->
   <section id="home">
     <div class="homeLead">
       <div class="leadCopy">
         <div class="leadEyebrow">人体物質代謝学 / Practice</div>
-        <h2>今日解く範囲を選ぶ</h2>
-        <p>年度別・予想問題・分野別から演習を選べます。クイック演習や学習状況は左上メニューから開けます。</p>
+        <h2>今日は何をする？</h2>
+        <p>下のボタンから、問題演習・カード・復習・学習状況などの画面へ移動できます。</p>
       </div>
       <div class="leadStats" aria-label="問題データの概要">
         <div class="leadStat"><b id="leadTotal">0</b><span>総問題</span></div>
         <div class="leadStat"><b id="leadFields">0</b><span>分野</span></div>
         <div class="leadStat"><b id="leadDone">0</b><span>学習済</span></div>
       </div>
-    </div>
-
-    <div class="homeSection" id="searchEntrySection">
-      <button type="button" class="searchEntry" id="searchCard">
-        <span class="seIcon">🔍</span>
-        <span class="seText">問題をキーワードで検索</span>
-      </button>
     </div>
 
     <div class="homeSection dueSection" id="dueSection">
@@ -880,6 +883,21 @@
       </button>
     </div>
 
+    <div class="hubGrid" id="hubGrid"></div>
+  </section>
+
+  <!-- ===== VIEW: 問題演習 ===== -->
+  <section id="practiceView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small viewBack">← ホーム</button>
+      <span class="pill">問題演習</span>
+    </div>
+
+    <div class="homeSection" id="quickSection">
+      <div class="sectlabel">クイック演習</div>
+      <div class="quick" id="quick"></div>
+    </div>
+
     <div class="homeSection examSection" id="examSection">
       <button type="button" class="dueCard examCard" id="examCard">
         <span class="dueIcon">📝</span>
@@ -888,28 +906,6 @@
           <span class="dueSub">分野バランスの50問・制限50分・100点満点で採点</span>
         </span>
         <span class="dueRight"><b class="dueCount">100</b><span class="dueUnit">点</span></span>
-      </button>
-    </div>
-
-    <div class="homeSection examSection" id="flashSection">
-      <button type="button" class="dueCard flashEntry" id="flashCardBtn">
-        <span class="dueIcon">🎴</span>
-        <span class="dueBody">
-          <span class="dueTitle">フラッシュカード</span>
-          <span class="dueSub">選択肢なしで表↔裏を素早くめくる暗記モード</span>
-        </span>
-        <span class="dueRight"><span class="dueUnit" style="font-size:15px">めくる →</span></span>
-      </button>
-    </div>
-
-    <div class="homeSection" id="browseSection">
-      <button type="button" class="dueCard browseEntry" id="browseBtn">
-        <span class="dueIcon">🗂</span>
-        <span class="dueBody">
-          <span class="dueTitle">カードをぜんぶ見る</span>
-          <span class="dueSub">出典・分野・キーワードで見たいカードをすぐ探せる</span>
-        </span>
-        <span class="dueRight"><span class="dueUnit" style="font-size:15px">一覧 →</span></span>
       </button>
     </div>
 
@@ -929,11 +925,6 @@
       <div id="predictionList" class="grid hidden"></div>
     </div>
 
-    <div class="homeSection" id="bookmarkSection">
-      <div class="sectlabel">見直したい問題</div>
-      <div id="bookmarkList" class="grid"></div>
-    </div>
-
     <div class="homeSection rangeSection" id="fieldSection">
       <button type="button" class="sectToggle" data-toggle="fieldList" aria-expanded="false" style="--accent:#1f8a62">
         <span class="stMain"><span class="stLabel">分野別</span><span class="stHint">タップして表示</span></span>
@@ -941,10 +932,48 @@
       </button>
       <div id="fieldList" class="grid hidden"></div>
     </div>
+  </section>
 
-    <div class="homeSection" id="quickSection">
-      <div class="sectlabel">クイック演習</div>
-      <div class="quick" id="quick"></div>
+  <!-- ===== VIEW: カード ===== -->
+  <section id="cardsView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small viewBack">← ホーム</button>
+      <span class="pill">カード</span>
+    </div>
+
+    <div class="homeSection examSection" id="flashSection">
+      <button type="button" class="dueCard flashEntry" id="flashCardBtn">
+        <span class="dueIcon">🎴</span>
+        <span class="dueBody">
+          <span class="dueTitle">フラッシュカード</span>
+          <span class="dueSub">選択肢なしで表↔裏を素早くめくる暗記モード</span>
+        </span>
+        <span class="dueRight"><span class="dueUnit" style="font-size:15px">めくる →</span></span>
+      </button>
+    </div>
+
+    <div class="homeSection" id="browseSection">
+      <button type="button" class="dueCard browseEntry" id="browseBtn">
+        <span class="dueIcon">🗂</span>
+        <span class="dueBody">
+          <span class="dueTitle">カードをぜんぶ見る</span>
+          <span class="dueSub">授業回ごとに、見たいカードを開いて確認</span>
+        </span>
+        <span class="dueRight"><span class="dueUnit" style="font-size:15px">一覧 →</span></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: 復習・苦手 ===== -->
+  <section id="reviewView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small viewBack">← ホーム</button>
+      <span class="pill">復習・苦手</span>
+    </div>
+
+    <div class="homeSection" id="bookmarkSection">
+      <div class="sectlabel">見直したい問題</div>
+      <div id="bookmarkList" class="grid"></div>
     </div>
 
     <div class="homeSection" id="weakSection">
@@ -955,6 +984,14 @@
     <div class="homeSection" id="playlistSection">
       <div class="sectlabel">弱点プレイリスト</div>
       <div id="playlistList" class="plGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: 学習状況 ===== -->
+  <section id="statsView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small viewBack">← ホーム</button>
+      <span class="pill">学習状況</span>
     </div>
 
     <div class="homeSection" id="dashboardSection">
@@ -971,6 +1008,14 @@
     <div class="homeSection" id="achSection">
       <div class="sectlabel">実績</div>
       <div class="panel"><div class="ach-scroll" id="achList"></div></div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: 設定・データ ===== -->
+  <section id="moreView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small viewBack">← ホーム</button>
+      <span class="pill">設定・データ</span>
     </div>
 
     <div class="homeSection" id="updatesSection">
@@ -1406,12 +1451,48 @@
     $("#subtitle").textContent=`全${o.total}問 ・ 学習済 ${o.seenQ}問 ・ 苦手 ${o.weak}問`;
   }
 
-  /* ---------- ホーム ---------- */
+  /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
+  const VIEWS=["practiceView","cardsView","reviewView","statsView","moreView"];
+  function hideAllScreens(){
+    ["#home","#quiz","#result","#search","#flash","#browse"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
+    VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
+  }
+  function refreshData(){
+    renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick();
+    renderHero(); renderKpis(); renderHeatmap(); renderAch(); renderUpdatesHome();
+  }
   function renderHome(){
-    stopExamTimer();
-    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden");$("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#browse").classList.add("hidden");
-    renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
+    stopExamTimer(); closeFcLightbox();
+    hideAllScreens();
+    $("#home").classList.remove("hidden");
+    refreshData(); renderHub();
     window.scrollTo(0,0);
+  }
+  function openView(id){
+    if(VIEWS.indexOf(id)===-1){ renderHome(); return; }
+    stopExamTimer(); closeFcLightbox();
+    hideAllScreens();
+    refreshData();
+    $("#"+id).classList.remove("hidden");
+    window.scrollTo(0,0);
+  }
+  function renderHub(){
+    const grid=$("#hubGrid"); if(!grid) return;
+    const weakN=DATA.filter(q=>syncWeak(rec(q.id))).length;
+    const bmN=DATA.filter(q=>isBookmarked(q.id)).length;
+    const items=[
+      {icon:"📚",name:"問題演習",sub:"年度別・予想・分野別・本番",go:()=>openView("practiceView")},
+      {icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")},
+      {icon:"🔥",name:"復習・苦手",sub:`苦手 ${weakN} ・ 見直し ${bmN}`,go:()=>openView("reviewView")},
+      {icon:"📊",name:"学習状況",sub:"進捗・アクティビティ・実績",go:()=>openView("statsView")},
+      {icon:"🔍",name:"検索",sub:"キーワードで問題を探す",go:openSearch},
+      {icon:"⚙️",name:"設定・データ",sub:"更新履歴・バックアップ",go:()=>openView("moreView")}
+    ];
+    grid.innerHTML=items.map((it,i)=>`<button type="button" class="hubBtn" data-i="${i}">
+      <span class="hubIcon">${it.icon}</span>
+      <span class="hubBody"><span class="hubName">${esc(it.name)}</span><span class="hubSub">${esc(it.sub)}</span></span>
+      <span class="hubChev">›</span></button>`).join("");
+    grid.querySelectorAll(".hubBtn").forEach(el=>{ el.onclick=items[+el.dataset.i].go; });
   }
 
   function renderLead(){
@@ -1666,8 +1747,8 @@
     return h;
   }
   function openSearch(){
-    stopExamTimer();
-    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden");$("#flash").classList.add("hidden"); $("#browse").classList.add("hidden");
+    stopExamTimer(); closeFcLightbox();
+    hideAllScreens();
     $("#search").classList.remove("hidden");
     runSearch();
     const inp=$("#searchInput"); setTimeout(()=>inp.focus(),60);
@@ -1800,7 +1881,7 @@
   }
   function showFlashView(){
     stopExamTimer(); closeFcLightbox();
-    ["#home","#quiz","#result","#search","#browse"].forEach(id=>$(id).classList.add("hidden"));
+    hideAllScreens();
     $("#flash").classList.remove("hidden"); window.scrollTo(0,0);
   }
   function startFlash(cards,label){
@@ -1953,7 +2034,7 @@
   }
   function openBrowse(){
     stopExamTimer(); closeFcLightbox();
-    ["#home","#quiz","#result","#search","#flash"].forEach(id=>$(id).classList.add("hidden"));
+    hideAllScreens();
     $("#browse").classList.remove("hidden");
     browseState={deck:null,q:""}; $("#browseInput").value="";
     renderBrowse(); window.scrollTo(0,0);
@@ -1965,7 +2046,7 @@
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const queue=shuffle(items).map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
     session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
-    $("#home").classList.add("hidden"); $("#result").classList.add("hidden");$("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#browse").classList.add("hidden"); $("#quiz").classList.remove("hidden");
+    hideAllScreens(); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
     const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam);
     if(session.exam) startExamTimer();
@@ -2090,8 +2171,10 @@
   $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ stopExamTimer(); renderHome(); } };
   $("#examCard").onclick=()=>{ if(confirm(`本番モードを開始します。\n・分野バランスの${EXAM_N}問\n・制限 ${EXAM_MIN}分\n・1問${EXAM_POINT}点、${EXAM_N*EXAM_POINT}点満点\n・途中で正誤や解説は出ません\nよろしいですか？`)) startExam(); };
 
+  /* ビュー（各画面）の戻るボタン */
+  document.querySelectorAll(".viewBack").forEach(b=>{ b.onclick=renderHome; });
+
   /* 問題検索 */
-  $("#searchCard").onclick=openSearch;
   $("#searchBack").onclick=closeSearch;
   $("#searchInput").oninput=()=>{ clearTimeout(searchDebounce); searchDebounce=setTimeout(runSearch,160); };
   $("#searchInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=searchMatches($("#searchInput").value); if(m.length) startQuiz(m, `「${$("#searchInput").value.trim()}」の検索結果`); } };
@@ -2247,23 +2330,17 @@
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"){
     const lbOpen=!$("#fcLightbox").classList.contains("hidden");
     closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
-    if(!lbOpen && !$("#browse").classList.contains("hidden")) browseBackStep();
+    if(lbOpen) return;
+    if(!$("#browse").classList.contains("hidden")) browseBackStep();
+    else if(VIEWS.some(v=>!$("#"+v).classList.contains("hidden"))) renderHome();
   } });
 
   /* ---------- 更新情報モーダル(自動表示) ---------- */
   $("#updatesModalClose").onclick=closeUpdatesModal;
   $("#updatesModalBackdrop").addEventListener("click",e=>{ if(e.target.id==="updatesModalBackdrop") closeUpdatesModal(); });
   $("#updatesModalDismiss").onclick=()=>{ markUpdatesSeen(); refreshUpdateDot(); closeUpdatesModal(); };
-  menuPanel.querySelectorAll("[data-menu-target]").forEach(item=>{
-    item.onclick=e=>{
-      e.preventDefault(); closeMenu();
-      const target=$("#"+item.dataset.menuTarget);
-      if(target){
-        const toggle=target.querySelector(".sectToggle");
-        if(toggle && toggle.getAttribute("aria-expanded")!=="true") toggle.click();
-        target.scrollIntoView({behavior:"smooth",block:"start"});
-      }
-    };
+  menuPanel.querySelectorAll("[data-menu-view]").forEach(item=>{
+    item.onclick=e=>{ e.preventDefault(); closeMenu(); openView(item.dataset.menuView); };
   });
 
   /* ---------- 折りたたみセクション ---------- */
