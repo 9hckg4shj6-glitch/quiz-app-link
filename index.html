@@ -368,15 +368,8 @@
   /* ===== カード一覧（ライブラリ） ===== */
   .browseEntry{border-color:color-mix(in srgb,#2f9e7d 52%,var(--line));background:color-mix(in srgb,#2f9e7d 10%,var(--card))}
   .browseEntry:hover{border-color:#2f9e7d}
-  .browseFilters{display:grid;gap:12px;margin:12px 0 6px}
-  .browseChipLabel{font-size:11px;font-weight:900;color:var(--muted);margin:0 2px 6px}
-  .browseChipRow{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
-  .browseChipRow::-webkit-scrollbar{height:0}
-  .browseChip{flex:0 0 auto;border:1.5px solid var(--line);background:var(--card2);color:var(--text);border-radius:999px;
-    padding:8px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s;white-space:nowrap}
-  .browseChip:hover{border-color:var(--brand)} .browseChip:active{transform:scale(.96)}
-  .browseChip.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-color:transparent}
-  .browseChip small{opacity:.72;font-weight:800;margin-left:2px}
+  #browseDeckGrid.fcDecks{margin-top:6px}
+  #browseDeckGrid .fcDeck{padding:15px 15px}
   .browseList{display:grid;gap:8px;margin-top:6px}
   .brItem{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.12s}
   .brItem:hover{border-color:var(--brand)}
@@ -1039,26 +1032,19 @@
   <!-- ===== BROWSE（カード一覧） ===== -->
   <section id="browse" class="hidden">
     <div class="reviewTop">
-      <button class="btn ghost small" id="browseBack">← ホーム</button>
-      <span class="pill">カード一覧</span>
-    </div>
-    <div class="browseFilters">
-      <div>
-        <div class="browseChipLabel">出典（授業回）</div>
-        <div class="browseChipRow" id="browseSrcChips"></div>
-      </div>
-      <div>
-        <div class="browseChipLabel">分野</div>
-        <div class="browseChipRow" id="browseFieldChips"></div>
-      </div>
+      <button class="btn ghost small" id="browseBack"><span id="browseBackLabel">← ホーム</span></button>
+      <span class="pill" id="browseTitle">カード一覧</span>
     </div>
     <div class="searchBar">
       <span class="sbIcon">🔍</span>
-      <input type="search" id="browseInput" placeholder="カードのキーワード（例：解糖系、ATP、酵素）" inputmode="search" autocomplete="off" enterkeyhint="search">
+      <input type="search" id="browseInput" placeholder="カードを検索（全回から）" inputmode="search" autocomplete="off" enterkeyhint="search">
       <button type="button" id="browseClear" class="searchClear hidden" aria-label="クリア">✕</button>
     </div>
-    <div class="searchActions hidden" id="browseActions"></div>
-    <div id="browseResults" class="browseList"></div>
+    <div id="browseDeckGrid" class="fcDecks"></div>
+    <div id="browseResultsWrap" class="hidden">
+      <div class="searchActions hidden" id="browseActions"></div>
+      <div id="browseResults" class="browseList"></div>
+    </div>
   </section>
 
   <!-- ===== FLASHCARD ===== -->
@@ -1881,64 +1867,65 @@
   }
 
   /* ---------- カード一覧（ライブラリ） ---------- */
-  let browseState={src:"__all",field:"__all",q:""};
+  // 2階層：deck=null → 授業回のボタン一覧（インデックス）／deck指定 → その回のカードだけ表示。
+  let browseState={deck:null,q:""};
   let browseDebounce=null;
   const BROWSE_CAP=80;
+  const BROWSE_ICONS=["📘","📗","📙","📕","📓","📔"];
   function browseAllCards(){
     // 講義フラッシュカード（TERM_CARDS）のみ。src・field を保持したカードにして返す。
     return termSources().map((t,i)=>{ const c=termToCard(t,i); c.src=t.src||"用語カード"; return c; });
   }
   function browseSrcKeys(cards){ return [...new Set(cards.map(c=>c.src))].sort((a,b)=>a.localeCompare(b,"ja",{numeric:true})); }
-  function browseFieldKeys(cards){
-    const cnt={}; cards.forEach(c=>{ const f=c.field||"その他"; cnt[f]=(cnt[f]||0)+1; });
-    return Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
-  }
-  function browseFiltered(cards){
+  function browseApplyQuery(cards){
     const terms=searchTerms(browseState.q);
+    if(!terms.length) return cards;
     return cards.filter(c=>{
-      if(browseState.src!=="__all" && c.src!==browseState.src) return false;
-      if(browseState.field!=="__all" && (c.field||"その他")!==browseState.field) return false;
-      if(terms.length){
-        const hay=normQ((c.front||"")+" "+(c.desc||"")+" "+(c.field||"")+" "+(c.src||"")+" "+(c.imageAlt||""));
-        if(!terms.every(t=>hay.includes(t))) return false;
-      }
-      return true;
+      const hay=normQ((c.front||"")+" "+(c.desc||"")+" "+(c.field||"")+" "+(c.src||"")+" "+(c.imageAlt||""));
+      return terms.every(t=>hay.includes(t));
     });
   }
-  function buildBrowseChips(){
-    const cards=browseAllCards();
-    const srcBox=$("#browseSrcChips");
-    srcBox.innerHTML=[`<button type="button" class="browseChip" data-type="src" data-val="__all">すべて<small>${cards.length}</small></button>`]
-      .concat(browseSrcKeys(cards).map(s=>`<button type="button" class="browseChip" data-type="src" data-val="${esc(s)}">${esc(s)}<small>${cards.filter(c=>c.src===s).length}</small></button>`))
-      .join("");
-    const fBox=$("#browseFieldChips");
-    fBox.innerHTML=[`<button type="button" class="browseChip" data-type="field" data-val="__all">すべての分野</button>`]
-      .concat(browseFieldKeys(cards).map(f=>`<button type="button" class="browseChip" data-type="field" data-val="${esc(f)}">${esc(f)}</button>`))
-      .join("");
-    [srcBox,fBox].forEach(box=>box.querySelectorAll(".browseChip").forEach(el=>{
-      el.onclick=()=>{ browseState[el.dataset.type]=el.dataset.val; syncBrowseChips(); renderBrowseList(); };
-    }));
-    syncBrowseChips();
+  function renderBrowse(){
+    const inDeck=!!browseState.deck, q=browseState.q.trim();
+    $("#browseTitle").textContent=inDeck?browseState.deck:"カード一覧";
+    $("#browseBackLabel").textContent=inDeck?"← 授業回一覧":"← ホーム";
+    $("#browseInput").placeholder=inDeck?"この回のカードを検索":"カードを検索（全回から）";
+    $("#browseClear").classList.toggle("hidden", !q);
+    if(inDeck) renderBrowseDeck();
+    else if(q) renderBrowseCardList(browseApplyQuery(browseAllCards()), `「${q}」の検索結果`);
+    else renderBrowseIndex();
   }
-  function syncBrowseChips(){
-    document.querySelectorAll("#browseSrcChips .browseChip").forEach(el=>el.classList.toggle("on",el.dataset.val===browseState.src));
-    document.querySelectorAll("#browseFieldChips .browseChip").forEach(el=>el.classList.toggle("on",el.dataset.val===browseState.field));
+  function renderBrowseIndex(){
+    $("#browseResultsWrap").classList.add("hidden");
+    const grid=$("#browseDeckGrid"); grid.classList.remove("hidden");
+    const cards=browseAllCards(), srcs=browseSrcKeys(cards);
+    grid.innerHTML=srcs.map((s,idx)=>{
+      const n=cards.filter(c=>c.src===s).length;
+      return `<button type="button" class="fcDeck" data-src="${esc(s)}">
+        <span class="fcDeckIcon">${BROWSE_ICONS[idx%BROWSE_ICONS.length]}</span>
+        <span class="fcDeckName">${esc(s)}</span><span class="fcDeckN">${n}枚</span></button>`;
+    }).join("");
+    grid.querySelectorAll(".fcDeck").forEach(el=>{ el.onclick=()=>{
+      browseState.deck=el.dataset.src; browseState.q=""; $("#browseInput").value="";
+      renderBrowse(); window.scrollTo(0,0);
+    }; });
   }
-  function renderBrowseList(){
-    const matches=browseFiltered(browseAllCards());
+  function renderBrowseDeck(){
+    const all=browseAllCards().filter(c=>c.src===browseState.deck);
+    renderBrowseCardList(browseApplyQuery(all), browseState.deck);
+  }
+  function renderBrowseCardList(matches, flipLabel){
+    $("#browseDeckGrid").classList.add("hidden");
+    $("#browseResultsWrap").classList.remove("hidden");
     const box=$("#browseResults"), act=$("#browseActions");
-    $("#browseClear").classList.toggle("hidden", !browseState.q);
     if(!matches.length){
       act.classList.add("hidden");
-      box.innerHTML=`<div class="empty">条件に合うカードはありません。<br>出典・分野・キーワードを変えてみてください。</div>`;
+      box.innerHTML=`<div class="empty">条件に合うカードはありません。<br>キーワードを変えてみてください。</div>`;
       return;
     }
     act.classList.remove("hidden");
     act.innerHTML=`<span class="srCount">${matches.length}枚</span><button type="button" class="btn small" id="browseFlipAll">🎴 この${matches.length}枚をめくる</button>`;
-    $("#browseFlipAll").onclick=()=>{
-      const lbl=browseState.src!=="__all"?browseState.src:(browseState.field!=="__all"?browseState.field+"（カード）":"カード一覧");
-      startFlash(matches.slice(), lbl);
-    };
+    $("#browseFlipAll").onclick=()=>startFlash(matches.slice(), flipLabel);
     const cap=matches.slice(0,BROWSE_CAP);
     box.innerHTML=cap.map((c,i)=>{
       const figHint=c.image?`<span class="brFig">🖼 図</span>`:"";
@@ -1951,7 +1938,7 @@
         </button>
         <div class="brBack hidden">${fcBackHTML(c)}<div class="brActions"><button type="button" class="brFlipOne">🎴 このカードだけめくる</button></div></div>
       </div>`;
-    }).join("")+(matches.length>cap.length?`<div class="srMore">ほか ${matches.length-cap.length} 枚（キーワードや出典で絞れます）</div>`:"");
+    }).join("")+(matches.length>cap.length?`<div class="srMore">ほか ${matches.length-cap.length} 枚（キーワードで絞れます）</div>`:"");
     box.querySelectorAll(".brBack img").forEach(img=>img.setAttribute("loading","lazy"));
     box.querySelectorAll(".brItem").forEach(el=>{
       const c=cap[+el.dataset.i], back=el.querySelector(".brBack");
@@ -1960,12 +1947,16 @@
       back.querySelectorAll(".fcImgWrap").forEach(w=>{ w.onclick=(e)=>{ const img=w.querySelector("img"); if(img){ e.stopPropagation(); openFcLightbox(img.getAttribute("src"),img.getAttribute("alt")); } }; });
     });
   }
+  function browseBackStep(){
+    if(browseState.deck){ browseState.deck=null; browseState.q=""; $("#browseInput").value=""; renderBrowse(); window.scrollTo(0,0); }
+    else closeBrowse();
+  }
   function openBrowse(){
     stopExamTimer(); closeFcLightbox();
     ["#home","#quiz","#result","#search","#flash"].forEach(id=>$(id).classList.add("hidden"));
     $("#browse").classList.remove("hidden");
-    buildBrowseChips(); renderBrowseList();
-    window.scrollTo(0,0);
+    browseState={deck:null,q:""}; $("#browseInput").value="";
+    renderBrowse(); window.scrollTo(0,0);
   }
   function closeBrowse(){ $("#browse").classList.add("hidden"); renderHome(); }
 
@@ -2108,11 +2099,14 @@
 
   /* カード一覧（ライブラリ） */
   $("#browseBtn").onclick=openBrowse;
-  $("#browseBack").onclick=closeBrowse;
+  $("#browseBack").onclick=browseBackStep;
   $("#fcToBrowse").onclick=()=>{ closeFlashChooser(); openBrowse(); };
-  $("#browseInput").oninput=()=>{ browseState.q=$("#browseInput").value; clearTimeout(browseDebounce); browseDebounce=setTimeout(renderBrowseList,160); };
-  $("#browseInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=browseFiltered(browseAllCards()); if(m.length) startFlash(m.slice(), browseState.src!=="__all"?browseState.src:"カード一覧"); } };
-  $("#browseClear").onclick=()=>{ const i=$("#browseInput"); i.value=""; browseState.q=""; i.focus(); renderBrowseList(); };
+  $("#browseInput").oninput=()=>{ browseState.q=$("#browseInput").value; clearTimeout(browseDebounce); browseDebounce=setTimeout(renderBrowse,160); };
+  $("#browseInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault();
+    const base=browseState.deck?browseAllCards().filter(c=>c.src===browseState.deck):browseAllCards();
+    const m=browseApplyQuery(base);
+    if(m.length) startFlash(m.slice(), browseState.deck || (browseState.q.trim()?`「${browseState.q.trim()}」の検索結果`:"カード一覧")); } };
+  $("#browseClear").onclick=()=>{ const i=$("#browseInput"); i.value=""; browseState.q=""; i.focus(); renderBrowse(); };
 
   /* 記録の引き継ぎ・バックアップ */
   $("#backupBtn").onclick=openBackupModal;
@@ -2253,7 +2247,7 @@
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"){
     const lbOpen=!$("#fcLightbox").classList.contains("hidden");
     closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
-    if(!lbOpen && !$("#browse").classList.contains("hidden")) closeBrowse();
+    if(!lbOpen && !$("#browse").classList.contains("hidden")) browseBackStep();
   } });
 
   /* ---------- 更新情報モーダル(自動表示) ---------- */
