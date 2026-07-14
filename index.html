@@ -365,6 +365,41 @@
     padding:8px 13px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
   .fcFieldChip:hover{border-color:var(--brand)} .fcFieldChip:active{transform:scale(.96)}
 
+  /* ===== カード一覧（ライブラリ） ===== */
+  .browseEntry{border-color:color-mix(in srgb,#2f9e7d 52%,var(--line));background:color-mix(in srgb,#2f9e7d 10%,var(--card))}
+  .browseEntry:hover{border-color:#2f9e7d}
+  .browseFilters{display:grid;gap:12px;margin:12px 0 6px}
+  .browseChipLabel{font-size:11px;font-weight:900;color:var(--muted);margin:0 2px 6px}
+  .browseChipRow{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .browseChipRow::-webkit-scrollbar{height:0}
+  .browseChip{flex:0 0 auto;border:1.5px solid var(--line);background:var(--card2);color:var(--text);border-radius:999px;
+    padding:8px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s;white-space:nowrap}
+  .browseChip:hover{border-color:var(--brand)} .browseChip:active{transform:scale(.96)}
+  .browseChip.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-color:transparent}
+  .browseChip small{opacity:.72;font-weight:800;margin-left:2px}
+  .browseList{display:grid;gap:8px;margin-top:6px}
+  .brItem{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.12s}
+  .brItem:hover{border-color:var(--brand)}
+  .brItem.open{border-color:color-mix(in srgb,var(--brand) 45%,var(--line))}
+  .brHead{width:100%;border:none;background:transparent;color:inherit;font-family:inherit;cursor:pointer;
+    display:flex;align-items:center;gap:11px;padding:13px 15px;text-align:left}
+  .brHead:active{transform:scale(.997)}
+  .brFront{flex:1;min-width:0;font-size:14.5px;font-weight:700;color:var(--text);line-height:1.55}
+  .brMeta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:0 0 auto}
+  .brSrc{font-size:10.5px;font-weight:900;color:var(--brand);white-space:nowrap}
+  .brField{font-size:10px;color:var(--muted);white-space:nowrap}
+  .brFig{font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .brChev{flex:0 0 auto;color:var(--brand);font-size:14px;font-weight:900;transition:transform .2s}
+  .brItem.open .brChev{transform:rotate(90deg)}
+  .brBack{border-top:1px solid var(--line);padding:14px 15px;background:color-mix(in srgb,var(--brand) 5%,var(--card));
+    display:flex;flex-direction:column;gap:12px;text-align:left}
+  .brBack .fcExpl{margin:0}
+  .brBack .fcImgWrap{align-self:center}
+  .brActions{display:flex;justify-content:flex-end}
+  .brFlipOne{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;
+    padding:8px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+  .brFlipOne:hover{border-color:var(--brand);color:var(--brand)} .brFlipOne:active{transform:scale(.97)}
+
   /* ===== heatmap ===== */
   .heat-scroll{overflow-x:auto;padding-bottom:4px}
   .heat{display:flex;gap:4px;min-width:max-content}
@@ -763,6 +798,7 @@
     <div class="cmKicker">フラッシュカード</div>
     <h3 id="fcChooserTitle">どのカードをめくる？</h3>
     <p class="cmSub">選択肢なしで表↔裏をめくる暗記モード。4段階の理解度がFSRSの復習予定に反映されます。</p>
+    <button type="button" class="cmStartAlt" id="fcToBrowse" style="margin-top:0;margin-bottom:8px">📖 一覧から探す（1枚ずつ確認）</button>
     <div class="fcDecks" id="fcDecks"></div>
     <div class="fcFieldLabel">分野からめくる</div>
     <div class="fcFieldChips" id="fcFieldChips"></div>
@@ -788,6 +824,7 @@
       <button class="menuBtn" id="menuBtn" type="button" aria-label="メニュー" aria-expanded="false">☰</button>
       <div class="menuPanel hidden" id="menuPanel">
         <button type="button" id="menuSearch" data-menu-action="search"><span class="mi">🔍</span>問題検索</button>
+        <button type="button" id="menuBrowse" data-menu-action="browse"><span class="mi">🗂</span>カード一覧</button>
         <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">🌓</span>テーマ切替</button>
         <a href="#yearSection" data-menu-target="yearSection"><span class="mi">📅</span>年度別<span class="ms">先頭</span></a>
         <a href="#predictionSection" data-menu-target="predictionSection"><span class="mi">📝</span>予想問題<span class="ms">先頭</span></a>
@@ -869,6 +906,17 @@
           <span class="dueSub">選択肢なしで表↔裏を素早くめくる暗記モード</span>
         </span>
         <span class="dueRight"><span class="dueUnit" style="font-size:15px">めくる →</span></span>
+      </button>
+    </div>
+
+    <div class="homeSection" id="browseSection">
+      <button type="button" class="dueCard browseEntry" id="browseBtn">
+        <span class="dueIcon">🗂</span>
+        <span class="dueBody">
+          <span class="dueTitle">カードをぜんぶ見る</span>
+          <span class="dueSub">出典・分野・キーワードで見たいカードをすぐ探せる</span>
+        </span>
+        <span class="dueRight"><span class="dueUnit" style="font-size:15px">一覧 →</span></span>
       </button>
     </div>
 
@@ -986,6 +1034,31 @@
     </div>
     <div class="searchActions hidden" id="searchActions"></div>
     <div id="searchResults"></div>
+  </section>
+
+  <!-- ===== BROWSE（カード一覧） ===== -->
+  <section id="browse" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="browseBack">← ホーム</button>
+      <span class="pill">カード一覧</span>
+    </div>
+    <div class="browseFilters">
+      <div>
+        <div class="browseChipLabel">出典（授業回）</div>
+        <div class="browseChipRow" id="browseSrcChips"></div>
+      </div>
+      <div>
+        <div class="browseChipLabel">分野</div>
+        <div class="browseChipRow" id="browseFieldChips"></div>
+      </div>
+    </div>
+    <div class="searchBar">
+      <span class="sbIcon">🔍</span>
+      <input type="search" id="browseInput" placeholder="カードのキーワード（例：解糖系、ATP、酵素）" inputmode="search" autocomplete="off" enterkeyhint="search">
+      <button type="button" id="browseClear" class="searchClear hidden" aria-label="クリア">✕</button>
+    </div>
+    <div class="searchActions hidden" id="browseActions"></div>
+    <div id="browseResults" class="browseList"></div>
   </section>
 
   <!-- ===== FLASHCARD ===== -->
@@ -1350,7 +1423,7 @@
   /* ---------- ホーム ---------- */
   function renderHome(){
     stopExamTimer();
-    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden");$("#search").classList.add("hidden"); $("#flash").classList.add("hidden");
+    $("#home").classList.remove("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden");$("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#browse").classList.add("hidden");
     renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick(); renderHero(); renderKpis(); renderHeatmap(); renderAch();
     window.scrollTo(0,0);
   }
@@ -1608,7 +1681,7 @@
   }
   function openSearch(){
     stopExamTimer();
-    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden");$("#flash").classList.add("hidden");
+    $("#home").classList.add("hidden"); $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden");$("#flash").classList.add("hidden"); $("#browse").classList.add("hidden");
     $("#search").classList.remove("hidden");
     runSearch();
     const inp=$("#searchInput"); setTimeout(()=>inp.focus(),60);
@@ -1741,7 +1814,7 @@
   }
   function showFlashView(){
     stopExamTimer(); closeFcLightbox();
-    ["#home","#quiz","#result","#search"].forEach(id=>$(id).classList.add("hidden"));
+    ["#home","#quiz","#result","#search","#browse"].forEach(id=>$(id).classList.add("hidden"));
     $("#flash").classList.remove("hidden"); window.scrollTo(0,0);
   }
   function startFlash(cards,label){
@@ -1807,12 +1880,101 @@
     chips.querySelectorAll(".fcFieldChip").forEach(el=>{ el.onclick=()=>{ const f=el.dataset.f, items=DATA.filter(q=>q.field===f); startFlash(items.map(questionToCard), f+"（カード）"); }; });
   }
 
+  /* ---------- カード一覧（ライブラリ） ---------- */
+  let browseState={src:"__all",field:"__all",q:""};
+  let browseDebounce=null;
+  const BROWSE_CAP=80;
+  function browseAllCards(){
+    // 講義フラッシュカード（TERM_CARDS）のみ。src・field を保持したカードにして返す。
+    return termSources().map((t,i)=>{ const c=termToCard(t,i); c.src=t.src||"用語カード"; return c; });
+  }
+  function browseSrcKeys(cards){ return [...new Set(cards.map(c=>c.src))].sort((a,b)=>a.localeCompare(b,"ja",{numeric:true})); }
+  function browseFieldKeys(cards){
+    const cnt={}; cards.forEach(c=>{ const f=c.field||"その他"; cnt[f]=(cnt[f]||0)+1; });
+    return Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
+  }
+  function browseFiltered(cards){
+    const terms=searchTerms(browseState.q);
+    return cards.filter(c=>{
+      if(browseState.src!=="__all" && c.src!==browseState.src) return false;
+      if(browseState.field!=="__all" && (c.field||"その他")!==browseState.field) return false;
+      if(terms.length){
+        const hay=normQ((c.front||"")+" "+(c.desc||"")+" "+(c.field||"")+" "+(c.src||"")+" "+(c.imageAlt||""));
+        if(!terms.every(t=>hay.includes(t))) return false;
+      }
+      return true;
+    });
+  }
+  function buildBrowseChips(){
+    const cards=browseAllCards();
+    const srcBox=$("#browseSrcChips");
+    srcBox.innerHTML=[`<button type="button" class="browseChip" data-type="src" data-val="__all">すべて<small>${cards.length}</small></button>`]
+      .concat(browseSrcKeys(cards).map(s=>`<button type="button" class="browseChip" data-type="src" data-val="${esc(s)}">${esc(s)}<small>${cards.filter(c=>c.src===s).length}</small></button>`))
+      .join("");
+    const fBox=$("#browseFieldChips");
+    fBox.innerHTML=[`<button type="button" class="browseChip" data-type="field" data-val="__all">すべての分野</button>`]
+      .concat(browseFieldKeys(cards).map(f=>`<button type="button" class="browseChip" data-type="field" data-val="${esc(f)}">${esc(f)}</button>`))
+      .join("");
+    [srcBox,fBox].forEach(box=>box.querySelectorAll(".browseChip").forEach(el=>{
+      el.onclick=()=>{ browseState[el.dataset.type]=el.dataset.val; syncBrowseChips(); renderBrowseList(); };
+    }));
+    syncBrowseChips();
+  }
+  function syncBrowseChips(){
+    document.querySelectorAll("#browseSrcChips .browseChip").forEach(el=>el.classList.toggle("on",el.dataset.val===browseState.src));
+    document.querySelectorAll("#browseFieldChips .browseChip").forEach(el=>el.classList.toggle("on",el.dataset.val===browseState.field));
+  }
+  function renderBrowseList(){
+    const matches=browseFiltered(browseAllCards());
+    const box=$("#browseResults"), act=$("#browseActions");
+    $("#browseClear").classList.toggle("hidden", !browseState.q);
+    if(!matches.length){
+      act.classList.add("hidden");
+      box.innerHTML=`<div class="empty">条件に合うカードはありません。<br>出典・分野・キーワードを変えてみてください。</div>`;
+      return;
+    }
+    act.classList.remove("hidden");
+    act.innerHTML=`<span class="srCount">${matches.length}枚</span><button type="button" class="btn small" id="browseFlipAll">🎴 この${matches.length}枚をめくる</button>`;
+    $("#browseFlipAll").onclick=()=>{
+      const lbl=browseState.src!=="__all"?browseState.src:(browseState.field!=="__all"?browseState.field+"（カード）":"カード一覧");
+      startFlash(matches.slice(), lbl);
+    };
+    const cap=matches.slice(0,BROWSE_CAP);
+    box.innerHTML=cap.map((c,i)=>{
+      const figHint=c.image?`<span class="brFig">🖼 図</span>`:"";
+      const field=c.field?`<span class="brField">${esc(c.field)}</span>`:"";
+      return `<div class="brItem" data-i="${i}">
+        <button type="button" class="brHead">
+          <span class="brFront">${esc(c.front)}</span>
+          <span class="brMeta"><span class="brSrc">${esc(c.src||"")}</span>${field}${figHint}</span>
+          <span class="brChev">›</span>
+        </button>
+        <div class="brBack hidden">${fcBackHTML(c)}<div class="brActions"><button type="button" class="brFlipOne">🎴 このカードだけめくる</button></div></div>
+      </div>`;
+    }).join("")+(matches.length>cap.length?`<div class="srMore">ほか ${matches.length-cap.length} 枚（キーワードや出典で絞れます）</div>`:"");
+    box.querySelectorAll(".brBack img").forEach(img=>img.setAttribute("loading","lazy"));
+    box.querySelectorAll(".brItem").forEach(el=>{
+      const c=cap[+el.dataset.i], back=el.querySelector(".brBack");
+      el.querySelector(".brHead").onclick=()=>{ const open=back.classList.contains("hidden"); back.classList.toggle("hidden",!open); el.classList.toggle("open",open); };
+      const flip=el.querySelector(".brFlipOne"); if(flip) flip.onclick=(e)=>{ e.stopPropagation(); startFlash([c], c.src||"カード"); };
+      back.querySelectorAll(".fcImgWrap").forEach(w=>{ w.onclick=(e)=>{ const img=w.querySelector("img"); if(img){ e.stopPropagation(); openFcLightbox(img.getAttribute("src"),img.getAttribute("alt")); } }; });
+    });
+  }
+  function openBrowse(){
+    stopExamTimer(); closeFcLightbox();
+    ["#home","#quiz","#result","#search","#flash"].forEach(id=>$(id).classList.add("hidden"));
+    $("#browse").classList.remove("hidden");
+    buildBrowseChips(); renderBrowseList();
+    window.scrollTo(0,0);
+  }
+  function closeBrowse(){ $("#browse").classList.add("hidden"); renderHome(); }
+
   function startQuiz(items,label,catRef,opts){
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const queue=shuffle(items).map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
     session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
-    $("#home").classList.add("hidden"); $("#result").classList.add("hidden");$("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#quiz").classList.remove("hidden");
+    $("#home").classList.add("hidden"); $("#result").classList.add("hidden");$("#search").classList.add("hidden"); $("#flash").classList.add("hidden"); $("#browse").classList.add("hidden"); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
     const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam);
     if(session.exam) startExamTimer();
@@ -1943,6 +2105,14 @@
   $("#searchInput").oninput=()=>{ clearTimeout(searchDebounce); searchDebounce=setTimeout(runSearch,160); };
   $("#searchInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=searchMatches($("#searchInput").value); if(m.length) startQuiz(m, `「${$("#searchInput").value.trim()}」の検索結果`); } };
   $("#searchClear").onclick=()=>{ const i=$("#searchInput"); i.value=""; i.focus(); runSearch(); };
+
+  /* カード一覧（ライブラリ） */
+  $("#browseBtn").onclick=openBrowse;
+  $("#browseBack").onclick=closeBrowse;
+  $("#fcToBrowse").onclick=()=>{ closeFlashChooser(); openBrowse(); };
+  $("#browseInput").oninput=()=>{ browseState.q=$("#browseInput").value; clearTimeout(browseDebounce); browseDebounce=setTimeout(renderBrowseList,160); };
+  $("#browseInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=browseFiltered(browseAllCards()); if(m.length) startFlash(m.slice(), browseState.src!=="__all"?browseState.src:"カード一覧"); } };
+  $("#browseClear").onclick=()=>{ const i=$("#browseInput"); i.value=""; browseState.q=""; i.focus(); renderBrowseList(); };
 
   /* 記録の引き継ぎ・バックアップ */
   $("#backupBtn").onclick=openBackupModal;
@@ -2080,7 +2250,11 @@
   menuBtn.onclick=()=>{ closeUpdates(); menuPanel.classList.contains("hidden") ? openMenu() : closeMenu(); };
   updatesBtn.onclick=()=>{ closeMenu(); updatesPanel.classList.contains("hidden") ? openUpdates() : closeUpdates(); };
   menuBackdrop.onclick=()=>{ closeMenu(); closeUpdates(); };
-  document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal(); } });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"){
+    const lbOpen=!$("#fcLightbox").classList.contains("hidden");
+    closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
+    if(!lbOpen && !$("#browse").classList.contains("hidden")) closeBrowse();
+  } });
 
   /* ---------- 更新情報モーダル(自動表示) ---------- */
   $("#updatesModalClose").onclick=closeUpdatesModal;
@@ -2138,6 +2312,7 @@
   menuPanel.addEventListener("click",e=>{
     if(e.target.closest('[data-menu-action="theme"]')) toggleTheme();
     else if(e.target.closest('[data-menu-action="search"]')){ closeMenu(); openSearch(); }
+    else if(e.target.closest('[data-menu-action="browse"]')){ closeMenu(); openBrowse(); }
   });
 
   /* ---------- データ読込 / リセット ---------- */
