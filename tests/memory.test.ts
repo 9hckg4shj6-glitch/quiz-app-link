@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import { examGain, retrievabilityAt, retrievabilityCurve } from "../src/fsrs";
 import type { LegacyProgress } from "../src/types";
 
-const NOW = new Date("2026-07-17T09:00:00.000Z");
-const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000).toISOString().slice(0, 10);
+// 本番コード（legacyToFsrs）は "YYYY-MM-DD" を「ローカル正午」として解釈する。
+// テストもローカル正午を基準にしないと、UTCのCIとJSTの手元で経過日数がずれる。
+const NOW = new Date(2026, 6, 17, 12, 0, 0);
+const ymd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const daysAgo = (n: number) => ymd(new Date(NOW.getTime() - n * 86_400_000));
 
 // interval を stability として引き継ぐので、これで「安定度Sで、n日前に復習した」カードを作れる
 const studied = (stability: number, reviewedDaysAgo: number): LegacyProgress => ({
