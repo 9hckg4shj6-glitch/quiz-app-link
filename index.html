@@ -1846,7 +1846,7 @@
 
   /* ---------- コミュニティ（掲示板・全公開） ---------- */
   function CM(){ return (window.STUDY_CORE && window.STUDY_CORE.community) || null; }
-  const cmState={boardId:null, boardTitle:"", creating:false};
+  const cmState={boardId:null, boardTitle:"", creating:false, postSig:null, boardSig:null, scrollToEnd:false};
   let cmTimer=null;
   function startCmTimer(){ stopCmTimer(); cmTimer=setInterval(()=>{
     const v=$("#communityView"); if(!v||v.classList.contains("hidden")) return;
@@ -1929,6 +1929,11 @@
     try{ boards=await cm.listBoards(); }
     catch(e){ cmError(e, "コミュニティを取得できませんでした。オンライン状態を確認してください。"); return; }
     const admin=cm.isAdminMode();
+    // 内容が変わっていなければ作り直さない
+    const bsig=boards.map(b=>b.id+":"+b.postCount).join(",")+"|"+admin+"|"+cm.getName();
+    if(bsig===cmState.boardSig && box.querySelector(".cmList")) return;
+    cmState.boardSig=bsig;
+    const scrollY=window.scrollY;
     const items = boards.length ? boards.map(b=>`<div class="cmBoardRow">
         <button type="button" class="cmBoard" data-id="${esc(b.id)}" data-title="${esc(b.title)}">
           <span class="cmBoardBody">
@@ -1957,7 +1962,9 @@
     $("#cmNew").onclick=()=>{ cmState.creating=true; renderCommunity(); };
     $("#cmRefresh").onclick=()=>renderCommunity();
     box.querySelectorAll(".cmBoard").forEach(el=>{ el.onclick=()=>{
-      cmState.boardId=el.dataset.id; cmState.boardTitle=el.dataset.title; renderCommunity(); window.scrollTo(0,0); }; });
+      cmState.boardId=el.dataset.id; cmState.boardTitle=el.dataset.title; cmState.postSig=null;
+      renderCommunity(); window.scrollTo(0,0); }; });
+    if(scrollY) window.scrollTo(0, scrollY);
     box.querySelectorAll("[data-bdel]").forEach(el=>{ el.onclick=async()=>{
       if(!confirm("この掲示板を削除しますか？中の書き込みも見えなくなります。")) return;
       try{ await cm.deleteMyBoard(el.dataset.bdel); toast("削除しました"); }catch(e){ toast("削除に失敗しました"); }
@@ -1989,6 +1996,12 @@
     try{ posts=await cm.listPosts(cmState.boardId); }
     catch(e){ cmError(e, "書き込みを取得できませんでした。オンライン状態を確認してください。"); return; }
     const admin=cm.isAdminMode();
+    // 内容が変わっていなければ作り直さない（読んでいる最中のちらつき・スクロール飛びを防ぐ）
+    const sig=posts.map(p=>p.id).join(",")+"|"+admin+"|"+cmState.boardId;
+    if(sig===cmState.postSig && box.querySelector(".cmPosts") && !cmState.scrollToEnd) return;
+    cmState.postSig=sig;
+    const scrollY=window.scrollY;
+    const draft=$("#cmInput")?$("#cmInput").value:"";
     const list = posts.length ? posts.map(p=>`<div class="cmPost${p.isMine?" mine":""}">
         <div class="cmPostHead"><span class="cmAuthor">${esc(p.author)}${p.isMine?' <span class="youTag">自分</span>':""}</span>
           <span class="cmDate">${cmTime(p.createdAt)}</span></div>
@@ -2005,18 +2018,25 @@
         <div class="cmComposeRow"><span class="cmCount" id="cmCount">0 / 1000</span>
           <button type="button" class="btn" id="cmSend">書き込む</button></div>
       </div>`;
-    $("#cmToList").onclick=()=>{ cmState.boardId=null; renderCommunity(); window.scrollTo(0,0); };
+    $("#cmToList").onclick=()=>{ cmState.boardId=null; cmState.postSig=null; renderCommunity(); window.scrollTo(0,0); };
     $("#cmRefresh2").onclick=()=>renderCommunity();
     const inp=$("#cmInput");
+    // 再描画をまたいでも書きかけの下書きを失わない
+    if(draft){ inp.value=draft; }
+    $("#cmCount").textContent=`${inp.value.length} / 1000`;
     inp.oninput=()=>{ $("#cmCount").textContent=`${inp.value.length} / 1000`; };
     $("#cmSend").onclick=async()=>{
       const body=inp.value; if(!body.trim()){ toast("本文を入力してください"); return; }
       if(!cmEnsureName()) return;
       const btn=$("#cmSend"); btn.disabled=true; btn.textContent="送信中…";
       const res=await cm.createPost(cmState.boardId, body);
-      if(res.ok){ inp.value=""; renderCommunity(); }
+      if(res.ok){ inp.value=""; cmState.scrollToEnd=true; renderCommunity(); }
       else { toast(res.error||"書き込みに失敗しました"); btn.disabled=false; btn.textContent="書き込む"; }
     };
+    // 投稿直後は最新の書き込みまで送る。通常の更新ではスクロール位置を保つ。
+    if(cmState.scrollToEnd){ cmState.scrollToEnd=false; const ps=box.querySelector(".cmPostsPanel");
+      if(ps) ps.scrollIntoView({behavior:"smooth", block:"end"}); }
+    else if(scrollY) window.scrollTo(0, scrollY);
     box.querySelectorAll("[data-pdel]").forEach(el=>{ el.onclick=async()=>{
       if(!confirm("この書き込みを削除しますか？")) return;
       try{ await cm.deleteMyPost(el.dataset.pdel); toast("削除しました"); }catch(e){ toast("削除に失敗しました"); }
