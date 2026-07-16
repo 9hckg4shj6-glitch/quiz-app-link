@@ -414,6 +414,30 @@
   .brFlipOne{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;
     padding:8px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
   .brFlipOne:hover{border-color:var(--brand);color:var(--brand)} .brFlipOne:active{transform:scale(.97)}
+  /* ===== 問題一覧（qbrowse） ===== */
+  .qbSectLabel{font-size:12.5px;font-weight:900;color:var(--muted);margin:16px 2px 9px;letter-spacing:.02em}
+  .qbSectLabel:first-child{margin-top:2px}
+  .qbGroupList{display:grid;gap:10px;margin-bottom:6px}
+  .qbNum{flex:0 0 auto;min-width:28px;height:24px;padding:0 7px;border-radius:8px;background:color-mix(in srgb,var(--brand) 13%,var(--card2));color:var(--brand);font-weight:900;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+  .qbBack .qbChoices{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+  .qbChoice{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card2)}
+  .qbChoice.ok{border-color:var(--good);background:var(--good-bg)}
+  .qbCL{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:var(--muted);text-transform:lowercase}
+  .qbChoice.ok .qbCL{background:var(--good);color:#fff;border-color:var(--good)}
+  .qbCBody{flex:1;min-width:0}
+  .qbCText{font-size:13.5px;font-weight:700;line-height:1.55;color:var(--text)}
+  .qbOk{font-size:10.5px;font-weight:900;color:var(--good);margin-left:6px;white-space:nowrap}
+  .qbCNote{font-size:12px;color:var(--muted);font-weight:600;line-height:1.55;margin-top:4px}
+  .qbExpl{font-size:13px;line-height:1.7;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+  .qbExpl b{display:block;font-size:11px;color:var(--brand);margin-bottom:4px;font-weight:900}
+  .qbPractice{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+  .qbPractice:hover{border-color:var(--brand);color:var(--brand)} .qbPractice:active{transform:scale(.97)}
+  .qbPager{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin:16px 0 6px}
+  .qbPageBtn{min-width:34px;height:34px;padding:0 9px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:9px;font-weight:800;font-size:13px;font-family:inherit;cursor:pointer;transition:.12s}
+  .qbPageBtn:hover:not(:disabled){border-color:var(--brand)} .qbPageBtn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .qbPageBtn:disabled{opacity:.38;cursor:default}
+  .qbPageBtn.qbNav{font-weight:800}
+  .qbInfo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap}
 
   /* ===== ホームのハブ（カテゴリボタン） ===== */
   .hubGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:4px}
@@ -856,6 +880,7 @@
       <div class="menuPanel hidden" id="menuPanel">
         <button type="button" id="menuSearch" data-menu-action="search"><span class="mi">🔍</span>問題検索</button>
         <button type="button" id="menuBrowse" data-menu-action="browse"><span class="mi">🗂</span>カード一覧</button>
+        <button type="button" id="menuQBrowse" data-menu-action="qbrowse"><span class="mi">📖</span>問題一覧</button>
         <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">🌓</span>テーマ切替</button>
         <a href="#practiceView" data-menu-view="practiceView"><span class="mi">📚</span>問題演習</a>
         <a href="#cardsView" data-menu-view="cardsView"><span class="mi">🎴</span>カード</a>
@@ -913,6 +938,17 @@
     <div class="reviewTop">
       <button class="btn ghost small viewBack">← ホーム</button>
       <span class="pill">問題演習</span>
+    </div>
+
+    <div class="homeSection" id="qbrowseSection">
+      <button type="button" class="dueCard browseEntry" id="qbrowseBtn">
+        <span class="dueIcon">📖</span>
+        <span class="dueBody">
+          <span class="dueTitle">問題一覧（年度別）</span>
+          <span class="dueSub">年度・予想問題ごとに全問を1ページ10問で閲覧</span>
+        </span>
+        <span class="dueRight"><span class="dueUnit" style="font-size:15px">一覧 →</span></span>
+      </button>
     </div>
 
     <div class="homeSection" id="quickSection">
@@ -1111,6 +1147,20 @@
     <div id="browseResultsWrap" class="hidden">
       <div class="searchActions hidden" id="browseActions"></div>
       <div id="browseResults" class="browseList"></div>
+    </div>
+  </section>
+
+  <!-- ===== 問題一覧（年度別ブラウズ） ===== -->
+  <section id="qbrowse" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="qbrowseBack"><span id="qbrowseBackLabel">← ホーム</span></button>
+      <span class="pill" id="qbrowseTitle">問題一覧</span>
+    </div>
+    <div id="qbrowseIndex"></div>
+    <div id="qbrowseResultsWrap" class="hidden">
+      <div class="qbInfo" id="qbrowseInfo"></div>
+      <div id="qbrowseList" class="browseList"></div>
+      <div id="qbrowsePager" class="qbPager"></div>
     </div>
   </section>
 
@@ -1535,7 +1585,7 @@
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
   const VIEWS=["practiceView","cardsView","reviewView","statsView","moreView"];
   function hideAllScreens(){
-    ["#home","#quiz","#result","#search","#flash","#browse"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
+    ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
     VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
   }
   function refreshData(){
@@ -1563,6 +1613,7 @@
     const bmN=DATA.filter(q=>isBookmarked(q.id)).length;
     const items=[
       {icon:"📚",name:"問題演習",sub:"年度別・予想・分野別・本番",go:()=>openView("practiceView")},
+      {icon:"📖",name:"問題一覧",sub:"年度別に全問題を閲覧",go:openQBrowse},
       {icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")},
       {icon:"🔥",name:"復習・苦手",sub:`苦手 ${weakN} ・ 見直し ${bmN}`,go:()=>openView("reviewView")},
       {icon:"📊",name:"学習状況",sub:"進捗・アクティビティ・実績",go:()=>openView("statsView")},
@@ -2158,6 +2209,139 @@
   }
   function closeBrowse(){ $("#browse").classList.add("hidden"); renderHome(); }
 
+  /* ---------- 問題一覧（年度別ブラウズ） ---------- */
+  let qbrowseState={group:null,page:0};
+  const QB_PAGE=10;
+  const QB_EXAM_ICONS=["📄","📝","🗓"];
+  const QB_PRED_ICONS=["🔮","📗","📘","📙"];
+  function qbNum(id){ const m=String(id).match(/\d+/g); return m?parseInt(m[m.length-1],10):0; }
+  function qbKanjiOrder(label){
+    // 「代謝第十三回予想問題」→ 13。模試などは末尾に回す。
+    const m=String(label).match(/第([〇一二三四五六七八九十百]+)回/);
+    if(!m) return 999;
+    const d={〇:0,一:1,二:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9};
+    const t=m[1]; let n;
+    if(t.indexOf("十")>=0){ const p=t.split("十"); n=(p[0]===""?1:(d[p[0]]||0))*10+(p[1]?(d[p[1]]||0):0); }
+    else n=d[t]!=null?d[t]:998;
+    return n;
+  }
+  function qbGroups(){
+    const exam=new Map(), pred=new Map();
+    DATA.forEach(q=>{
+      if(q.category==="予想問題"){ const k=q.mockTitle||q.year||"予想問題"; if(!pred.has(k))pred.set(k,[]); pred.get(k).push(q); }
+      else { const k=q.year; if(!k)return; if(!exam.has(k))exam.set(k,[]); exam.get(k).push(q); }
+    });
+    const ek=[...exam.keys()].sort().reverse();
+    const pk=[...pred.keys()].sort((a,b)=>qbKanjiOrder(a)-qbKanjiOrder(b)||a.localeCompare(b,"ja",{numeric:true}));
+    return { exam:ek.map(k=>({key:k,label:k,items:exam.get(k)})),
+             pred:pk.map(k=>({key:k,label:k,items:pred.get(k)})) };
+  }
+  function qbFindGroup(key){
+    const g=qbGroups(); return g.exam.find(x=>x.key===key)||g.pred.find(x=>x.key===key)||null;
+  }
+  function renderQBrowse(){
+    const g=qbrowseState.group;
+    $("#qbrowseTitle").textContent=g?g.label:"問題一覧";
+    $("#qbrowseBackLabel").textContent=g?"← 年度一覧":"← ホーム";
+    if(g) renderQBrowseGroup(); else renderQBrowseIndex();
+  }
+  function qbGroupBtn(g,icon){
+    const st=catStats(g.items), pct=st.total?Math.round(st.seen/st.total*100):0;
+    return `<button type="button" class="brDeck2" data-key="${esc(g.key)}">
+      <span class="brDeckHead">
+        <span class="fcDeckIcon">${icon}</span>
+        <span class="brDeckTitle">${esc(g.label)}</span>
+        <span class="brDeckN">${g.items.length}問</span>
+      </span>
+      <span class="brDeckSub">学習 ${st.seen}/${st.total}問${st.acc?` ・ 正答 ${st.acc}%`:""}</span>
+      <span class="brDeckBar"><i style="width:${pct}%"></i></span>
+    </button>`;
+  }
+  function renderQBrowseIndex(){
+    $("#qbrowseResultsWrap").classList.add("hidden");
+    const box=$("#qbrowseIndex"); box.classList.remove("hidden");
+    const g=qbGroups();
+    let html="";
+    if(g.exam.length){
+      html+=`<div class="qbSectLabel">📅 年度別（本試験）</div><div class="qbGroupList">`+
+        g.exam.map((x,i)=>qbGroupBtn(x,QB_EXAM_ICONS[i%QB_EXAM_ICONS.length])).join("")+`</div>`;
+    }
+    if(g.pred.length){
+      html+=`<div class="qbSectLabel">🔮 予想問題・模試</div><div class="qbGroupList">`+
+        g.pred.map((x,i)=>qbGroupBtn(x,QB_PRED_ICONS[i%QB_PRED_ICONS.length])).join("")+`</div>`;
+    }
+    box.innerHTML=html||`<div class="empty">問題データがありません。</div>`;
+    box.querySelectorAll(".brDeck2").forEach(el=>{ el.onclick=()=>{
+      const grp=qbFindGroup(el.dataset.key); if(!grp)return;
+      qbrowseState.group=grp; qbrowseState.page=0; renderQBrowse(); window.scrollTo(0,0);
+    }; });
+  }
+  function qLetter(i){ return "abcde"[i]||String(i+1); }
+  function qDetailHTML(q){
+    const img=q.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(q.image)}" alt="${esc(q.imageAlt||"")}" loading="lazy"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:"";
+    const notes=Array.isArray(q.choiceNotes)?q.choiceNotes:[];
+    const choices=(q.choices||[]).map((c,i)=>{
+      const ok=i===q.answer, note=notes[i]?`<div class="qbCNote">${esc(notes[i])}</div>`:"";
+      return `<li class="qbChoice${ok?' ok':''}"><span class="qbCL">${qLetter(i)}</span><span class="qbCBody"><span class="qbCText">${esc(c)}${ok?' <span class="qbOk">✓ 正解</span>':''}</span>${note}</span></li>`;
+    }).join("");
+    const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${esc(q.explanation)}</div>`:"";
+    return `${img}<ol class="qbChoices">${choices}</ol>${expl}`;
+  }
+  function qbPagerHTML(page,pages){
+    if(pages<=1) return "";
+    let h=`<button type="button" class="qbPageBtn qbNav" data-page="${page-1}" ${page<=0?"disabled":""}>‹ 前へ</button>`;
+    for(let p=0;p<pages;p++){ h+=`<button type="button" class="qbPageBtn${p===page?" active":""}" data-page="${p}">${p+1}</button>`; }
+    h+=`<button type="button" class="qbPageBtn qbNav" data-page="${page+1}" ${page>=pages-1?"disabled":""}>次へ ›</button>`;
+    return h;
+  }
+  function renderQBrowseGroup(){
+    $("#qbrowseIndex").classList.add("hidden");
+    $("#qbrowseResultsWrap").classList.remove("hidden");
+    const g=qbrowseState.group;
+    const items=g.items.slice().sort((a,b)=>qbNum(a.id)-qbNum(b.id));
+    const pages=Math.max(1,Math.ceil(items.length/QB_PAGE));
+    if(qbrowseState.page>=pages) qbrowseState.page=pages-1;
+    if(qbrowseState.page<0) qbrowseState.page=0;
+    const page=qbrowseState.page, slice=items.slice(page*QB_PAGE,(page+1)*QB_PAGE);
+    $("#qbrowseInfo").innerHTML=`<span class="srCount">全${items.length}問 ・ ${page+1}/${pages}ページ</span>`+
+      `<button type="button" class="btn small" id="qbPracticeGroup">▶ まとめて演習</button>`;
+    $("#qbPracticeGroup").onclick=()=>startQuiz(items.slice(), g.label);
+    $("#qbrowseList").innerHTML=slice.map((q,i)=>{
+      const fig=q.image?`<span class="brFig">🖼 図</span>`:"";
+      const field=q.field?`<span class="brField">${esc(q.field)}</span>`:"";
+      const r=progress[q.id], status=(r&&r.seen)?(r.correct>=r.wrong?'<span class="srOk">学習済</span>':'<span class="srNg">要復習</span>'):"";
+      return `<div class="brItem qbItem" data-i="${i}">
+        <button type="button" class="brHead">
+          <span class="qbNum">${qbNum(q.id)}</span>
+          <span class="brFront">${esc(q.question||"")}</span>
+          <span class="brMeta">${field}${fig}${status}</span>
+          <span class="brChev">›</span>
+        </button>
+        <div class="brBack qbBack hidden">${qDetailHTML(q)}<div class="brActions"><button type="button" class="qbPractice">▶ この問題を解く</button></div></div>
+      </div>`;
+    }).join("");
+    $("#qbrowsePager").innerHTML=qbPagerHTML(page,pages);
+    $("#qbrowseList").querySelectorAll(".qbItem").forEach(el=>{
+      const q=slice[+el.dataset.i], back=el.querySelector(".qbBack");
+      el.querySelector(".brHead").onclick=()=>{ const open=back.classList.contains("hidden"); back.classList.toggle("hidden",!open); el.classList.toggle("open",open); };
+      const pb=el.querySelector(".qbPractice"); if(pb) pb.onclick=(e)=>{ e.stopPropagation(); startQuiz([q], g.label); };
+      back.querySelectorAll(".fcImgWrap").forEach(w=>{ w.onclick=(e)=>{ const img=w.querySelector("img"); if(img){ e.stopPropagation(); openFcLightbox(img.getAttribute("src"),img.getAttribute("alt")); } }; });
+    });
+    $("#qbrowsePager").querySelectorAll(".qbPageBtn").forEach(b=>{ if(b.disabled) return; b.onclick=()=>{ qbrowseState.page=+b.dataset.page; renderQBrowseGroup(); window.scrollTo(0,0); }; });
+  }
+  function qbBackStep(){
+    if(qbrowseState.group){ qbrowseState.group=null; qbrowseState.page=0; renderQBrowse(); window.scrollTo(0,0); }
+    else closeQBrowse();
+  }
+  function openQBrowse(){
+    stopExamTimer(); closeFcLightbox();
+    hideAllScreens();
+    $("#qbrowse").classList.remove("hidden");
+    qbrowseState={group:null,page:0};
+    renderQBrowse(); window.scrollTo(0,0);
+  }
+  function closeQBrowse(){ $("#qbrowse").classList.add("hidden"); renderHome(); }
+
   function startQuiz(items,label,catRef,opts){
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
@@ -2296,6 +2480,10 @@
   $("#searchInput").oninput=()=>{ clearTimeout(searchDebounce); searchDebounce=setTimeout(runSearch,160); };
   $("#searchInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=searchMatches($("#searchInput").value); if(m.length) startQuiz(m, `「${$("#searchInput").value.trim()}」の検索結果`); } };
   $("#searchClear").onclick=()=>{ const i=$("#searchInput"); i.value=""; i.focus(); runSearch(); };
+
+  /* 問題一覧（年度別ブラウズ） */
+  $("#qbrowseBtn").onclick=openQBrowse;
+  $("#qbrowseBack").onclick=qbBackStep;
 
   /* カード一覧（ライブラリ） */
   $("#browseBtn").onclick=openBrowse;
@@ -2449,6 +2637,7 @@
     closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
     if(lbOpen) return;
     if(!$("#browse").classList.contains("hidden")) browseBackStep();
+    else if(!$("#qbrowse").classList.contains("hidden")) qbBackStep();
     else if(VIEWS.some(v=>!$("#"+v).classList.contains("hidden"))) renderHome();
   } });
 
@@ -2501,6 +2690,7 @@
     if(e.target.closest('[data-menu-action="theme"]')) toggleTheme();
     else if(e.target.closest('[data-menu-action="search"]')){ closeMenu(); openSearch(); }
     else if(e.target.closest('[data-menu-action="browse"]')){ closeMenu(); openBrowse(); }
+    else if(e.target.closest('[data-menu-action="qbrowse"]')){ closeMenu(); openQBrowse(); }
   });
 
   /* ---------- データ読込 / リセット ---------- */
