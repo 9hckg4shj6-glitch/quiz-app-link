@@ -187,14 +187,19 @@ export async function deleteMyPost(postId: string): Promise<void> {
   if (error) throw error;
 }
 
+// 通報は端末ごとに1回だけ数える（同一端末の連打で他人の投稿を隠せないようにするため）
 export async function reportPost(postId: string): Promise<void> {
   if (!supabase) return;
-  await supabase.rpc("report_post", { p_post_id: postId });
+  const deviceId = await getDeviceId();
+  const { error } = await supabase.rpc("report_post", { p_device_id: deviceId, p_post_id: postId });
+  if (error) throw rpcError(error);
 }
 
 export async function reportBoard(boardId: string): Promise<void> {
   if (!supabase) return;
-  await supabase.rpc("report_board", { p_board_id: boardId });
+  const deviceId = await getDeviceId();
+  const { error } = await supabase.rpc("report_board", { p_device_id: deviceId, p_board_id: boardId });
+  if (error) throw rpcError(error);
 }
 
 /* ---------- 管理者削除 ---------- */
