@@ -52,14 +52,26 @@ create or replace function public.sync_create(p_payload jsonb)
 returns text
 language plpgsql security definer set search_path = public
 as $$
-declare v_code text;
+declare
+  v_code text;
+  i int;
 begin
   if pg_column_size(coalesce(p_payload, '{}'::jsonb)) > 1048576 then
     raise exception '記録が大きすぎます';
   end if;
-  v_code := public.gen_sync_code();
-  insert into public.sync_data (sync_key, payload) values (v_code, coalesce(p_payload, '{}'::jsonb));
-  return v_code;
+  -- gen_sync_code は「未使用か確認 → 返す」ため、2人が同時に発行すると
+  -- 確認と挿入の隙間で同じコードを掴む可能性がある（確率は極小）。
+  -- 主キー違反を捕まえて引き直し、必ず全員が別のコードを受け取れるようにする。
+  for i in 1..5 loop
+    begin
+      v_code := public.gen_sync_code();
+      insert into public.sync_data (sync_key, payload) values (v_code, coalesce(p_payload, '{}'::jsonb));
+      return v_code;
+    exception when unique_violation then
+      null; -- 衝突したので引き直す
+    end;
+  end loop;
+  raise exception '同期コードを発行できませんでした。もう一度お試しください。';
 end; $$;
 
 -- コードの記録を取得する。存在しなければ0行（クライアントは「コードが違います」を表示）

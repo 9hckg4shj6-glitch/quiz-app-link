@@ -953,13 +953,8 @@
   <div class="countModal bkCard" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
     <button type="button" class="countModalClose" id="backupClose" aria-label="閉じる">✕</button>
     <div class="cmKicker">学習記録</div>
-    <h3 id="bkTitle">引き継ぎ・バックアップ</h3>
-    <p class="cmSub">同期コードを使うと、複数の端末で記録を自動的にそろえられます。</p>
-
-    <div class="bkBlock syncBlock" id="syncBlock"></div>
-
-    <details class="bkAdvanced">
-      <summary>手動でのバックアップ（ファイル・コピー）</summary>
+    <h3 id="bkTitle">手動バックアップ</h3>
+    <p class="cmSub">ファイルとして保存したり、手作業で別端末へ移せます。<br>ふだんの端末間の引き継ぎは「設定・データ」の<b>端末間同期</b>（同期コード）が簡単です。</p>
     <div class="bkBlock">
       <div class="bkLabel">📤 書き出す（この端末 → 別端末）</div>
       <textarea id="bkExport" class="bkArea" readonly rows="2" aria-label="書き出した記録"></textarea>
@@ -979,7 +974,6 @@
       <button type="button" class="bkReplace" id="bkReplace">置き換える（今の記録を消して入れ替え）</button>
       <input type="file" id="bkFileInput" accept=".json,.txt" style="display:none">
     </div>
-    </details>
   </div>
 </div>
 <div class="countModalBackdrop hidden" id="flashChooser">
@@ -1211,6 +1205,11 @@
       <span class="pill">設定・データ</span>
     </div>
 
+    <div class="homeSection" id="syncSection">
+      <div class="sectlabel">端末間同期</div>
+      <div class="bkBlock syncBlock" id="syncBlock"></div>
+    </div>
+
     <div class="homeSection" id="updatesSection">
       <button type="button" class="sectToggle" data-toggle="updatesHomePanel" aria-expanded="false" style="--accent:#be7c18">
         <span class="stMain"><span class="stLabel">更新履歴</span><span class="stHint">タップして表示</span></span>
@@ -1221,7 +1220,7 @@
 
     <div class="foot homeSection" id="dataSection">
       学習記録はこの端末に自動保存されます。&nbsp;·&nbsp;
-      <a id="backupBtn">記録の引き継ぎ・バックアップ</a> &nbsp;·&nbsp;
+      <a id="backupBtn">手動バックアップ</a> &nbsp;·&nbsp;
       <a id="importBtn">データ読込</a> &nbsp;·&nbsp;
       <a id="resetBtn">記録リセット</a>
       <input type="file" id="fileInput" accept=".json,.csv,.txt">
@@ -1761,6 +1760,7 @@
     $("#"+id).classList.remove("hidden");
     if(id==="rankView"){ renderRank(true); startRankTimer(); }
     if(id==="communityView"){ cmState.boardId=null; renderCommunity(); startCmTimer(); }
+    if(id==="moreView"){ renderSyncBlock(); }
     window.scrollTo(0,0);
   }
   function renderHub(){
@@ -2360,7 +2360,7 @@
 
   /* ---------- 学習記録の引き継ぎ・バックアップ ---------- */
   function buildExportString(){ return JSON.stringify({ app:"metabolism-quiz", v:1, exportedAt:new Date().toISOString(), progress:progress, meta:meta }); }
-  function openBackupModal(){ $("#bkExport").value=buildExportString(); $("#bkImport").value=""; $("#backupModal").classList.remove("hidden"); renderSyncBlock(); }
+  function openBackupModal(){ $("#bkExport").value=buildExportString(); $("#bkImport").value=""; $("#backupModal").classList.remove("hidden"); }
   function closeBackupModal(){ $("#backupModal").classList.add("hidden"); }
   function copyText(str){
     const ok=()=>toast("📋 コピーしました");
