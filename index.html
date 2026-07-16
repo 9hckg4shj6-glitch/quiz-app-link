@@ -595,6 +595,7 @@
 
   /* ===== ランキング ===== */
   .rankIntro{padding:20px 18px}
+  .rankJoinPanel{margin-top:14px}
   .rankTitle{font-size:17px;font-weight:900;margin-bottom:8px}
   .rankLead{font-size:13.5px;line-height:1.7;color:var(--text);margin:0 0 14px}
   .rankJoin{display:flex;gap:8px;flex-wrap:wrap}
@@ -1707,7 +1708,10 @@
   function medal(rank){ return rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":String(rank); }
   function maybePublishRank(force){ const lb=LB(); if(lb&&lb.hasJoined()){ try{ lb.publish(solvedCount(), !!force); }catch(e){} } }
   let rankTimer=null;
-  function startRankTimer(){ stopRankTimer(); rankTimer=setInterval(()=>{ const v=$("#rankView"); if(v&&!v.classList.contains("hidden")) renderRank(false); }, 30000); }
+  function startRankTimer(){ stopRankTimer(); rankTimer=setInterval(()=>{
+    const v=$("#rankView"); if(!v||v.classList.contains("hidden")) return;
+    const inp=$("#rankNameInput"); if(inp&&document.activeElement===inp) return; // 名前入力中は再描画しない
+    renderRank(false); }, 30000); }
   function stopRankTimer(){ if(rankTimer){ clearInterval(rankTimer); rankTimer=null; } }
   async function renderRank(doPublish){
     const box=$("#rankBody"); if(!box) return;
@@ -1717,18 +1721,51 @@
         <p class="rankLead">みんなで「解いた問題数」を競うランキングです。<br>現在準備中です（サーバー設定の完了後に利用できます）。</p></div>`;
       return;
     }
-    const solved=solvedCount();
-    if(!lb.hasJoined()){
-      box.innerHTML=`<div class="panel rankIntro">
-        <div class="rankTitle">🏆 ランキングに参加</div>
-        <p class="rankLead">名前を登録すると、あなたの「解いた問題数（現在 ${solved}問）」が公開ランキングに掲載されます。名前は他の参加者に表示されるので、ニックネームでの参加をおすすめします。</p>
+    const solved=solvedCount(), joined=lb.hasJoined();
+    // 名前を入れていなくてもランキングは閲覧できる。参加は任意（下のCTAから）。
+    const typed=$("#rankNameInput")?$("#rankNameInput").value:null;
+    if(!box.querySelector(".rankListPanel")) box.innerHTML=`<div class="rankLoading">読み込み中…</div>`;
+    if(doPublish && joined){ try{ await lb.publish(solved, true); }catch(e){} }
+    let view=null;
+    try{ view=await lb.fetch(); }
+    catch(e){
+      box.innerHTML=`<div class="panel rankIntro"><p class="rankLead">ランキングを取得できませんでした。オンライン状態を確認してください。</p>
+        <button type="button" class="btn ghost" id="rankRetry">再読み込み</button></div>`;
+      const rr=$("#rankRetry"); if(rr) rr.onclick=()=>renderRank(true); return;
+    }
+    if(!view) return;
+    const meCard = (joined && view.myRank) ? `<div class="rankMe">
+        <div class="rankMeRank">${view.myRank}<small>位</small></div>
+        <div class="rankMeBody"><div class="rankMeName">${esc(lb.savedName())} <span class="youTag">あなた</span></div>
+        <div class="rankMeSolved">${view.mySolved!=null?view.mySolved:solved} 問を解いた</div></div></div>` : "";
+    const list = view.rows.length ? view.rows.map(r=>`<div class="rankRow${r.you?' you':''}">
+        <span class="rankNum${r.rank<=3?' medal':''}">${medal(r.rank)}</span>
+        <span class="rankName">${esc(r.name)}${r.you?' <span class="youTag">あなた</span>':''}</span>
+        <span class="rankSolved">${r.solved}<small>問</small></span></div>`).join("")
+      : `<div class="rankEmpty">まだ参加者がいません。最初の1人になろう！</div>`;
+    const joinPanel = joined ? "" : `<div class="panel rankIntro rankJoinPanel">
+        <div class="rankTitle">🏆 あなたも参加する</div>
+        <p class="rankLead">名前を登録すると、あなたの「解いた問題数（現在 ${solved}問）」がこのランキングに掲載されます。ニックネームでの参加をおすすめします。</p>
         <div class="rankJoin">
           <input type="text" id="rankNameInput" maxlength="24" placeholder="名前（漢字・かなOK）" autocomplete="off" enterkeyhint="done">
           <button type="button" class="btn" id="rankJoinBtn">参加する</button>
         </div>
-        <div class="rankNote">※ 公開されるのは「名前」と「解いた問題数」だけです。メールなどの個人情報は公開されません。いつでも抜けられます。</div>
+        <div class="rankNote">※ 公開されるのは「名前」と「解いた問題数」だけです。参加しなくてもランキングの閲覧はできます。いつでも抜けられます。</div>
       </div>`;
-      const inp=$("#rankNameInput"); inp.value=lb.savedName()||"";
+    const footer = joined ? `<div class="rankFooter"><a id="rankRename">名前を変更</a> ・ <a id="rankLeave">ランキングから抜ける</a></div>` : "";
+    box.innerHTML=`
+      ${meCard}
+      <div class="panel rankListPanel">
+        <div class="rankListHead"><span>上位 ${view.rows.length} 人${(view.myRank&&!view.inTop)?` ・ あなたは ${view.myRank} 位`:''}</span>
+          <button type="button" class="rankRefresh" id="rankRefresh">↻ 更新</button></div>
+        <div class="rankList">${list}</div>
+      </div>
+      ${joinPanel}
+      ${footer}`;
+    $("#rankRefresh").onclick=()=>renderRank(true);
+    if(!joined){
+      const inp=$("#rankNameInput");
+      inp.value = typed!=null ? typed : (lb.savedName()||"");
       const doJoin=async()=>{
         const nm=inp.value; if(!nm.trim()){ toast("名前を入力してください"); return; }
         const btn=$("#rankJoinBtn"); btn.disabled=true; btn.textContent="登録中…";
@@ -1740,34 +1777,6 @@
       inp.onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); doJoin(); } };
       return;
     }
-    if(!box.querySelector(".rankListPanel")) box.innerHTML=`<div class="rankLoading">読み込み中…</div>`;
-    if(doPublish){ try{ await lb.publish(solved, true); }catch(e){} }
-    let view=null;
-    try{ view=await lb.fetch(); }
-    catch(e){
-      box.innerHTML=`<div class="panel rankIntro"><p class="rankLead">ランキングを取得できませんでした。オンライン状態を確認してください。</p>
-        <button type="button" class="btn ghost" id="rankRetry">再読み込み</button></div>`;
-      const rr=$("#rankRetry"); if(rr) rr.onclick=()=>renderRank(true); return;
-    }
-    if(!view) return;
-    const meCard = view.myRank ? `<div class="rankMe">
-        <div class="rankMeRank">${view.myRank}<small>位</small></div>
-        <div class="rankMeBody"><div class="rankMeName">${esc(lb.savedName())} <span class="youTag">あなた</span></div>
-        <div class="rankMeSolved">${view.mySolved!=null?view.mySolved:solved} 問を解いた</div></div></div>` : "";
-    const list = view.rows.length ? view.rows.map(r=>`<div class="rankRow${r.you?' you':''}">
-        <span class="rankNum${r.rank<=3?' medal':''}">${medal(r.rank)}</span>
-        <span class="rankName">${esc(r.name)}${r.you?' <span class="youTag">あなた</span>':''}</span>
-        <span class="rankSolved">${r.solved}<small>問</small></span></div>`).join("")
-      : `<div class="rankEmpty">まだ参加者がいません。最初の1人になろう！</div>`;
-    box.innerHTML=`
-      ${meCard}
-      <div class="panel rankListPanel">
-        <div class="rankListHead"><span>上位 ${view.rows.length} 人${(view.myRank&&!view.inTop)?` ・ あなたは ${view.myRank} 位`:''}</span>
-          <button type="button" class="rankRefresh" id="rankRefresh">↻ 更新</button></div>
-        <div class="rankList">${list}</div>
-      </div>
-      <div class="rankFooter"><a id="rankRename">名前を変更</a> ・ <a id="rankLeave">ランキングから抜ける</a></div>`;
-    $("#rankRefresh").onclick=()=>renderRank(true);
     $("#rankRename").onclick=()=>{
       const nm=prompt("新しい名前（24文字まで）", lb.savedName());
       if(nm&&nm.trim()){ lb.join(nm, solvedCount()).then(res=>{ if(res.ok){ toast("名前を変更しました"); renderRank(false); } else toast(res.error||"変更に失敗しました"); }); }
