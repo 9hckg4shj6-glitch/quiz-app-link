@@ -565,6 +565,34 @@
   .choiceExplainList li.ce-wrongchosen .etag{background:var(--bad);color:#fff}
   .choiceExplainList .edesc{color:var(--muted);font-size:13px;line-height:1.6}
 
+  /* ===== confidence (FSRS 4段階) ===== */
+  .confRow{margin-top:12px;padding:12px 14px;border-radius:14px;border:1px dashed color-mix(in srgb,var(--brand) 42%,var(--line));background:color-mix(in srgb,var(--brand) 6%,var(--card2))}
+  .confLabel{display:block;font-size:12.5px;font-weight:900;color:var(--text);margin-bottom:8px}
+  .confLabel small{font-weight:700;color:var(--muted);font-size:11px;margin-left:6px}
+  .confBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .confBtn{font-family:inherit;font-size:13px;font-weight:800;padding:10px 6px;border-radius:12px;
+    border:1.5px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;transition:.15s}
+  .confBtn:hover{border-color:var(--brand);transform:translateY(-1px)}
+  .confBtn[data-g="2"].sel{background:var(--warn);border-color:var(--warn);color:#fff}
+  .confBtn[data-g="3"].sel{background:var(--brand);border-color:var(--brand);color:#fff}
+  .confBtn[data-g="4"].sel{background:var(--good);border-color:var(--good);color:#fff}
+  .confRow.done .confBtn{cursor:default}
+  .confRow.done .confBtn:not(.sel){opacity:.4}
+  .confResult{margin-top:9px;font-size:12.5px;font-weight:800;color:var(--brand)}
+
+  /* ===== 代謝経路リンク ===== */
+  .pathBox{margin-top:12px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card2)}
+  .pathBox .pbHead{font-size:12px;font-weight:900;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .pathItem{margin-top:12px} .pathItem:first-of-type{margin-top:0}
+  .pathName{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:900;color:var(--text)}
+  .pathFlow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:8px 0}
+  .pathStep{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+  .pathStep.on{background:color-mix(in srgb,var(--brand) 18%,var(--card));border-color:var(--brand);color:var(--text)}
+  .pathArrow{color:var(--muted);font-size:11px}
+  .pathMore{font-family:inherit;font-size:12.5px;font-weight:800;color:var(--brand);background:var(--card);
+    border:1.5px solid color-mix(in srgb,var(--brand) 35%,var(--line));border-radius:999px;padding:6px 13px;cursor:pointer}
+  .pathMore:hover{background:color-mix(in srgb,var(--brand) 10%,var(--card))}
+
   /* ===== result ===== */
   .result{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 20px;text-align:center;box-shadow:var(--shadow);margin-bottom:16px}
   .score{font-size:46px;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
@@ -2360,6 +2388,86 @@
     while((m=re.exec(text))) out.push({mark:m[2],text:m[3].trim()});
     return out.length ? out : null;
   }
+  /* ---------- 代謝経路リンク（キーワード照合・AI不使用） ---------- */
+  const PATHWAYS=[
+    {id:"glycolysis",name:"解糖系",emoji:"⚡",
+      steps:["グルコース","グルコース6リン酸","フルクトース6リン酸","フルクトース1,6ビスリン酸","グリセルアルデヒド3リン酸","ホスホエノールピルビン酸","ピルビン酸"],
+      keys:["解糖","ヘキソキナーゼ","グルコキナーゼ","ホスホフルクトキナーゼ","PFK","ピルビン酸キナーゼ","アルドラーゼ","エノラーゼ","乳酸","ピルビン酸"]},
+    {id:"gluconeogenesis",name:"糖新生",emoji:"🔄",
+      steps:["ピルビン酸","オキサロ酢酸","ホスホエノールピルビン酸","フルクトース6リン酸","グルコース6リン酸","グルコース"],
+      keys:["糖新生","ピルビン酸カルボキシラーゼ","ホスホエノールピルビン酸カルボキシキナーゼ","PEPCK","グルコース-6-ホスファターゼ","グルコース6ホスファターゼ","フルクトース1,6ビスホスファターゼ","コリ回路"]},
+    {id:"tca",name:"クエン酸回路（TCA）",emoji:"🔁",
+      steps:["アセチルCoA","クエン酸","イソクエン酸","αケトグルタル酸","スクシニルCoA","コハク酸","フマル酸","リンゴ酸","オキサロ酢酸"],
+      keys:["クエン酸回路","TCA","トリカルボン酸","クエン酸","イソクエン酸","ケトグルタル酸","スクシニル","コハク酸","フマル酸","リンゴ酸","オキサロ酢酸","クエン酸シンターゼ","アコニターゼ"]},
+    {id:"etc",name:"電子伝達系・酸化的リン酸化",emoji:"🔋",
+      steps:["NADH/FADH2","複合体I〜IV","ユビキノン","シトクロムc","ATP合成酵素","ATP"],
+      keys:["電子伝達","酸化的リン酸化","呼吸鎖","複合体","シトクロム","ユビキノン","ATP合成酵素","プロトン","化学浸透","脱共役","共役"]},
+    {id:"glycogen",name:"グリコーゲン代謝",emoji:"🌿",
+      steps:["グルコース1リン酸","UDPグルコース","グリコーゲン"],
+      keys:["グリコーゲン","グリコーゲンシンターゼ","グリコーゲンホスホリラーゼ","UDPグルコース","分枝","脱分枝","グルコース1リン酸"]},
+    {id:"ppp",name:"ペントースリン酸経路",emoji:"🔬",
+      steps:["グルコース6リン酸","6-ホスホグルコン酸","リブロース5リン酸","リボース5リン酸"],
+      keys:["ペントースリン酸","五炭糖","グルコース-6-リン酸脱水素酵素","G6PD","NADPH","リボース","トランスケトラーゼ"]},
+    {id:"betaox",name:"脂肪酸β酸化・ケトン体",emoji:"🔥",
+      steps:["脂肪酸","アシルCoA","アシルカルニチン","アセチルCoA","ケトン体"],
+      keys:["β酸化","ベータ酸化","脂肪酸","アシルCoA","カルニチン","ケトン体","アセト酢酸","アセトアセチル","ヒドロキシ酪酸","ケトーシス","ケトン"]},
+    {id:"fasyn",name:"脂肪酸合成",emoji:"🧈",
+      steps:["アセチルCoA","マロニルCoA","パルミチン酸"],
+      keys:["脂肪酸合成","アセチルCoAカルボキシラーゼ","マロニルCoA","脂肪酸シンターゼ","パルミチン酸","脂質合成"]},
+    {id:"urea",name:"尿素回路",emoji:"💧",
+      steps:["アンモニア","カルバモイルリン酸","シトルリン","アルギニノコハク酸","アルギニン","尿素","オルニチン"],
+      keys:["尿素","オルニチン","シトルリン","アルギニノコハク酸","アルギニン","カルバモイルリン酸","アンモニア","高アンモニア"]},
+    {id:"heme",name:"ヘム・ポルフィリン代謝",emoji:"🩸",
+      steps:["グリシン","δ-アミノレブリン酸","ポルフォビリノーゲン","ウロポルフィリノーゲン","プロトポルフィリン","ヘム","ビリルビン"],
+      keys:["ヘム","ポルフィリン","アミノレブリン酸","ALA","ポルフォビリノーゲン","ウロポルフィリン","コプロポルフィリン","ビリルビン","ビリベルジン","黄疸"]},
+    {id:"cholesterol",name:"コレステロール・胆汁酸",emoji:"🧪",
+      steps:["アセチルCoA","HMG-CoA","メバロン酸","スクアレン","コレステロール","胆汁酸"],
+      keys:["コレステロール","HMG-CoA","メバロン酸","スクアレン","スタチン","胆汁酸","ステロイド","イソプレノイド"]},
+    {id:"nucleotide",name:"ヌクレオチド代謝",emoji:"🧬",
+      steps:["PRPP","IMP","AMP / GMP","尿酸"],
+      keys:["ヌクレオチド","プリン","ピリミジン","PRPP","IMP","尿酸","ヒポキサンチン","キサンチン","痛風","サルベージ","デノボ"]},
+    {id:"aminoacid",name:"アミノ酸代謝",emoji:"🥩",
+      steps:["アミノ酸","アミノ基転移","グルタミン酸","α-ケト酸"],
+      keys:["アミノ基転移","トランスアミナーゼ","アミノ酸代謝","酸化的脱アミノ","分枝鎖アミノ酸","アラニン","フェニルケトン"]}
+  ];
+  function pathText(q){
+    const parts=[q.question||"", q.field||"", (q.choices||[]).join(" "), q.explanation||""];
+    if(Array.isArray(q.choiceNotes)) parts.push(q.choiceNotes.join(" "));
+    return parts.join(" ");
+  }
+  function relatedPathways(q){
+    const t=pathText(q), out=[];
+    for(const p of PATHWAYS){ const matched=new Set();
+      for(const k of p.keys){ if(t.indexOf(k)>=0) matched.add(k); }
+      if(matched.size) out.push({p,hits:matched.size,matched});
+    }
+    out.sort((a,b)=>b.hits-a.hits);
+    return out.slice(0,2);
+  }
+  function pathwayQuestions(pid){
+    const p=PATHWAYS.find(x=>x.id===pid); if(!p) return [];
+    return DATA.filter(q=>{ const t=pathText(q); return p.keys.some(k=>t.indexOf(k)>=0); });
+  }
+  function pathwayHTML(q){
+    const rel=relatedPathways(q); if(!rel.length) return "";
+    const items=rel.map(({p,matched})=>{
+      const flow=p.steps.map(s=>{ const on=[...matched].some(m=>s.indexOf(m)>=0||m.indexOf(s)>=0);
+        return `<span class="pathStep${on?' on':''}">${esc(s)}</span>`; }).join('<span class="pathArrow">→</span>');
+      const n=pathwayQuestions(p.id).length;
+      return `<div class="pathItem"><span class="pathName">${p.emoji} ${esc(p.name)}</span>
+        <div class="pathFlow">${flow}</div>
+        <button type="button" class="pathMore" data-pid="${p.id}">この経路の問題 ${n}問 →</button></div>`;
+    }).join("");
+    return `<div class="pathBox"><div class="pbHead">🔗 関連する代謝経路</div>${items}</div>`;
+  }
+  function wirePathButtons(scope){
+    (scope||document).querySelectorAll(".pathMore").forEach(btn=>{
+      btn.onclick=()=>{ const p=PATHWAYS.find(x=>x.id===btn.dataset.pid), items=pathwayQuestions(btn.dataset.pid);
+        if(items.length<2){ toast("関連問題が見つかりません"); return; }
+        openCountModal({items,label:(p?p.name:"経路")+"の問題",key:"__path_"+btn.dataset.pid},"playlist"); };
+    });
+  }
+
   function renderExplainBody(q,cur,chosenIdx){
     if(Array.isArray(q.choiceNotes)&&q.choiceNotes.length){
       return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>
@@ -2378,8 +2486,15 @@
     }).join("");
     return `<div class="lead">選択肢別の解説</div><ul class="choiceExplainList">${rows}</ul>`;
   }
+  function gradeCard(grade){
+    const s=session; if(!s) return 0;
+    const cur=s.queue[s.i], r=rec(cur.q.id);
+    if(!s.graded){ s.graded=true; r.lastGrade=grade; scheduleSRS(r, grade, cur.q.id); saveProgress(); }
+    return Math.max(1, r.interval||1);
+  }
   function renderQuestion(){
     const s=session,cur=s.queue[s.i],q=cur.q;
+    s.graded=false;
     $("#progBar").style.width=(s.i/s.queue.length*100)+"%";
     $("#counter").textContent=`${s.i+1} / ${s.queue.length}`;
     $("#streakPill").textContent=`🔥 ${s.streak}`;
@@ -2433,7 +2548,8 @@
     let lvup=0, gainXP=0, mult=1;
     if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
     else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text}); gainXP=XP_WRONG; lvup=addXP(gainXP); }
-    scheduleSRS(r, isCorrect?3:1, q.id);   // FSRSには1〜4の評価値を渡す（正解=できた/不正解=もう一度）
+    // 不正解は自動で「もう一度(Again)」。正解は下の手ごたえボタンで4段階評価をFSRSへ渡す。
+    if(!isCorrect){ scheduleSRS(r, 1, q.id); s.graded=true; }
     meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
     markStudied(); saveProgress(); saveMeta();
     if(lvup){ s.leveledUp=lvup; toast(`🎉 レベルアップ！ Lv.${lvup} に到達`); }
@@ -2448,11 +2564,33 @@
         :`<div class="lead">この問題は定着から外れました。あと ${untilWeak} 回間違えると「苦手問題」に分類されます。</div>`;
     }
     else if(r.weak&&remain>0) note=`<div class="lead">👍 あと ${remain} 回連続正解で苦手を克服できます。</div>`;
+    const confHTML=isCorrect?`<div class="confRow" id="confRow">
+        <span class="confLabel">手ごたえは？<small>次の復習時期に反映されます</small></span>
+        <div class="confBtns">
+          <button type="button" class="confBtn" data-g="2">むずかしい</button>
+          <button type="button" class="confBtn" data-g="3">できた</button>
+          <button type="button" class="confBtn" data-g="4">かんたん</button>
+        </div>
+        <div class="confResult hidden" id="confResult"></div></div>`:"";
     $("#explainBox").innerHTML=`<div class="explain ${isCorrect?'ok':'ng'}">
         <div class="head">${isCorrect?`⭕ 正解！ +${gainXP}XP${mult>1?` <span style="color:var(--warn)">🔥コンボ×${mult}</span>`:''}`:'❌ 不正解 +'+XP_WRONG+'XP'}</div>
         ${note}
         ${!isCorrect?`<div class="body" style="margin-bottom:8px"><b>正解：</b>${esc(correctText)}</div>`:''}
-        <div class="body">${renderExplainBody(q,cur,idx)}</div></div>`;
+        <div class="body">${renderExplainBody(q,cur,idx)}</div>
+        ${confHTML}
+        ${pathwayHTML(q)}</div>`;
+    if(isCorrect){
+      const row=$("#confRow");
+      row&&row.querySelectorAll(".confBtn").forEach(btn=>{
+        btn.onclick=()=>{
+          if(row.classList.contains("done")) return;
+          row.classList.add("done"); btn.classList.add("sel");
+          const iv=gradeCard(parseInt(btn.dataset.g,10));
+          const rc=$("#confResult"); if(rc){ rc.classList.remove("hidden"); rc.textContent=`📅 次の復習の目安：約${iv}日後`; }
+        };
+      });
+    }
+    wirePathButtons($("#explainBox"));
     const sp=$("#streakPill"); sp.textContent=mult>1?`🔥 ${s.streak} ×${mult}`:`🔥 ${s.streak}`; sp.classList.toggle("combo", mult>1);
     const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"結果を見る →"; nb.classList.remove("hidden");
     nb.scrollIntoView({behavior:"smooth",block:"nearest"});
@@ -2468,8 +2606,8 @@
     updateBookmarkBtn(q.id);
     toast(on ? "🔖 見直したい問題に保存しました" : "保存を解除しました");
   };
-  $("#nextBtn").onclick=()=>{ if(session.i+1<session.queue.length){ session.i++; renderQuestion(); } else { if(session.exam) submitExam(); else renderResult(); } };
-  $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ stopExamTimer(); renderHome(); } };
+  $("#nextBtn").onclick=()=>{ if(session&&!session.exam&&!session.graded) gradeCard(3); if(session.i+1<session.queue.length){ session.i++; renderQuestion(); } else { if(session.exam) submitExam(); else renderResult(); } };
+  $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ if(session&&!session.exam&&!session.graded) gradeCard(3); stopExamTimer(); renderHome(); } };
   $("#examCard").onclick=()=>{ if(confirm(`本番モードを開始します。\n・分野バランスの${EXAM_N}問\n・制限 ${EXAM_MIN}分\n・1問${EXAM_POINT}点、${EXAM_N*EXAM_POINT}点満点\n・途中で正誤や解説は出ません\nよろしいですか？`)) startExam(); };
 
   /* ビュー（各画面）の戻るボタン */
