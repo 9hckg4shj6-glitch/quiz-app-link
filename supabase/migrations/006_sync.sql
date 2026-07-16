@@ -33,7 +33,7 @@ begin
     code := '';
     for i in 1..10 loop
       -- 暗号論的に安全な乱数を使う（random() は使わない）
-      code := code || substr(alphabet, 1 + (get_byte(gen_random_bytes(1), 0) % n), 1);
+      code := code || substr(alphabet, 1 + (get_byte(extensions.gen_random_bytes(1), 0) % n), 1);
     end loop;
     exit when not exists (select 1 from public.sync_data where sync_key = code);
   end loop;
