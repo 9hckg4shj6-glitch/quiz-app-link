@@ -2,6 +2,7 @@ import type { StudyCard, SyncStatus } from "./types";
 import type { StoredSchedule } from "./types";
 import type { LeaderboardView } from "./leaderboard";
 import type { BoardRow, PostRow } from "./community";
+import type { SyncPayload } from "./datasync";
 
 declare global {
   interface Window {
@@ -43,6 +44,20 @@ declare global {
         disableAdmin: () => void;
         adminDeletePost: (postId: string) => Promise<void>;
         adminDeleteBoard: (boardId: string) => Promise<void>;
+      };
+      datasync: {
+        enabled: () => boolean;
+        getCode: () => string;
+        isLinked: () => boolean;
+        lastSyncedAt: () => string;
+        formatCode: (code: string) => string;
+        normalizeCode: (raw: string) => string;
+        createCode: (payload: SyncPayload) => Promise<{ ok: boolean; code?: string; error?: string }>;
+        link: (code: string) => Promise<{ ok: boolean; payload?: SyncPayload; error?: string }>;
+        pull: (code: string) => Promise<{ ok: boolean; payload?: SyncPayload; error?: string }>;
+        push: (code: string, payload: SyncPayload) => Promise<{ ok: boolean; error?: string }>;
+        unlink: () => void;
+        deleteRemote: (code: string) => Promise<void>;
       };
     };
     __STUDY_CARDS?: StudyCard[];

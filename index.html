@@ -628,6 +628,27 @@
   .rankFooter{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px}
   .rankFooter a{color:var(--brand);cursor:pointer;font-weight:700}
 
+  /* ===== 端末間同期 ===== */
+  .syncBlock{border:1.5px solid color-mix(in srgb,var(--brand) 35%,var(--line));
+    background:color-mix(in srgb,var(--brand) 6%,var(--card2))}
+  .syncLead{font-size:12.5px;line-height:1.7;color:var(--text);margin:0 0 12px}
+  .syncCode{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:26px;font-weight:900;
+    letter-spacing:2px;text-align:center;padding:14px 10px;border-radius:12px;margin-bottom:10px;
+    background:var(--card);border:1.5px dashed var(--brand);color:var(--brand);user-select:all;overflow-wrap:anywhere}
+  .syncStatus{font-size:11.5px;color:var(--muted);text-align:center;margin-top:9px;font-weight:700}
+  .syncNote{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6}
+  .syncOr{font-size:11px;color:var(--muted);text-align:center;margin:14px 0 8px;font-weight:800}
+  .syncJoin{display:flex;gap:8px}
+  .syncJoin input{flex:1 1 auto;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:16px;font-weight:800;letter-spacing:1px;text-align:center;text-transform:uppercase;
+    padding:11px 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--text)}
+  .syncJoin input:focus{outline:none;border-color:var(--brand)}
+  .syncJoin .bkBtn{flex:0 0 auto}
+  .bkAdvanced{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+  .bkAdvanced summary{font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer;padding:4px 0}
+  .bkAdvanced summary:hover{color:var(--brand)}
+  .bkAdvanced[open] summary{margin-bottom:10px}
+
   /* ===== コミュニティ（掲示板） ===== */
   .cmNewBtn{margin-bottom:14px}
   .cmListPanel{padding:6px 6px 8px}
@@ -933,7 +954,12 @@
     <button type="button" class="countModalClose" id="backupClose" aria-label="閉じる">✕</button>
     <div class="cmKicker">学習記録</div>
     <h3 id="bkTitle">引き継ぎ・バックアップ</h3>
-    <p class="cmSub">別の端末へ記録を移したり、バックアップとして保存できます。</p>
+    <p class="cmSub">同期コードを使うと、複数の端末で記録を自動的にそろえられます。</p>
+
+    <div class="bkBlock syncBlock" id="syncBlock"></div>
+
+    <details class="bkAdvanced">
+      <summary>手動でのバックアップ（ファイル・コピー）</summary>
     <div class="bkBlock">
       <div class="bkLabel">📤 書き出す（この端末 → 別端末）</div>
       <textarea id="bkExport" class="bkArea" readonly rows="2" aria-label="書き出した記録"></textarea>
@@ -953,6 +979,7 @@
       <button type="button" class="bkReplace" id="bkReplace">置き換える（今の記録を消して入れ替え）</button>
       <input type="file" id="bkFileInput" accept=".json,.txt" style="display:none">
     </div>
+    </details>
   </div>
 </div>
 <div class="countModalBackdrop hidden" id="flashChooser">
@@ -2247,7 +2274,7 @@
     const gained=correct*XP_CORRECT + (s.queue.length-correct)*XP_WRONG;
     s.leveledUp=addXP(gained); s.xpStart=meta.xp-gained;
     meta.bestRunStreak=Math.max(meta.bestRunStreak,maxRun);
-    markStudied(); saveProgress(); saveMeta(); checkAch(); maybePublishRank(true);
+    markStudied(); saveProgress(); saveMeta(); checkAch(); maybePublishRank(true); maybeAutoSync();
     renderExamResult();
   }
   function renderExamResult(){
@@ -2333,7 +2360,7 @@
 
   /* ---------- 学習記録の引き継ぎ・バックアップ ---------- */
   function buildExportString(){ return JSON.stringify({ app:"metabolism-quiz", v:1, exportedAt:new Date().toISOString(), progress:progress, meta:meta }); }
-  function openBackupModal(){ $("#bkExport").value=buildExportString(); $("#bkImport").value=""; $("#backupModal").classList.remove("hidden"); }
+  function openBackupModal(){ $("#bkExport").value=buildExportString(); $("#bkImport").value=""; $("#backupModal").classList.remove("hidden"); renderSyncBlock(); }
   function closeBackupModal(){ $("#backupModal").classList.add("hidden"); }
   function copyText(str){
     const ok=()=>toast("📋 コピーしました");
@@ -2386,6 +2413,121 @@
     localStorage.setItem(META_KEY, JSON.stringify(meta)); loadMeta(); saveMeta();
     closeBackupModal(); renderHome();
     toast(replace?"✅ 記録を置き換えました":"✅ 記録を統合しました");
+  }
+
+  /* ---------- 端末間データ同期（同期コード） ---------- */
+  function DS(){ return (window.STUDY_CORE && window.STUDY_CORE.datasync) || null; }
+  function syncSnapshot(){ return { app:"metabolism-quiz", v:1, exportedAt:new Date().toISOString(), progress:progress, meta:meta }; }
+  // リモートの記録をこの端末へ統合する（最大値・和集合。どちらの記録も失わない）
+  function mergeRemote(payload){
+    if(!payload || typeof payload!=="object" || typeof payload.progress!=="object") return false;
+    progress=mergeProgress(progress, payload.progress||{});
+    meta=mergeMeta(meta, payload.meta||{});
+    Object.keys(progress).forEach(id=>{ if(progress[id]&&typeof progress[id]==="object") syncWeak(progress[id]); });
+    saveProgress();
+    localStorage.setItem(META_KEY, JSON.stringify(meta)); loadMeta(); saveMeta();
+    return true;
+  }
+  function syncAgoText(iso){
+    if(!iso) return "まだ同期していません";
+    const s=(Date.now()-new Date(iso).getTime())/1000;
+    if(s<60) return "たった今 同期しました";
+    if(s<3600) return Math.floor(s/60)+"分前に同期";
+    if(s<86400) return Math.floor(s/3600)+"時間前に同期";
+    return Math.floor(s/86400)+"日前に同期";
+  }
+  // 内部エラー名をそのまま見せない
+  function syncErrText(msg){
+    if(msg==="NOT_READY") return "同期はまだ準備中です（サーバー設定の完了後に使えます）";
+    return msg||"同期に失敗しました";
+  }
+  let syncBusy=false;
+  // pull → 統合 → push。silent時はトーストを出さない（自動同期用）
+  async function doSync(silent){
+    const ds=DS(); if(!ds||!ds.enabled()||!ds.isLinked()) return false;
+    if(syncBusy) return false;
+    if(!navigator.onLine){ if(!silent) toast("オフラインのため同期できません"); return false; }
+    syncBusy=true;
+    try{
+      const code=ds.getCode();
+      const got=await ds.pull(code);
+      if(!got.ok){ if(!silent) toast(syncErrText(got.error)); return false; }
+      mergeRemote(got.payload);
+      const put=await ds.push(code, syncSnapshot());
+      if(!put.ok){ if(!silent) toast(syncErrText(put.error)); return false; }
+      if(!silent){ toast("✅ 同期しました"); renderHome(); }
+      return true;
+    } catch(e){ if(!silent) toast("同期に失敗しました"); return false; }
+    finally{ syncBusy=false; renderSyncBlock(); }
+  }
+  function renderSyncBlock(){
+    const box=$("#syncBlock"); if(!box) return;
+    const ds=DS();
+    if(!ds || !ds.enabled()){
+      box.innerHTML=`<div class="bkLabel">📱 他の端末と同期</div>
+        <p class="syncLead">現在準備中です（サーバー設定の完了後に利用できます）。下の手動バックアップはご利用いただけます。</p>`;
+      return;
+    }
+    if(!ds.isLinked()){
+      box.innerHTML=`<div class="bkLabel">📱 他の端末と同期</div>
+        <p class="syncLead">同期を始めると<b>同期コード</b>が発行されます。別の端末でそのコードを入れるだけで、記録が自動でそろいます。ファイルのやり取りは不要です。</p>
+        <button type="button" class="cmStart" id="syncStart">この端末で同期を始める</button>
+        <div class="syncOr">すでにコードをお持ちの場合</div>
+        <div class="syncJoin">
+          <input type="text" id="syncCodeInput" maxlength="13" placeholder="ABCDE-FGHIJ" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button type="button" class="bkBtn" id="syncJoin">つなぐ</button>
+        </div>
+        <div class="syncNote">※ 同期コードを知っている人は、あなたの学習記録を見たり書き換えたりできます。他人には教えないでください。</div>`;
+      $("#syncStart").onclick=async()=>{
+        const btn=$("#syncStart"); btn.disabled=true; btn.textContent="発行中…";
+        const res=await ds.createCode(syncSnapshot());
+        if(res.ok){ toast("🔗 同期を始めました"); renderSyncBlock(); }
+        else { toast(syncErrText(res.error)); btn.disabled=false; btn.textContent="この端末で同期を始める"; }
+      };
+      const inp=$("#syncCodeInput");
+      const join=async()=>{
+        const code=ds.normalizeCode(inp.value);
+        if(code.length<10){ toast("同期コードは10文字です"); return; }
+        const btn=$("#syncJoin"); btn.disabled=true; btn.textContent="接続中…";
+        const res=await ds.link(code);
+        if(!res.ok){ toast(syncErrText(res.error)); btn.disabled=false; btn.textContent="つなぐ"; return; }
+        mergeRemote(res.payload);
+        await ds.push(code, syncSnapshot());
+        toast("✅ 記録を取り込みました");
+        renderSyncBlock(); renderHome();
+      };
+      $("#syncJoin").onclick=join;
+      inp.onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); join(); } };
+      return;
+    }
+    const code=ds.getCode();
+    box.innerHTML=`<div class="bkLabel">📱 他の端末と同期</div>
+      <p class="syncLead">別の端末でこのコードを入力すると、記録がそろいます。</p>
+      <div class="syncCode" id="syncCodeText">${esc(ds.formatCode(code))}</div>
+      <div class="bkBtns">
+        <button type="button" class="bkBtn" id="syncCopy">📋 コードをコピー</button>
+        <button type="button" class="bkBtn" id="syncNow">🔄 今すぐ同期</button>
+      </div>
+      <div class="syncStatus" id="syncStatus">${esc(syncAgoText(ds.lastSyncedAt()))}</div>
+      <div class="syncNote">※ 学習するたびに自動で同期されます。コードは他人に教えないでください。</div>
+      <button type="button" class="bkReplace" id="syncStop">この端末の同期を解除する</button>`;
+    $("#syncCopy").onclick=()=>copyText(ds.formatCode(code));
+    $("#syncNow").onclick=async()=>{
+      const btn=$("#syncNow"); btn.disabled=true; btn.textContent="同期中…";
+      await doSync(false);
+      const b=$("#syncNow"); if(b){ b.disabled=false; b.textContent="🔄 今すぐ同期"; }
+    };
+    $("#syncStop").onclick=()=>{
+      if(!confirm("この端末の同期を解除しますか？\nこの端末の記録は残ります。サーバー上の記録も消えません（他の端末は同期を続けられます）。")) return;
+      ds.unlink(); toast("同期を解除しました"); renderSyncBlock();
+    };
+  }
+  // 学習のたびに自動同期（連打を避けるため間隔を空ける）
+  let lastAutoSync=0;
+  function maybeAutoSync(){
+    const ds=DS(); if(!ds||!ds.enabled()||!ds.isLinked()) return;
+    const now=Date.now(); if(now-lastAutoSync<60000) return;
+    lastAutoSync=now; doSync(true);
   }
 
   /* ---------- フラッシュカード ---------- */
@@ -2947,7 +3089,7 @@
     // 不正解は自動で「もう一度(Again)」。正解は下の手ごたえボタンで4段階評価をFSRSへ渡す。
     if(!isCorrect){ scheduleSRS(r, 1, q.id); s.graded=true; }
     meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
-    markStudied(); saveProgress(); saveMeta(); maybePublishRank();
+    markStudied(); saveProgress(); saveMeta(); maybePublishRank(); maybeAutoSync();
     if(lvup){ s.leveledUp=lvup; toast(`🎉 レベルアップ！ Lv.${lvup} に到達`); }
     const ach=checkAch(); if(ach) setTimeout(()=>toast(`🏅 実績解除：${ach.n}`),lvup?1400:0);
 
@@ -3301,6 +3443,16 @@
     $("#installNo").onclick=()=>hideInstall(true);
     const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent), isSafari=/^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
     if(isIOS && isSafari && !standalone && !dismissed()){ setTimeout(()=>{ if(!deferred) showInstall("共有ボタン →「ホーム画面に追加」でアプリになります"); }, 3500); }
+  })();
+
+  /* ---------- 起動時とオンライン復帰時に自動同期 ---------- */
+  (function autoSyncBoot(){
+    // STUDY_CORE は module 読み込み後に生えるため、少し待ってから試す
+    const kick=()=>{ const ds=DS(); if(ds&&ds.enabled()&&ds.isLinked()) doSync(true).then(()=>renderHome()); };
+    setTimeout(kick, 1500);
+    window.addEventListener("online", ()=>{ lastAutoSync=0; kick(); });
+    // 別端末で進めた分を、戻ってきたときに取り込む
+    document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) maybeAutoSync(); });
   })();
 
   /* ---------- ショートカット（?action=）起動 ---------- */

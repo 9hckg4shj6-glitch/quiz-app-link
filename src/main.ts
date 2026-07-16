@@ -33,6 +33,20 @@ import {
   reportPost,
   setName,
 } from "./community";
+import {
+  createCode,
+  deleteRemote,
+  formatCode,
+  getLastSyncedAt,
+  getSyncCode,
+  isLinked,
+  link,
+  normalizeCode,
+  pull,
+  push,
+  syncEnabled,
+  unlink,
+} from "./datasync";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -80,6 +94,20 @@ window.STUDY_CORE = {
     disableAdmin,
     adminDeletePost,
     adminDeleteBoard,
+  },
+  datasync: {
+    enabled: syncEnabled,
+    getCode: getSyncCode,
+    isLinked,
+    lastSyncedAt: getLastSyncedAt,
+    formatCode,
+    normalizeCode,
+    createCode,
+    link,
+    pull,
+    push,
+    unlink,
+    deleteRemote,
   },
 };
 
