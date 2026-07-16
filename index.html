@@ -628,6 +628,51 @@
   .rankFooter{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px}
   .rankFooter a{color:var(--brand);cursor:pointer;font-weight:700}
 
+  /* ===== コミュニティ（掲示板） ===== */
+  .cmNewBtn{margin-bottom:14px}
+  .cmListPanel{padding:6px 6px 8px}
+  .cmList{display:flex;flex-direction:column;gap:2px}
+  .cmBoardRow{border-radius:12px}
+  .cmBoardRow:nth-child(odd){background:var(--card2)}
+  .cmBoard{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;
+    background:none;border:none;cursor:pointer;font-family:inherit;color:var(--text)}
+  .cmBoardBody{display:flex;flex-direction:column;gap:3px;flex:1 1 auto;min-width:0}
+  .cmBoardTitle{font-size:14.5px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmBoardDesc{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmBoardMeta{font-size:11px;color:var(--muted)}
+  .cmBoardCount{flex:0 0 auto;font-size:15px;font-weight:900;color:var(--brand)}
+  .cmBoardCount small{font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
+  .cmActions{font-size:11.5px;color:var(--muted);padding:0 12px 9px}
+  .cmActions a{color:var(--muted);cursor:pointer;font-weight:700}
+  .cmActions a:hover{color:var(--bad)}
+  .cmToList{margin-bottom:10px}
+  .cmHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .cmHeadTitle{font-size:17px;font-weight:900;min-width:0;overflow-wrap:anywhere}
+  .cmPostsPanel{padding:6px}
+  .cmPosts{display:flex;flex-direction:column}
+  .cmPost{padding:12px;border-radius:12px}
+  .cmPost:nth-child(odd){background:var(--card2)}
+  .cmPost.mine{background:color-mix(in srgb,var(--brand) 10%,var(--card2))}
+  .cmPostHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+  .cmAuthor{font-size:12.5px;font-weight:900}
+  .cmDate{font-size:11px;color:var(--muted);flex:0 0 auto}
+  .cmText{font-size:14px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+  .cmPost .cmActions{padding:7px 0 0}
+  .cmCompose{margin-top:14px;padding:12px}
+  .cmCompose textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;line-height:1.6;
+    padding:11px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);color:var(--text);resize:vertical}
+  .cmCompose textarea:focus{outline:none;border-color:var(--brand)}
+  .cmComposeRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
+  .cmCount{font-size:11.5px;color:var(--muted);font-weight:700}
+  .cmCompose .btn{width:auto;margin:0;padding:10px 20px}
+  .cmForm{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .cmForm label{font-size:11.5px;font-weight:800;color:var(--muted);margin-top:6px}
+  .cmForm input{font-family:inherit;font-size:15px;padding:11px 13px;border-radius:12px;
+    border:1.5px solid var(--line);background:var(--card2);color:var(--text)}
+  .cmForm input:focus{outline:none;border-color:var(--brand)}
+  .cmFormRow{display:flex;gap:8px;justify-content:flex-end}
+  .cmFormRow .btn{width:auto;margin:0;padding:10px 20px}
+
   /* ===== result ===== */
   .result{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 20px;text-align:center;box-shadow:var(--shadow);margin-bottom:16px}
   .score{font-size:46px;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
@@ -1165,6 +1210,15 @@
     <div class="homeSection" id="rankBody"></div>
   </section>
 
+  <!-- ===== VIEW: コミュニティ ===== -->
+  <section id="communityView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="cmBack">← ホーム</button>
+      <span class="pill" id="cmTitle">コミュニティ</span>
+    </div>
+    <div class="homeSection" id="cmBody"></div>
+  </section>
+
   <!-- ===== QUIZ ===== -->
   <section id="quiz" class="hidden">
     <div class="qtop">
@@ -1655,9 +1709,9 @@
   }
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
-  const VIEWS=["practiceView","cardsView","reviewView","statsView","rankView","moreView"];
+  const VIEWS=["practiceView","cardsView","reviewView","statsView","rankView","communityView","moreView"];
   function hideAllScreens(){
-    stopRankTimer();
+    stopRankTimer(); stopCmTimer();
     ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
     VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
   }
@@ -1679,6 +1733,7 @@
     refreshData();
     $("#"+id).classList.remove("hidden");
     if(id==="rankView"){ renderRank(true); startRankTimer(); }
+    if(id==="communityView"){ cmState.boardId=null; renderCommunity(); startCmTimer(); }
     window.scrollTo(0,0);
   }
   function renderHub(){
@@ -1692,6 +1747,7 @@
       {icon:"🔥",name:"復習・苦手",sub:`苦手 ${weakN} ・ 見直し ${bmN}`,go:()=>openView("reviewView")},
       {icon:"📊",name:"学習状況",sub:"進捗・アクティビティ・実績",go:()=>openView("statsView")},
       {icon:"🏆",name:"ランキング",sub:"解いた問題数でみんなと競う",go:()=>openView("rankView")},
+      {icon:"💬",name:"コミュニティ",sub:"掲示板で質問・情報交換",go:()=>openView("communityView")},
       {icon:"🔍",name:"検索",sub:"キーワードで問題を探す",go:openSearch},
       {icon:"⚙️",name:"設定・データ",sub:"更新履歴・バックアップ",go:()=>openView("moreView")}
     ];
@@ -1786,6 +1842,193 @@
         try{ await lb.leave(); }catch(e){} toast("ランキングから抜けました"); renderRank(false);
       }
     };
+  }
+
+  /* ---------- コミュニティ（掲示板・全公開） ---------- */
+  function CM(){ return (window.STUDY_CORE && window.STUDY_CORE.community) || null; }
+  const cmState={boardId:null, boardTitle:"", creating:false};
+  let cmTimer=null;
+  function startCmTimer(){ stopCmTimer(); cmTimer=setInterval(()=>{
+    const v=$("#communityView"); if(!v||v.classList.contains("hidden")) return;
+    if(cmState.creating) return;
+    const a=document.activeElement; if(a&&(a.tagName==="TEXTAREA"||a.tagName==="INPUT")) return; // 入力中は再描画しない
+    renderCommunity(); }, 30000); }
+  function stopCmTimer(){ if(cmTimer){ clearInterval(cmTimer); cmTimer=null; } }
+  function cmTime(iso){
+    const d=new Date(iso), now=new Date(), diff=(now-d)/1000;
+    if(diff<60) return "たった今";
+    if(diff<3600) return Math.floor(diff/60)+"分前";
+    if(diff<86400) return Math.floor(diff/3600)+"時間前";
+    return (d.getFullYear()===now.getFullYear()?"":d.getFullYear()+"/")+(d.getMonth()+1)+"/"+d.getDate();
+  }
+  function cmEnsureName(){
+    const cm=CM(); if(!cm) return false;
+    if(cm.hasName()) return true;
+    const nm=prompt("コミュニティで表示する名前を入力してください（24文字まで）","");
+    if(!nm||!nm.trim()){ toast("名前を登録すると書き込めます"); return false; }
+    const saved=cm.setName(nm);
+    if(!saved){ toast("名前を入力してください"); return false; }
+    toast("名前を登録しました：「"+saved+"」"); return true;
+  }
+  function cmNotReady(){
+    $("#cmBody").innerHTML=`<div class="panel rankIntro"><div class="rankTitle">💬 コミュニティ</div>
+      <p class="rankLead">掲示板で質問や情報交換ができます。<br>現在準備中です（サーバー設定の完了後に利用できます）。</p></div>`;
+  }
+  function cmError(e, msg){
+    // マイグレーション未適用（RPC未作成）は通信エラーではなく「準備中」として扱う
+    if(e && e.message==="NOT_READY"){ cmNotReady(); return; }
+    $("#cmBody").innerHTML=`<div class="panel rankIntro"><p class="rankLead">${esc(msg)}</p>
+      <button type="button" class="btn ghost" id="cmRetry">再読み込み</button></div>`;
+    const r=$("#cmRetry"); if(r) r.onclick=()=>renderCommunity();
+  }
+  async function renderCommunity(){
+    const box=$("#cmBody"); if(!box) return;
+    const cm=CM();
+    $("#cmTitle").textContent = cmState.boardId ? "掲示板" : "コミュニティ";
+    if(!cm || !cm.enabled()){
+      box.innerHTML=`<div class="panel rankIntro"><div class="rankTitle">💬 コミュニティ</div>
+        <p class="rankLead">掲示板で質問や情報交換ができます。<br>現在準備中です（サーバー設定の完了後に利用できます）。</p></div>`;
+      return;
+    }
+    if(cmState.creating) return renderCmCreate();
+    if(cmState.boardId) return renderCmBoard();
+    return renderCmBoardList();
+  }
+  function renderCmCreate(){
+    const box=$("#cmBody");
+    box.innerHTML=`<div class="panel rankIntro">
+      <div class="rankTitle">✏️ 新しい掲示板を作る</div>
+      <div class="cmForm">
+        <label>タイトル（40文字まで）</label>
+        <input type="text" id="cmNewTitle" maxlength="40" placeholder="例：糖代謝の質問スレ" autocomplete="off">
+        <label>説明（任意・200文字まで）</label>
+        <input type="text" id="cmNewDesc" maxlength="200" placeholder="例：解糖系・糖新生でわからないところを聞き合う" autocomplete="off">
+      </div>
+      <div class="cmFormRow">
+        <button type="button" class="btn ghost" id="cmCancel">キャンセル</button>
+        <button type="button" class="btn" id="cmCreate">作成する</button>
+      </div>
+      <div class="rankNote">※ 誰でも閲覧・書き込みできます。個人情報や誹謗中傷は書き込まないでください。</div>
+    </div>`;
+    $("#cmNewTitle").focus();
+    $("#cmCancel").onclick=()=>{ cmState.creating=false; renderCommunity(); };
+    $("#cmCreate").onclick=async()=>{
+      const t=$("#cmNewTitle").value, d=$("#cmNewDesc").value;
+      if(!t.trim()){ toast("タイトルを入力してください"); return; }
+      if(!cmEnsureName()) return;
+      const btn=$("#cmCreate"); btn.disabled=true; btn.textContent="作成中…";
+      const res=await CM().createBoard(t,d);
+      if(res.ok){ toast("掲示板を作成しました"); cmState.creating=false; cmState.boardId=res.id; cmState.boardTitle=t.trim(); renderCommunity(); }
+      else { toast(res.error||"作成に失敗しました"); btn.disabled=false; btn.textContent="作成する"; }
+    };
+  }
+  async function renderCmBoardList(){
+    const box=$("#cmBody"), cm=CM();
+    if(!box.querySelector(".cmList")) box.innerHTML=`<div class="rankLoading">読み込み中…</div>`;
+    let boards=[];
+    try{ boards=await cm.listBoards(); }
+    catch(e){ cmError(e, "コミュニティを取得できませんでした。オンライン状態を確認してください。"); return; }
+    const admin=cm.isAdminMode();
+    const items = boards.length ? boards.map(b=>`<div class="cmBoardRow">
+        <button type="button" class="cmBoard" data-id="${esc(b.id)}" data-title="${esc(b.title)}">
+          <span class="cmBoardBody">
+            <span class="cmBoardTitle">${esc(b.title)}</span>
+            ${b.description?`<span class="cmBoardDesc">${esc(b.description)}</span>`:""}
+            <span class="cmBoardMeta">${esc(b.author)} ・ ${cmTime(b.lastPostAt)}${b.isMine?" ・ 自分":""}</span>
+          </span>
+          <span class="cmBoardCount">${b.postCount}<small>件</small></span>
+        </button>
+        <div class="cmActions">${b.isMine?`<a data-bdel="${esc(b.id)}">削除</a>`:`<a data-brep="${esc(b.id)}">⚠ 報告</a>`}${(admin&&!b.isMine)?` ・ <a data-badmin="${esc(b.id)}">管理削除</a>`:""}</div>
+      </div>`).join("") : `<div class="rankEmpty">まだ掲示板がありません。最初の1つを作ってみよう！</div>`;
+    box.innerHTML=`
+      <button type="button" class="dueCard cmNewBtn" id="cmNew">
+        <span class="dueIcon">✏️</span>
+        <span class="dueBody"><span class="dueTitle">新しい掲示板を作る</span>
+          <span class="dueSub">質問・情報共有・雑談など、自由に立てられます</span></span>
+        <span class="dueRight"><span class="dueUnit" style="font-size:15px">作る →</span></span>
+      </button>
+      <div class="panel cmListPanel">
+        <div class="rankListHead"><span>掲示板 ${boards.length} 件</span>
+          <button type="button" class="rankRefresh" id="cmRefresh">↻ 更新</button></div>
+        <div class="cmList">${items}</div>
+      </div>
+      <div class="rankFooter">表示名：<b>${esc(cm.getName()||"未設定")}</b> ・ <a id="cmRename">名前を変更</a>
+        ・ ${admin?`<a id="cmAdminOff">管理者モード解除</a>`:`<a id="cmAdminOn">管理者</a>`}</div>`;
+    $("#cmNew").onclick=()=>{ cmState.creating=true; renderCommunity(); };
+    $("#cmRefresh").onclick=()=>renderCommunity();
+    box.querySelectorAll(".cmBoard").forEach(el=>{ el.onclick=()=>{
+      cmState.boardId=el.dataset.id; cmState.boardTitle=el.dataset.title; renderCommunity(); window.scrollTo(0,0); }; });
+    box.querySelectorAll("[data-bdel]").forEach(el=>{ el.onclick=async()=>{
+      if(!confirm("この掲示板を削除しますか？中の書き込みも見えなくなります。")) return;
+      try{ await cm.deleteMyBoard(el.dataset.bdel); toast("削除しました"); }catch(e){ toast("削除に失敗しました"); }
+      renderCommunity(); }; });
+    box.querySelectorAll("[data-brep]").forEach(el=>{ el.onclick=async()=>{
+      if(!confirm("この掲示板を報告しますか？")) return;
+      try{ await cm.reportBoard(el.dataset.brep); toast("報告しました"); }catch(e){}
+      renderCommunity(); }; });
+    box.querySelectorAll("[data-badmin]").forEach(el=>{ el.onclick=async()=>{
+      if(!confirm("【管理者】この掲示板を削除しますか？")) return;
+      try{ await cm.adminDeleteBoard(el.dataset.badmin); toast("管理者として削除しました"); }catch(e){ toast("削除に失敗しました"); }
+      renderCommunity(); }; });
+    $("#cmRename").onclick=()=>{
+      const nm=prompt("コミュニティでの表示名（24文字まで）", cm.getName());
+      if(nm&&nm.trim()){ const s=cm.setName(nm); if(s){ toast("名前を変更しました"); renderCommunity(); } else toast("名前を入力してください"); }
+    };
+    const on=$("#cmAdminOn"); if(on) on.onclick=async()=>{
+      const t=prompt("管理者トークンを入力してください",""); if(!t) return;
+      const ok=await cm.enableAdmin(t.trim());
+      toast(ok?"管理者モードになりました":"トークンが違います");
+      if(ok) renderCommunity();
+    };
+    const off=$("#cmAdminOff"); if(off) off.onclick=()=>{ cm.disableAdmin(); toast("管理者モードを解除しました"); renderCommunity(); };
+  }
+  async function renderCmBoard(){
+    const box=$("#cmBody"), cm=CM();
+    if(!box.querySelector(".cmPosts")) box.innerHTML=`<div class="rankLoading">読み込み中…</div>`;
+    let posts=[];
+    try{ posts=await cm.listPosts(cmState.boardId); }
+    catch(e){ cmError(e, "書き込みを取得できませんでした。オンライン状態を確認してください。"); return; }
+    const admin=cm.isAdminMode();
+    const list = posts.length ? posts.map(p=>`<div class="cmPost${p.isMine?" mine":""}">
+        <div class="cmPostHead"><span class="cmAuthor">${esc(p.author)}${p.isMine?' <span class="youTag">自分</span>':""}</span>
+          <span class="cmDate">${cmTime(p.createdAt)}</span></div>
+        <div class="cmText">${esc(p.body)}</div>
+        <div class="cmActions">${p.isMine?`<a data-pdel="${esc(p.id)}">削除</a>`:`<a data-prep="${esc(p.id)}">⚠ 報告</a>`}${(admin&&!p.isMine)?` ・ <a data-padmin="${esc(p.id)}">管理削除</a>`:""}</div>
+      </div>`).join("") : `<div class="rankEmpty">まだ書き込みがありません。最初の1件を書いてみよう！</div>`;
+    box.innerHTML=`
+      <button type="button" class="btn ghost small cmToList" id="cmToList">← 掲示板一覧</button>
+      <div class="cmHead"><div class="cmHeadTitle">${esc(cmState.boardTitle)}</div>
+        <button type="button" class="rankRefresh" id="cmRefresh2">↻ 更新</button></div>
+      <div class="panel cmPostsPanel"><div class="cmPosts">${list}</div></div>
+      <div class="panel cmCompose">
+        <textarea id="cmInput" maxlength="1000" rows="3" placeholder="書き込む（1000文字まで）"></textarea>
+        <div class="cmComposeRow"><span class="cmCount" id="cmCount">0 / 1000</span>
+          <button type="button" class="btn" id="cmSend">書き込む</button></div>
+      </div>`;
+    $("#cmToList").onclick=()=>{ cmState.boardId=null; renderCommunity(); window.scrollTo(0,0); };
+    $("#cmRefresh2").onclick=()=>renderCommunity();
+    const inp=$("#cmInput");
+    inp.oninput=()=>{ $("#cmCount").textContent=`${inp.value.length} / 1000`; };
+    $("#cmSend").onclick=async()=>{
+      const body=inp.value; if(!body.trim()){ toast("本文を入力してください"); return; }
+      if(!cmEnsureName()) return;
+      const btn=$("#cmSend"); btn.disabled=true; btn.textContent="送信中…";
+      const res=await cm.createPost(cmState.boardId, body);
+      if(res.ok){ inp.value=""; renderCommunity(); }
+      else { toast(res.error||"書き込みに失敗しました"); btn.disabled=false; btn.textContent="書き込む"; }
+    };
+    box.querySelectorAll("[data-pdel]").forEach(el=>{ el.onclick=async()=>{
+      if(!confirm("この書き込みを削除しますか？")) return;
+      try{ await cm.deleteMyPost(el.dataset.pdel); toast("削除しました"); }catch(e){ toast("削除に失敗しました"); }
+      renderCommunity(); }; });
+    box.querySelectorAll("[data-prep]").forEach(el=>{ el.onclick=async()=>{
+      if(!confirm("この書き込みを報告しますか？")) return;
+      try{ await cm.reportPost(el.dataset.prep); toast("報告しました"); }catch(e){}
+      renderCommunity(); }; });
+    box.querySelectorAll("[data-padmin]").forEach(el=>{ el.onclick=async()=>{
+      if(!confirm("【管理者】この書き込みを削除しますか？")) return;
+      try{ await cm.adminDeletePost(el.dataset.padmin); toast("管理者として削除しました"); }catch(e){ toast("削除に失敗しました"); }
+      renderCommunity(); }; });
   }
 
   function renderLead(){
@@ -2745,6 +2988,12 @@
 
   /* ビュー（各画面）の戻るボタン */
   document.querySelectorAll(".viewBack").forEach(b=>{ b.onclick=renderHome; });
+  /* コミュニティは階層があるため、掲示板を開いていれば一覧へ戻る */
+  $("#cmBack").onclick=()=>{
+    if(cmState.creating){ cmState.creating=false; renderCommunity(); return; }
+    if(cmState.boardId){ cmState.boardId=null; renderCommunity(); window.scrollTo(0,0); return; }
+    renderHome();
+  };
 
   /* 問題検索 */
   $("#searchBack").onclick=closeSearch;

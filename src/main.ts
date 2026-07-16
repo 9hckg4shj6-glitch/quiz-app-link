@@ -14,6 +14,25 @@ import {
   leaveLeaderboard,
   publishScore,
 } from "./leaderboard";
+import {
+  adminDeleteBoard,
+  adminDeletePost,
+  communityEnabled,
+  createBoard,
+  createPost,
+  deleteMyBoard,
+  deleteMyPost,
+  disableAdmin,
+  enableAdmin,
+  getName,
+  hasName,
+  isAdminMode,
+  listBoards,
+  listPosts,
+  reportBoard,
+  reportPost,
+  setName,
+} from "./community";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -42,6 +61,25 @@ window.STUDY_CORE = {
     publish: publishScore,
     fetch: fetchLeaderboard,
     leave: leaveLeaderboard,
+  },
+  community: {
+    enabled: communityEnabled,
+    getName,
+    setName,
+    hasName,
+    listBoards,
+    createBoard,
+    deleteMyBoard,
+    listPosts,
+    createPost,
+    deleteMyPost,
+    reportPost,
+    reportBoard,
+    isAdminMode,
+    enableAdmin,
+    disableAdmin,
+    adminDeletePost,
+    adminDeleteBoard,
   },
 };
 

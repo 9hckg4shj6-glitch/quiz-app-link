@@ -1,6 +1,7 @@
 import type { StudyCard, SyncStatus } from "./types";
 import type { StoredSchedule } from "./types";
 import type { LeaderboardView } from "./leaderboard";
+import type { BoardRow, PostRow } from "./community";
 
 declare global {
   interface Window {
@@ -23,6 +24,25 @@ declare global {
         publish: (solved: number, force?: boolean) => Promise<void>;
         fetch: () => Promise<LeaderboardView | null>;
         leave: () => Promise<void>;
+      };
+      community: {
+        enabled: () => boolean;
+        getName: () => string;
+        setName: (raw: string) => string;
+        hasName: () => boolean;
+        listBoards: () => Promise<BoardRow[]>;
+        createBoard: (title: string, description: string) => Promise<{ ok: boolean; id?: string; error?: string }>;
+        deleteMyBoard: (boardId: string) => Promise<void>;
+        listPosts: (boardId: string) => Promise<PostRow[]>;
+        createPost: (boardId: string, body: string) => Promise<{ ok: boolean; error?: string }>;
+        deleteMyPost: (postId: string) => Promise<void>;
+        reportPost: (postId: string) => Promise<void>;
+        reportBoard: (boardId: string) => Promise<void>;
+        isAdminMode: () => boolean;
+        enableAdmin: (token: string) => Promise<boolean>;
+        disableAdmin: () => void;
+        adminDeletePost: (postId: string) => Promise<void>;
+        adminDeleteBoard: (boardId: string) => Promise<void>;
       };
     };
     __STUDY_CARDS?: StudyCard[];
