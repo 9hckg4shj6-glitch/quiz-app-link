@@ -36,6 +36,7 @@ APP_USER="study" APP_PASSWORD="任意のパスワード" node server.js
 - 旧 `localStorage` の進捗・自作問題は初回起動時に自動移行します。
 - 「カード管理・同期」からカード作成、編集、複製、削除、デッキ作成、JSONバックアップができます。
 - Supabase未設定でも全ローカル機能を利用できます。
+- PWAは新しい配信を検出するとService Workerを自動更新し、古いキャッシュを表示し続けないようにします。長時間開いたままの場合も1時間ごとに更新を確認します。
 - 複数端末同期を有効にする場合は `.env.example` を `.env` にコピーして値を設定し、`supabase/migrations/001_initial.sql` をSupabaseへ適用します。
 - 同期はメールOTP、Row Level Security、オフライン送信待ちキューを使用します。
 

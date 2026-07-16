@@ -45,13 +45,17 @@ window.STUDY_CORE = {
   },
 };
 
-const updateSW = registerSW({
+registerSW({
   immediate: true,
-  onNeedRefresh() {
-    const banner = document.querySelector<HTMLElement>("#updateBanner");
-    banner?.classList.remove("hidden");
-    document.querySelector<HTMLElement>("#updateYes")?.addEventListener("click", () => void updateSW(true), { once: true });
-    document.querySelector<HTMLElement>("#updateNo")?.addEventListener("click", () => banner?.classList.add("hidden"), { once: true });
+  onRegisteredSW(_swUrl, registration) {
+    if (!registration) return;
+    // 開きっぱなしのPWAも更新を取りこぼさないよう、オンライン時に定期確認する。
+    window.setInterval(() => {
+      if (navigator.onLine) void registration.update();
+    }, 60 * 60 * 1000);
+  },
+  onRegisterError(error) {
+    console.error("アプリの自動更新を登録できませんでした", error);
   },
 });
 

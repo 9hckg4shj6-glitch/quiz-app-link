@@ -9,7 +9,8 @@ export default defineConfig({
   },
   plugins: [
     VitePWA({
-      registerType: "prompt",
+      // 新版を検出したら待機させずに有効化し、古いPWA画面を自動で更新する。
+      registerType: "autoUpdate",
       includeAssets: ["icons/*.png"],
       manifest: {
         name: "代謝・生化学 問題演習",
