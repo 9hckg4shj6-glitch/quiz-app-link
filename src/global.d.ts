@@ -1,5 +1,6 @@
 import type { StudyCard, SyncStatus } from "./types";
 import type { StoredSchedule } from "./types";
+import type { LeaderboardView } from "./leaderboard";
 
 declare global {
   interface Window {
@@ -14,6 +15,15 @@ declare global {
       openCardManager: () => Promise<void>;
       syncNow: () => Promise<SyncStatus>;
       undoLastReview: (cardId: string) => Promise<StoredSchedule | null>;
+      leaderboard: {
+        enabled: () => boolean;
+        hasJoined: () => boolean;
+        savedName: () => string;
+        join: (rawName: string, solved: number) => Promise<{ ok: boolean; error?: string }>;
+        publish: (solved: number, force?: boolean) => Promise<void>;
+        fetch: () => Promise<LeaderboardView | null>;
+        leave: () => Promise<void>;
+      };
     };
     __STUDY_CARDS?: StudyCard[];
   }

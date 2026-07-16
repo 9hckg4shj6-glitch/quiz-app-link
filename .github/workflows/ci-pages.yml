@@ -27,6 +27,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+        env:
+          # 公開ランキング/同期用。リポジトリ Settings → Secrets に登録すると本番ビルドへ注入される。
+          # 未設定でもビルドは成功し、アプリはローカル専用（ランキングは「準備中」表示）で動作する。
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

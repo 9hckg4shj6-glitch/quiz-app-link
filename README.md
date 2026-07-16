@@ -39,6 +39,19 @@ APP_USER="study" APP_PASSWORD="任意のパスワード" node server.js
 - 複数端末同期を有効にする場合は `.env.example` を `.env` にコピーして値を設定し、`supabase/migrations/001_initial.sql` をSupabaseへ適用します。
 - 同期はメールOTP、Row Level Security、オフライン送信待ちキューを使用します。
 
+## 公開ランキング（解いた問題数）
+
+ホームの「🏆 ランキング」から、名前を登録すると「解いた問題数」がグローバルな公開ランキングに掲載されます。端末ごとに発行される `deviceId` で本人を識別し、名前は表示ラベルです（メール等の個人情報は公開しません）。演習中は随時、上限付き（30秒間隔）でスコアを送信します。
+
+有効化には Supabase が必要です（未設定でもアプリはローカル専用で動作し、ランキングは「準備中」と表示されます）。手順:
+
+1. Supabase プロジェクトを用意する（既存の同期用と同じでよい）。
+2. `supabase/migrations/002_leaderboard.sql` を SQL Editor で実行する（`leaderboard` テーブルと4つの `security definer` 関数を作成）。認証は不要で、匿名（anon）ロールから関数のみ実行できます。
+3. GitHub リポジトリの Settings → Secrets and variables → Actions に `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` を登録する（anonキーはRLS前提の公開可能キー）。
+4. `main` へマージ／pushすると、CIがSecretsをビルドへ注入して配信します。
+
+不適切な名前などは Supabase ダッシュボードの `leaderboard` テーブルから該当行を削除できます。名前は制御文字を除去し24文字までに制限、解答数はサーバ側で 0〜100000 にクランプ・単調増加（下がらない）としています。
+
 ## 教材の編集
 
 標準教材は次のファイルにあります。

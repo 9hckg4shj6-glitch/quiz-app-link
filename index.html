@@ -593,6 +593,40 @@
     border:1.5px solid color-mix(in srgb,var(--brand) 35%,var(--line));border-radius:999px;padding:6px 13px;cursor:pointer}
   .pathMore:hover{background:color-mix(in srgb,var(--brand) 10%,var(--card))}
 
+  /* ===== ランキング ===== */
+  .rankIntro{padding:20px 18px}
+  .rankTitle{font-size:17px;font-weight:900;margin-bottom:8px}
+  .rankLead{font-size:13.5px;line-height:1.7;color:var(--text);margin:0 0 14px}
+  .rankJoin{display:flex;gap:8px;flex-wrap:wrap}
+  .rankJoin input{flex:1 1 160px;min-width:0;font-family:inherit;font-size:15px;padding:11px 13px;border-radius:12px;
+    border:1.5px solid var(--line);background:var(--card2);color:var(--text)}
+  .rankJoin input:focus{outline:none;border-color:var(--brand)}
+  .rankJoin .btn{flex:0 0 auto;width:auto;padding:11px 20px;margin:0}
+  .rankNote{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6}
+  .rankLoading{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+  .rankMe{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;margin-bottom:14px;
+    background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 20%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line));box-shadow:var(--shadow)}
+  .rankMeRank{font-size:34px;font-weight:900;line-height:1;color:var(--brand)}
+  .rankMeRank small{font-size:13px;font-weight:800;color:var(--muted);margin-left:2px}
+  .rankMeName{font-size:15px;font-weight:900}
+  .rankMeSolved{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .youTag{display:inline-block;font-size:10px;font-weight:900;padding:2px 8px;border-radius:999px;background:var(--brand);color:#fff;vertical-align:middle;margin-left:4px}
+  .rankListPanel{padding:6px 6px 8px}
+  .rankListHead{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px;font-size:11.5px;font-weight:800;color:var(--muted)}
+  .rankRefresh{font-family:inherit;font-size:12px;font-weight:800;color:var(--brand);background:none;border:none;cursor:pointer;padding:4px 6px}
+  .rankList{display:flex;flex-direction:column}
+  .rankRow{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px}
+  .rankRow:nth-child(odd){background:var(--card2)}
+  .rankRow.you{background:color-mix(in srgb,var(--brand) 14%,var(--card2));box-shadow:0 0 0 1.5px var(--brand) inset}
+  .rankNum{flex:0 0 auto;min-width:30px;text-align:center;font-size:14px;font-weight:900;color:var(--muted)}
+  .rankNum.medal{font-size:19px}
+  .rankName{flex:1 1 auto;min-width:0;font-size:14.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rankSolved{flex:0 0 auto;font-size:15px;font-weight:900;color:var(--brand)}
+  .rankSolved small{font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
+  .rankEmpty{padding:24px;text-align:center;color:var(--muted);font-size:13px}
+  .rankFooter{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px}
+  .rankFooter a{color:var(--brand);cursor:pointer;font-weight:700}
+
   /* ===== result ===== */
   .result{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 20px;text-align:center;box-shadow:var(--shadow);margin-bottom:16px}
   .score{font-size:46px;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
@@ -1121,6 +1155,15 @@
     </div>
   </section>
 
+  <!-- ===== VIEW: ランキング ===== -->
+  <section id="rankView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small viewBack">← ホーム</button>
+      <span class="pill">ランキング</span>
+    </div>
+    <div class="homeSection" id="rankBody"></div>
+  </section>
+
   <!-- ===== QUIZ ===== -->
   <section id="quiz" class="hidden">
     <div class="qtop">
@@ -1611,8 +1654,9 @@
   }
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
-  const VIEWS=["practiceView","cardsView","reviewView","statsView","moreView"];
+  const VIEWS=["practiceView","cardsView","reviewView","statsView","rankView","moreView"];
   function hideAllScreens(){
+    stopRankTimer();
     ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
     VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
   }
@@ -1633,6 +1677,7 @@
     hideAllScreens();
     refreshData();
     $("#"+id).classList.remove("hidden");
+    if(id==="rankView"){ renderRank(true); startRankTimer(); }
     window.scrollTo(0,0);
   }
   function renderHub(){
@@ -1645,6 +1690,7 @@
       {icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")},
       {icon:"🔥",name:"復習・苦手",sub:`苦手 ${weakN} ・ 見直し ${bmN}`,go:()=>openView("reviewView")},
       {icon:"📊",name:"学習状況",sub:"進捗・アクティビティ・実績",go:()=>openView("statsView")},
+      {icon:"🏆",name:"ランキング",sub:"解いた問題数でみんなと競う",go:()=>openView("rankView")},
       {icon:"🔍",name:"検索",sub:"キーワードで問題を探す",go:openSearch},
       {icon:"⚙️",name:"設定・データ",sub:"更新履歴・バックアップ",go:()=>openView("moreView")}
     ];
@@ -1653,6 +1699,84 @@
       <span class="hubBody"><span class="hubName">${esc(it.name)}</span><span class="hubSub">${esc(it.sub)}</span></span>
       <span class="hubChev">›</span></button>`).join("");
     grid.querySelectorAll(".hubBtn").forEach(el=>{ el.onclick=items[+el.dataset.i].go; });
+  }
+
+  /* ---------- 公開ランキング（解いた問題数） ---------- */
+  function LB(){ return (window.STUDY_CORE && window.STUDY_CORE.leaderboard) || null; }
+  function solvedCount(){ let n=0; DATA.forEach(q=>{ const r=progress[q.id]; if(r&&r.seen>0) n++; }); return n; }
+  function medal(rank){ return rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":String(rank); }
+  function maybePublishRank(force){ const lb=LB(); if(lb&&lb.hasJoined()){ try{ lb.publish(solvedCount(), !!force); }catch(e){} } }
+  let rankTimer=null;
+  function startRankTimer(){ stopRankTimer(); rankTimer=setInterval(()=>{ const v=$("#rankView"); if(v&&!v.classList.contains("hidden")) renderRank(false); }, 30000); }
+  function stopRankTimer(){ if(rankTimer){ clearInterval(rankTimer); rankTimer=null; } }
+  async function renderRank(doPublish){
+    const box=$("#rankBody"); if(!box) return;
+    const lb=LB();
+    if(!lb || !lb.enabled()){
+      box.innerHTML=`<div class="panel rankIntro"><div class="rankTitle">🏆 ランキング</div>
+        <p class="rankLead">みんなで「解いた問題数」を競うランキングです。<br>現在準備中です（サーバー設定の完了後に利用できます）。</p></div>`;
+      return;
+    }
+    const solved=solvedCount();
+    if(!lb.hasJoined()){
+      box.innerHTML=`<div class="panel rankIntro">
+        <div class="rankTitle">🏆 ランキングに参加</div>
+        <p class="rankLead">名前を登録すると、あなたの「解いた問題数（現在 ${solved}問）」が公開ランキングに掲載されます。名前は他の参加者に表示されるので、ニックネームでの参加をおすすめします。</p>
+        <div class="rankJoin">
+          <input type="text" id="rankNameInput" maxlength="24" placeholder="名前（漢字・かなOK）" autocomplete="off" enterkeyhint="done">
+          <button type="button" class="btn" id="rankJoinBtn">参加する</button>
+        </div>
+        <div class="rankNote">※ 公開されるのは「名前」と「解いた問題数」だけです。メールなどの個人情報は公開されません。いつでも抜けられます。</div>
+      </div>`;
+      const inp=$("#rankNameInput"); inp.value=lb.savedName()||"";
+      const doJoin=async()=>{
+        const nm=inp.value; if(!nm.trim()){ toast("名前を入力してください"); return; }
+        const btn=$("#rankJoinBtn"); btn.disabled=true; btn.textContent="登録中…";
+        const res=await lb.join(nm, solvedCount());
+        if(res.ok){ toast("🏆 ランキングに参加しました"); renderRank(false); }
+        else { toast(res.error||"参加に失敗しました"); btn.disabled=false; btn.textContent="参加する"; }
+      };
+      $("#rankJoinBtn").onclick=doJoin;
+      inp.onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); doJoin(); } };
+      return;
+    }
+    if(!box.querySelector(".rankListPanel")) box.innerHTML=`<div class="rankLoading">読み込み中…</div>`;
+    if(doPublish){ try{ await lb.publish(solved, true); }catch(e){} }
+    let view=null;
+    try{ view=await lb.fetch(); }
+    catch(e){
+      box.innerHTML=`<div class="panel rankIntro"><p class="rankLead">ランキングを取得できませんでした。オンライン状態を確認してください。</p>
+        <button type="button" class="btn ghost" id="rankRetry">再読み込み</button></div>`;
+      const rr=$("#rankRetry"); if(rr) rr.onclick=()=>renderRank(true); return;
+    }
+    if(!view) return;
+    const meCard = view.myRank ? `<div class="rankMe">
+        <div class="rankMeRank">${view.myRank}<small>位</small></div>
+        <div class="rankMeBody"><div class="rankMeName">${esc(lb.savedName())} <span class="youTag">あなた</span></div>
+        <div class="rankMeSolved">${view.mySolved!=null?view.mySolved:solved} 問を解いた</div></div></div>` : "";
+    const list = view.rows.length ? view.rows.map(r=>`<div class="rankRow${r.you?' you':''}">
+        <span class="rankNum${r.rank<=3?' medal':''}">${medal(r.rank)}</span>
+        <span class="rankName">${esc(r.name)}${r.you?' <span class="youTag">あなた</span>':''}</span>
+        <span class="rankSolved">${r.solved}<small>問</small></span></div>`).join("")
+      : `<div class="rankEmpty">まだ参加者がいません。最初の1人になろう！</div>`;
+    box.innerHTML=`
+      ${meCard}
+      <div class="panel rankListPanel">
+        <div class="rankListHead"><span>上位 ${view.rows.length} 人${(view.myRank&&!view.inTop)?` ・ あなたは ${view.myRank} 位`:''}</span>
+          <button type="button" class="rankRefresh" id="rankRefresh">↻ 更新</button></div>
+        <div class="rankList">${list}</div>
+      </div>
+      <div class="rankFooter"><a id="rankRename">名前を変更</a> ・ <a id="rankLeave">ランキングから抜ける</a></div>`;
+    $("#rankRefresh").onclick=()=>renderRank(true);
+    $("#rankRename").onclick=()=>{
+      const nm=prompt("新しい名前（24文字まで）", lb.savedName());
+      if(nm&&nm.trim()){ lb.join(nm, solvedCount()).then(res=>{ if(res.ok){ toast("名前を変更しました"); renderRank(false); } else toast(res.error||"変更に失敗しました"); }); }
+    };
+    $("#rankLeave").onclick=async()=>{
+      if(confirm("ランキングから抜けますか？あなたの掲載が削除されます。")){
+        try{ await lb.leave(); }catch(e){} toast("ランキングから抜けました"); renderRank(false);
+      }
+    };
   }
 
   function renderLead(){
@@ -1851,7 +1975,7 @@
     const gained=correct*XP_CORRECT + (s.queue.length-correct)*XP_WRONG;
     s.leveledUp=addXP(gained); s.xpStart=meta.xp-gained;
     meta.bestRunStreak=Math.max(meta.bestRunStreak,maxRun);
-    markStudied(); saveProgress(); saveMeta(); checkAch();
+    markStudied(); saveProgress(); saveMeta(); checkAch(); maybePublishRank(true);
     renderExamResult();
   }
   function renderExamResult(){
@@ -2551,7 +2675,7 @@
     // 不正解は自動で「もう一度(Again)」。正解は下の手ごたえボタンで4段階評価をFSRSへ渡す。
     if(!isCorrect){ scheduleSRS(r, 1, q.id); s.graded=true; }
     meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
-    markStudied(); saveProgress(); saveMeta();
+    markStudied(); saveProgress(); saveMeta(); maybePublishRank();
     if(lvup){ s.leveledUp=lvup; toast(`🎉 レベルアップ！ Lv.${lvup} に到達`); }
     const ach=checkAch(); if(ach) setTimeout(()=>toast(`🏅 実績解除：${ach.n}`),lvup?1400:0);
 
@@ -2729,6 +2853,7 @@
       </div>
       ${wrong?`<div class="review"><h4>間違えた問題（${s.wrongList.length}問）</h4>${wrong}</div>`:''}`;
     $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
+    maybePublishRank(true);
     if(pct===100||s.leveledUp) confetti();
     $("#rHome").onclick=renderHome;
     $("#rRetry").onclick=()=>startQuiz(s.queue.map(x=>x.q),s.label);

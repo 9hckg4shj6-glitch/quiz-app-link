@@ -5,6 +5,15 @@ import { migrateLegacyStorage, mirrorCustomCardsToLegacy } from "./migration";
 import { mirrorSchedulesToLegacy, queueLegacyStateSave, reconcileLegacyAfterSync } from "./legacy-bridge";
 import { scheduleReview, undoLastReview } from "./fsrs";
 import { startAutomaticSync, syncNow } from "./sync";
+import {
+  fetchLeaderboard,
+  getSavedName,
+  hasJoined,
+  joinLeaderboard,
+  leaderboardEnabled,
+  leaveLeaderboard,
+  publishScore,
+} from "./leaderboard";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -25,6 +34,15 @@ window.STUDY_CORE = {
   openCardManager,
   syncNow,
   undoLastReview,
+  leaderboard: {
+    enabled: leaderboardEnabled,
+    hasJoined,
+    savedName: getSavedName,
+    join: joinLeaderboard,
+    publish: publishScore,
+    fetch: fetchLeaderboard,
+    leave: leaveLeaderboard,
+  },
 };
 
 const updateSW = registerSW({
