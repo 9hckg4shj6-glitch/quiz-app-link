@@ -972,7 +972,7 @@
     <button type="button" class="countModalClose" id="examDateClose" aria-label="閉じる">✕</button>
     <div class="cmKicker">試験日モード</div>
     <h3 id="edTitle">試験日を設定</h3>
-    <p class="cmSub">試験日を決めると、「今日やると試験日の点が最も伸びる問題」から順に出題します。<br>忘却曲線から、試験日に思い出せる確率を計算して並べ替えます。</p>
+    <p class="cmSub">忘却曲線から「試験日に思い出せる確率」を計算し、<b>今日やると試験日の点が最も伸びる問題</b>から順に出題します。<br>対象はすでに解いた問題です（新しい問題は年度別・分野別からどうぞ）。</p>
     <input type="date" id="examDateInput" class="examDateInput">
     <button type="button" class="cmStart" id="examDateSave">この日で設定する</button>
   </div>
@@ -1568,7 +1568,9 @@
     $("#countTitle").textContent=g.label;
     $("#countTotal").textContent=total;
     const last=loadLastCount();
-    const inp=$("#countInput"); inp.max=total; inp.value=(last>0?Math.min(last,total):total);
+    const inp=$("#countInput"); inp.max=total;
+    // 既定は前回の出題数。未指定なら g.defaultN（試験日モードのようにプールが巨大な場合）か全問。
+    inp.value=(last>0?Math.min(last,total):(g.defaultN?Math.min(g.defaultN,total):total));
     $("#countChips").querySelectorAll(".countChip").forEach(c=>{
       const num=(c.dataset.n==="all")?total:parseInt(c.dataset.n,10);
       c.classList.toggle("disabled", c.dataset.n!=="all" && num>total);
@@ -1624,9 +1626,8 @@
   function recallNow(id){ const m=MEM(), r=progress[id]; if(!m||!r) return null; try{ return m.retrievability(r); }catch(e){ return null; } }
   // 何日後にRがどうなるか（グラフ用）
   function recallCurve(id, dayOffsets){ const m=MEM(), r=progress[id]; if(!m||!r) return dayOffsets.map(()=>null); try{ return m.curve(r, dayOffsets); }catch(e){ return dayOffsets.map(()=>null); } }
-  // 5択の推測補正：記憶が0でも1/選択肢数は当たるので、想起確率をそのまま得点率にしない
-  function expectedScore(q, r){ const k=(q.choices&&q.choices.length)||5; const g=1/k; return g + (1-g)*(r==null?0:r); }
   // 「最も忘れかけている順」（Rの低い順）。Rが出せないものは後ろへ。
+  // .id を持てば問題でもフラッシュカードでも使える。
   function sortByUrgency(items){
     return items.map(q=>({q, r:recallNow(q.id)}))
       .sort((a,b)=>(a.r==null?2:a.r)-(b.r==null?2:b.r))
@@ -2682,7 +2683,8 @@
     if(!cards || !cards.length){ toast("カードがありません"); return; }
     opts=opts||{};
     closeFlashChooser();
-    flashSession={label,deck:shuffle(cards),i:0,ok:0,ng:0,ngList:[],judge:opts.judge?opts.judgeSrc:null};
+    const deck = opts.keepOrder ? cards.slice() : shuffle(cards);  // 復習は「忘れかけ順」を崩さない
+    flashSession={label,deck,i:0,ok:0,ng:0,ngList:[],judge:opts.judge?opts.judgeSrc:null};
     showFlashView(); renderCard();
   }
   function startJudge(src){
@@ -3251,7 +3253,8 @@
     if(!MEM()){ box.innerHTML=`<div class="fcNote">記憶モデルを準備しています…</div>`; return; }
     const offsets=[]; for(let d=0; d<=90; d++) offsets.push(d);
     const sum=offsets.map(()=>0); let n=0;
-    DATA.forEach(q=>{
+    // 問題だけでなく講義カードも「あなたの記憶」なので合わせて集計する
+    DATA.concat(termSources()).forEach(q=>{
       if(!progress[q.id]) return;
       const c=recallCurve(q.id, offsets);
       if(c[0]==null) return;
@@ -3271,7 +3274,7 @@
     const gx=(d)=>`<text x="${X(d)}" y="${H-7}" text-anchor="middle" font-size="8" fill="var(--muted)">${d===0?"今日":d+"日"}</text>`;
     const at=d=>Math.round(avg[d]*100);
     box.innerHTML=`
-      <p class="fcLead">学習済み <b>${n}問</b> について、これから復習しなかった場合に思い出せる確率です。</p>
+      <p class="fcLead">学習済みの <b>${n}件</b>（問題・カード）について、これから復習しなかった場合に思い出せる確率です。</p>
       <svg class="fcChart" viewBox="0 0 ${W} ${H}" role="img" aria-label="今後90日間の記憶の推移">
         <defs><linearGradient id="fcg" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="var(--brand)" stop-opacity="0.35"/>
@@ -3295,7 +3298,7 @@
     const card=$("#examDayCard"); if(!card) return;
     const left=examDaysLeft(), foot=$("#examDayFoot");
     if(left==null){
-      $("#examDaySub").textContent="試験日を決めると、点が伸びる順に出題します";
+      $("#examDaySub").textContent="試験日を決めると、覚えた内容を忘れない順に出題します";
       $("#examDayCount").textContent="–"; $("#examDayUnit").textContent="設定";
       card.classList.add("dueEmpty"); foot.classList.add("hidden"); return;
     }
@@ -3303,9 +3306,10 @@
     $("#examDayCount").textContent=Math.max(0,left);
     $("#examDayUnit").textContent=left<0?"日経過":"日後";
     const d=meta.examDate.slice(5).replace("-","/");
+    const n=examDayItems().length;
     $("#examDaySub").textContent = left<0 ? `試験日（${d}）は過ぎました。変更できます`
       : left===0 ? `今日が試験日（${d}）。仕上げに出題します`
-      : `${d}の試験に向けて、点が伸びる順に出題します`;
+      : `${d}の試験日に向けて、学習済み${n}問から忘れそうな順に出題します`;
   }
   function openExamDateModal(){
     const inp=$("#examDateInput");
@@ -3328,10 +3332,15 @@
   $("#examDateClear").onclick=(e)=>{ e.stopPropagation();
     if(!confirm("試験日モードを解除しますか？")) return;
     meta.examDate=null; saveMeta(); renderExamDay(); toast("試験日を解除しました"); };
+  // 試験日モードの対象＝すでに学習した問題（＝忘却曲線を描けるもの）。
+  // 未学習は伸びが全て同値で順序が無意味になるため入れない。新規は年度別・分野別で。
+  function examDayItems(){ return DATA.filter(q=>recallNow(q.id)!=null); }
   function startExamDaySession(){
     if(examDateMs()==null){ openExamDateModal(); return; }
     if(!MEM()){ toast("記憶モデルの準備中です。少し待ってからお試しください"); return; }
-    openCountModal({items:DATA, label:"試験日モード", key:"__examday__"}, "examday");
+    const items=examDayItems();
+    if(items.length<5){ toast("まず問題を解きましょう。覚えた内容が溜まると、試験日から逆算して出題します"); return; }
+    openCountModal({items, label:"試験日モード", key:"__examday__", defaultN:20}, "examday");
   }
   $("#examDayCard").onclick=startExamDaySession;
 
@@ -3426,7 +3435,11 @@
     const questions=dueItems(), terms=dueTermItems();
     if(!questions.length&&!terms.length){ toast("🎉 今日の復習はありません"); return; }
     // 講義カードが含まれる日は、問題とカードをまとめてフラッシュカードで復習する
-    if(terms.length){ startFlash(questions.map(questionToCard).concat(terms.map((t,i)=>termToCard(t,i))),"今日の復習カード"); return; }
+    if(terms.length){
+      // 問題とカードを混ぜたうえで、最も忘れかけているものから出す
+      const deck=sortByUrgency(questions.map(questionToCard).concat(terms.map((t,i)=>termToCard(t,i))));
+      startFlash(deck,"今日の復習カード",{keepOrder:true}); return;
+    }
     openCountModal({items:questions,label:"今日の復習",key:"__due__"},"due");
   };
 
