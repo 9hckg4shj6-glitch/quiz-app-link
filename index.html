@@ -628,6 +628,24 @@
   .rankFooter{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px}
   .rankFooter a{color:var(--brand);cursor:pointer;font-weight:700}
 
+  /* ===== 忘却曲線 ===== */
+  .fcLead{font-size:12.5px;color:var(--text);margin:0 0 10px;line-height:1.6}
+  .fcChart{width:100%;height:auto;display:block}
+  .fcStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .fcStat{text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:9px 4px}
+  .fcStat b{display:block;font-size:17px;font-weight:900;color:var(--brand);line-height:1.1}
+  .fcStat span{font-size:10.5px;color:var(--muted);font-weight:700}
+  .fcNote{font-size:11.5px;color:var(--muted);line-height:1.65;margin-top:10px}
+
+  /* ===== 試験日モード ===== */
+  .examDayCard{--accent:#c2410c}
+  .examDayFoot{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
+  .examDayFoot a{color:var(--brand);cursor:pointer;font-weight:700}
+  .examDateInput{width:100%;box-sizing:border-box;font-family:inherit;font-size:17px;font-weight:800;
+    text-align:center;padding:12px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--card2);color:var(--text);margin-bottom:14px}
+  .examDateInput:focus{outline:none;border-color:var(--brand)}
+
   /* ===== 端末間同期 ===== */
   .syncBlock{border:1.5px solid color-mix(in srgb,var(--brand) 35%,var(--line));
     background:color-mix(in srgb,var(--brand) 6%,var(--card2))}
@@ -949,6 +967,17 @@
     <button type="button" class="cmStartAlt" id="countStartFlash">🎴 カードでめくる</button>
   </div>
 </div>
+<div class="countModalBackdrop hidden" id="examDateModal">
+  <div class="countModal" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+    <button type="button" class="countModalClose" id="examDateClose" aria-label="閉じる">✕</button>
+    <div class="cmKicker">試験日モード</div>
+    <h3 id="edTitle">試験日を設定</h3>
+    <p class="cmSub">試験日を決めると、「今日やると試験日の点が最も伸びる問題」から順に出題します。<br>忘却曲線から、試験日に思い出せる確率を計算して並べ替えます。</p>
+    <input type="date" id="examDateInput" class="examDateInput">
+    <button type="button" class="cmStart" id="examDateSave">この日で設定する</button>
+  </div>
+</div>
+
 <div class="countModalBackdrop hidden" id="backupModal">
   <div class="countModal bkCard" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
     <button type="button" class="countModalClose" id="backupClose" aria-label="閉じる">✕</button>
@@ -1085,6 +1114,20 @@
       <div class="quick" id="quick"></div>
     </div>
 
+    <div class="homeSection examSection" id="examDaySection">
+      <button type="button" class="dueCard examDayCard" id="examDayCard">
+        <span class="dueIcon">🎯</span>
+        <span class="dueBody">
+          <span class="dueTitle">試験日モード</span>
+          <span class="dueSub" id="examDaySub">試験日を決めると、点が伸びる順に出題します</span>
+        </span>
+        <span class="dueRight"><b class="dueCount" id="examDayCount">–</b><span class="dueUnit" id="examDayUnit">設定</span></span>
+      </button>
+      <div class="examDayFoot hidden" id="examDayFoot">
+        <a id="examDateChange">試験日を変更</a> ・ <a id="examDateClear">解除</a>
+      </div>
+    </div>
+
     <div class="homeSection examSection" id="examSection">
       <button type="button" class="dueCard examCard" id="examCard">
         <span class="dueIcon">📝</span>
@@ -1185,6 +1228,11 @@
       <div class="sectlabel">学習状況</div>
       <div class="hero"><div class="glowdot"></div><div class="hero-grid" id="heroGrid"></div></div>
       <div class="kpis" id="kpis"></div>
+    </div>
+
+    <div class="homeSection" id="forgetSection">
+      <div class="sectlabel">忘却曲線</div>
+      <div class="panel" id="forgetPanel"></div>
     </div>
 
     <div class="homeSection" id="activitySection">
@@ -1475,6 +1523,18 @@
     meta.lastStudyDate = meta.lastStudyDate||null; meta.lastCategory = meta.lastCategory||null;
     meta.freezes = meta.freezes||0;                 // ストリークフリーズ所持数
     meta.mastery = meta.mastery||{};                // { [出典名]: {passes:[日付], certified:bool, certifiedAt:日付} }
+    meta.examDate = meta.examDate||null;            // 試験日 "YYYY-MM-DD"（試験日モードで使用）
+  }
+  /* 試験日（Dで使用） */
+  function examDateMs(){
+    if(!meta.examDate) return null;
+    const t=new Date(meta.examDate+"T09:00:00").getTime();
+    return isNaN(t)?null:t;
+  }
+  function examDaysLeft(){
+    const ms=examDateMs(); if(ms==null) return null;
+    const d0=new Date(); d0.setHours(0,0,0,0);
+    return Math.round((new Date(meta.examDate+"T00:00:00").getTime()-d0.getTime())/86400000);
   }
   function saveMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(meta)); }catch(e){} }
   function syncWeak(r){
@@ -1504,7 +1564,7 @@
   function openCountModal(g, mode){
     const total=g.items.length;
     pendingSel={items:g.items,label:g.label,mode,key:g.key,total};
-    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="playlist"?"プレイリスト":"演習");
+    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
     $("#countTotal").textContent=total;
     const last=loadLastCount();
@@ -1522,10 +1582,16 @@
     const total=pendingSel.total;
     const n=clampCount(parseInt($("#countInput").value,10), total);
     saveLastCount(n===total?0:n);
-    const items=shuffle(pendingSel.items).slice(0,n);
+    // 復習は「最も忘れかけている順」、試験日モードは「点が伸びる順」に選ぶ。
+    // ランダム抽出だと、20問だけ解くときに危険な問題を取りこぼす。
+    const prioritized = pendingSel.mode==="due" ? sortByUrgency(pendingSel.items)
+                      : pendingSel.mode==="examday" ? sortByExamGain(pendingSel.items)
+                      : shuffle(pendingSel.items);
+    const items=prioritized.slice(0,n);
+    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday";
     const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key};
     closeCountModal();
-    startQuiz(items,label,ref);
+    startQuiz(items,label,ref,{keepOrder});
   }
   function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function toast(msg,ms){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),ms||1700); }
@@ -1552,6 +1618,28 @@
     const d=new Date(); d.setDate(d.getDate()+r.interval);
     r.due=dstr(d); r.lastReviewed=todayStr();
   }
+  /* ---------- 忘却曲線（FSRSのstabilityから想起確率Rを引く） ---------- */
+  function MEM(){ return (window.STUDY_CORE && window.STUDY_CORE.memory) || null; }
+  // 今この瞬間に思い出せる確率（0〜1）。未学習は null。
+  function recallNow(id){ const m=MEM(), r=progress[id]; if(!m||!r) return null; try{ return m.retrievability(r); }catch(e){ return null; } }
+  // 何日後にRがどうなるか（グラフ用）
+  function recallCurve(id, dayOffsets){ const m=MEM(), r=progress[id]; if(!m||!r) return dayOffsets.map(()=>null); try{ return m.curve(r, dayOffsets); }catch(e){ return dayOffsets.map(()=>null); } }
+  // 5択の推測補正：記憶が0でも1/選択肢数は当たるので、想起確率をそのまま得点率にしない
+  function expectedScore(q, r){ const k=(q.choices&&q.choices.length)||5; const g=1/k; return g + (1-g)*(r==null?0:r); }
+  // 「最も忘れかけている順」（Rの低い順）。Rが出せないものは後ろへ。
+  function sortByUrgency(items){
+    return items.map(q=>({q, r:recallNow(q.id)}))
+      .sort((a,b)=>(a.r==null?2:a.r)-(b.r==null?2:b.r))
+      .map(x=>x.q);
+  }
+  // 「今日やると試験日の点が伸びる順」（限界効用の大きい順）
+  function sortByExamGain(items){
+    const m=MEM(), at=examDateMs(); if(!m||!at) return shuffle(items);
+    return items.map(q=>{ let g=0; try{ g=m.examGain(progress[q.id]||{}, at); }catch(e){ g=0; } return {q, g}; })
+      .sort((a,b)=>b.g-a.g)
+      .map(x=>x.q);
+  }
+
   function dueItems(){
     const t=todayStr();
     return DATA.filter(q=>{ const r=progress[q.id]; return r && r.due && r.due<=t; });
@@ -1744,6 +1832,7 @@
   function refreshData(){
     renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick();
     renderHero(); renderKpis(); renderHeatmap(); renderAch(); renderUpdatesHome();
+    renderExamDay();
   }
   function renderHome(){
     stopExamTimer(); closeFcLightbox();
@@ -1759,6 +1848,7 @@
     refreshData();
     $("#"+id).classList.remove("hidden");
     if(id==="rankView"){ renderRank(true); startRankTimer(); }
+    if(id==="statsView"){ renderForgetCurve(); }
     if(id==="communityView"){ cmState.boardId=null; renderCommunity(); startCmTimer(); }
     if(id==="moreView"){ renderSyncBlock(); }
     window.scrollTo(0,0);
@@ -2400,6 +2490,8 @@
     out.activity=Object.assign({},cur.activity||{}); const ia=inc.activity||{};
     Object.keys(ia).forEach(d=>{ out.activity[d]=Math.max(out.activity[d]||0, ia[d]||0); });
     out.freezes=Math.max(cur.freezes||0, inc.freezes||0);
+    // 試験日は片方にしかなければそれを、両方あれば後の日付（延期）を採る
+    out.examDate=(cur.examDate&&inc.examDate)?(cur.examDate>inc.examDate?cur.examDate:inc.examDate):(cur.examDate||inc.examDate||null);
     out.mastery=Object.assign({}, cur.mastery||{}); const im=inc.mastery||{};
     Object.keys(im).forEach(s=>{ const a=out.mastery[s], b=im[s]; if(!b) return;
       out.mastery[s]=a?{ certified:!!(a.certified||b.certified), certifiedAt:a.certifiedAt||b.certifiedAt, passes:[...new Set([...(a.passes||[]),...(b.passes||[])])] }:b; });
@@ -2911,7 +3003,8 @@
   function startQuiz(items,label,catRef,opts){
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
-    const queue=shuffle(items).map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
+    const ordered = opts.keepOrder ? items.slice() : shuffle(items);  // 復習・試験日モードは並びに意味があるので崩さない
+    const queue=ordered.map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
     session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
     hideAllScreens(); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
@@ -3124,7 +3217,13 @@
           if(row.classList.contains("done")) return;
           row.classList.add("done"); btn.classList.add("sel");
           const iv=gradeCard(parseInt(btn.dataset.g,10));
-          const rc=$("#confResult"); if(rc){ rc.classList.remove("hidden"); rc.textContent=`📅 次の復習の目安：約${iv}日後`; }
+          const rc=$("#confResult");
+          if(rc){
+            rc.classList.remove("hidden");
+            const c=recallCurve(q.id,[30]);   // 復習しなかった場合の30日後
+            rc.textContent = c[0]==null ? `📅 次の復習の目安：約${iv}日後`
+              : `📅 次の復習の目安：約${iv}日後 ・ 放置すると30日後には ${Math.round(c[0]*100)}%`;
+          }
         };
       });
     }
@@ -3146,6 +3245,96 @@
   };
   $("#nextBtn").onclick=()=>{ if(session&&!session.exam&&!session.graded) gradeCard(3); if(session.i+1<session.queue.length){ session.i++; renderQuestion(); } else { if(session.exam) submitExam(); else renderResult(); } };
   $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ if(session&&!session.exam&&!session.graded) gradeCard(3); stopExamTimer(); renderHome(); } };
+  /* ---------- 忘却曲線の可視化（C） ---------- */
+  function renderForgetCurve(){
+    const box=$("#forgetPanel"); if(!box) return;
+    if(!MEM()){ box.innerHTML=`<div class="fcNote">記憶モデルを準備しています…</div>`; return; }
+    const offsets=[]; for(let d=0; d<=90; d++) offsets.push(d);
+    const sum=offsets.map(()=>0); let n=0;
+    DATA.forEach(q=>{
+      if(!progress[q.id]) return;
+      const c=recallCurve(q.id, offsets);
+      if(c[0]==null) return;
+      n++; for(let i=0;i<offsets.length;i++) sum[i]+=c[i];
+    });
+    if(!n){
+      box.innerHTML=`<div class="fcNote">問題を解くと、あなたの記憶がこれからどう薄れていくかをここに表示します。</div>`;
+      return;
+    }
+    const avg=sum.map(v=>v/n);
+    const W=320,H=132,PL=30,PR=10,PT=10,PB=22;
+    const X=d=>PL+(d/90)*(W-PL-PR), Y=r=>PT+(1-r)*(H-PT-PB);
+    const line=offsets.map((d,i)=>`${X(d).toFixed(1)},${Y(avg[i]).toFixed(1)}`).join(" ");
+    const area=`${PL},${Y(0)} ${line} ${X(90)},${Y(0)}`;
+    const gy=(r,label)=>`<line x1="${PL}" y1="${Y(r)}" x2="${W-PR}" y2="${Y(r)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="${PL-5}" y="${Y(r)+3.5}" text-anchor="end" font-size="8" fill="var(--muted)">${label}</text>`;
+    const gx=(d)=>`<text x="${X(d)}" y="${H-7}" text-anchor="middle" font-size="8" fill="var(--muted)">${d===0?"今日":d+"日"}</text>`;
+    const at=d=>Math.round(avg[d]*100);
+    box.innerHTML=`
+      <p class="fcLead">学習済み <b>${n}問</b> について、これから復習しなかった場合に思い出せる確率です。</p>
+      <svg class="fcChart" viewBox="0 0 ${W} ${H}" role="img" aria-label="今後90日間の記憶の推移">
+        <defs><linearGradient id="fcg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--brand)" stop-opacity="0.35"/>
+          <stop offset="1" stop-color="var(--brand)" stop-opacity="0"/></linearGradient></defs>
+        ${gy(0.9,"90%")}${gy(0.5,"50%")}
+        <polygon points="${area}" fill="url(#fcg)"/>
+        <polyline points="${line}" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linejoin="round"/>
+        ${gx(0)}${gx(30)}${gx(60)}${gx(90)}
+      </svg>
+      <div class="fcStats">
+        <div class="fcStat"><b>${at(0)}%</b><span>今日</span></div>
+        <div class="fcStat"><b>${at(7)}%</b><span>7日後</span></div>
+        <div class="fcStat"><b>${at(30)}%</b><span>30日後</span></div>
+        <div class="fcStat"><b>${at(90)}%</b><span>90日後</span></div>
+      </div>
+      <div class="fcNote">エビングハウスの忘却曲線どおり、復習しないと記憶は薄れます。復習すると曲線が上に戻り、傾きがゆるやかになります（＝忘れにくくなります）。</div>`;
+  }
+
+  /* ---------- 試験日モード（D） ---------- */
+  function renderExamDay(){
+    const card=$("#examDayCard"); if(!card) return;
+    const left=examDaysLeft(), foot=$("#examDayFoot");
+    if(left==null){
+      $("#examDaySub").textContent="試験日を決めると、点が伸びる順に出題します";
+      $("#examDayCount").textContent="–"; $("#examDayUnit").textContent="設定";
+      card.classList.add("dueEmpty"); foot.classList.add("hidden"); return;
+    }
+    card.classList.remove("dueEmpty"); foot.classList.remove("hidden");
+    $("#examDayCount").textContent=Math.max(0,left);
+    $("#examDayUnit").textContent=left<0?"日経過":"日後";
+    const d=meta.examDate.slice(5).replace("-","/");
+    $("#examDaySub").textContent = left<0 ? `試験日（${d}）は過ぎました。変更できます`
+      : left===0 ? `今日が試験日（${d}）。仕上げに出題します`
+      : `${d}の試験に向けて、点が伸びる順に出題します`;
+  }
+  function openExamDateModal(){
+    const inp=$("#examDateInput");
+    const d=new Date(); d.setDate(d.getDate()+14);
+    inp.value = meta.examDate || dstr(d);
+    inp.min = todayStr();
+    $("#examDateModal").classList.remove("hidden");
+  }
+  function closeExamDateModal(){ $("#examDateModal").classList.add("hidden"); }
+  $("#examDateClose").onclick=closeExamDateModal;
+  $("#examDateModal").onclick=(e)=>{ if(e.target.id==="examDateModal") closeExamDateModal(); };
+  $("#examDateSave").onclick=()=>{
+    const v=$("#examDateInput").value;
+    if(!v){ toast("試験日を選んでください"); return; }
+    meta.examDate=v; saveMeta(); closeExamDateModal(); renderExamDay();
+    toast(`🎯 試験日を ${v.slice(5).replace("-","/")} に設定しました`);
+    startExamDaySession();
+  };
+  $("#examDateChange").onclick=(e)=>{ e.stopPropagation(); openExamDateModal(); };
+  $("#examDateClear").onclick=(e)=>{ e.stopPropagation();
+    if(!confirm("試験日モードを解除しますか？")) return;
+    meta.examDate=null; saveMeta(); renderExamDay(); toast("試験日を解除しました"); };
+  function startExamDaySession(){
+    if(examDateMs()==null){ openExamDateModal(); return; }
+    if(!MEM()){ toast("記憶モデルの準備中です。少し待ってからお試しください"); return; }
+    openCountModal({items:DATA, label:"試験日モード", key:"__examday__"}, "examday");
+  }
+  $("#examDayCard").onclick=startExamDaySession;
+
   $("#examCard").onclick=()=>{ if(confirm(`本番モードを開始します。\n・分野バランスの${EXAM_N}問\n・制限 ${EXAM_MIN}分\n・1問${EXAM_POINT}点、${EXAM_N*EXAM_POINT}点満点\n・途中で正誤や解説は出ません\nよろしいですか？`)) startExam(); };
 
   /* ビュー（各画面）の戻るボタン */

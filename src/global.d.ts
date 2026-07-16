@@ -17,6 +17,11 @@ declare global {
       openCardManager: () => Promise<void>;
       syncNow: () => Promise<SyncStatus>;
       undoLastReview: (cardId: string) => Promise<StoredSchedule | null>;
+      memory: {
+        retrievability: (progress: Record<string, unknown>, atMs?: number) => number | null;
+        curve: (progress: Record<string, unknown>, dayOffsets: number[]) => (number | null)[];
+        examGain: (progress: Record<string, unknown>, examMs: number) => number;
+      };
       leaderboard: {
         enabled: () => boolean;
         hasJoined: () => boolean;

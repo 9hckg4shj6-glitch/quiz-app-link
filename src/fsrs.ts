@@ -151,6 +151,58 @@ export async function undoLastReview(cardId: string): Promise<StoredSchedule | n
   return rebuildScheduleFromEvents(cardId);
 }
 
+/* ---------- 忘却曲線（可視化・優先順位付け） ----------
+   FSRSは各カードの stability（＝R が90%まで下がるまでの日数）を持っている。
+   ここから任意の日時の想起確率 R を引けるが、これまで保存するだけで使っていなかった。 */
+
+// 一度も復習していないカードは忘却曲線を描けないので null を返す
+function reviewedCard(progress: LegacyProgress, at: Date): FsrsCard | null {
+  if (!progress) return null;
+  if (!progress.fsrs && !progress.reps && !progress.lastReviewed) return null;
+  const card = legacyToFsrs(progress, at);
+  if (card.state === State.New || !card.last_review) return null;
+  return card;
+}
+
+// 指定時点の想起確率（0〜1）。未学習は null。
+export function retrievabilityAt(progress: LegacyProgress, at: Date = new Date()): number | null {
+  const card = reviewedCard(progress, at);
+  if (!card) return null;
+  return scheduler.get_retrievability(card, at, false) as number;
+}
+
+// 何日後にRがどうなるかをまとめて返す（グラフ用。カード生成を1回で済ませる）
+export function retrievabilityCurve(
+  progress: LegacyProgress,
+  dayOffsets: number[],
+  from: Date = new Date(),
+): (number | null)[] {
+  const card = reviewedCard(progress, from);
+  if (!card) return dayOffsets.map(() => null);
+  return dayOffsets.map(
+    (d) => scheduler.get_retrievability(card, new Date(from.getTime() + d * 86_400_000), false) as number,
+  );
+}
+
+// 今日この問題を復習すると、試験日の想起確率が何ポイント上がるか（限界効用）。
+// 未学習の問題は「今は0%、学べばR」なので伸びがそのままRになる。
+export function examGain(progress: LegacyProgress, examAt: Date, now: Date = new Date()): number {
+  const card = reviewedCard(progress, now);
+  if (!card) {
+    const learned = scheduler.next(createEmptyCard(now), now, Rating.Good as Grade).card;
+    return scheduler.get_retrievability(learned, examAt, false) as number;
+  }
+  // 端末の時計ずれ等で最終復習が未来だと next() が例外を投げるため、その場合は対象外にする
+  if (card.last_review && card.last_review.getTime() > now.getTime()) return 0;
+  const before = scheduler.get_retrievability(card, examAt, false) as number;
+  const after = scheduler.get_retrievability(
+    scheduler.next(card, now, Rating.Good as Grade).card,
+    examAt,
+    false,
+  ) as number;
+  return after - before;
+}
+
 export const ratingLabels: Record<ReviewRating, string> = {
   [Rating.Again]: "もう一度",
   [Rating.Hard]: "難しい",

@@ -3,7 +3,7 @@ import { registerSW } from "virtual:pwa-register";
 import { installCardManager, openCardManager } from "./card-manager";
 import { migrateLegacyStorage, mirrorCustomCardsToLegacy } from "./migration";
 import { mirrorSchedulesToLegacy, queueLegacyStateSave, reconcileLegacyAfterSync } from "./legacy-bridge";
-import { scheduleReview, undoLastReview } from "./fsrs";
+import { examGain, retrievabilityAt, retrievabilityCurve, scheduleReview, undoLastReview } from "./fsrs";
 import { startAutomaticSync, syncNow } from "./sync";
 import {
   fetchLeaderboard,
@@ -67,6 +67,12 @@ window.STUDY_CORE = {
   openCardManager,
   syncNow,
   undoLastReview,
+  memory: {
+    retrievability: (progress, atMs) =>
+      retrievabilityAt(progress as LegacyProgress, atMs == null ? new Date() : new Date(atMs)),
+    curve: (progress, dayOffsets) => retrievabilityCurve(progress as LegacyProgress, dayOffsets),
+    examGain: (progress, examMs) => examGain(progress as LegacyProgress, new Date(examMs)),
+  },
   leaderboard: {
     enabled: leaderboardEnabled,
     hasJoined,
