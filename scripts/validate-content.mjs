@@ -33,7 +33,7 @@ for (const [index, term] of terms.entries()) {
   if (term.image && !fs.existsSync(path.join("public", term.image))) errors.push(`用語カード ${id}: 画像がありません (${term.image})`);
 }
 
-if (questions.length !== 886) errors.push(`問題数が想定と異なります: ${questions.length} / 886`);
+if (questions.length !== 954) errors.push(`問題数が想定と異なります: ${questions.length} / 954`);
 if (terms.length !== 558) errors.push(`用語カード数が想定と異なります: ${terms.length} / 558`);
 if (errors.length) {
   console.error(errors.slice(0, 50).join("\n"));
