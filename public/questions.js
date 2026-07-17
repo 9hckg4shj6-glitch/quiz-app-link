@@ -2883,7 +2883,7 @@ window.QUIZ_DATA = [
     explanation:"正解。Proは非必須アミノ酸に分類され、体内で合成可能である。",
     choiceNotes:["Lysは必須アミノ酸である。", "Leuは必須アミノ酸で、BCAAの一つである。", "Metは必須アミノ酸である。", "Pheは必須アミノ酸である。", "正解。Proは非必須アミノ酸に分類され、体内で合成可能である。"] },
 
-  { id:"2025-008", year:"2025年 前半", field:"アミノ酸・タンパク質",
+  { id:"2025-008", image:"images/F3.webp", imageAlt:"アミノ酸側鎖 ㋐-CH2OH(Ser)・㋑-CH2SH(Cys)・㋒-CH2CH2SCH3(Met)・㋓-CH2CONH2(Asn)・㋔-CH2CH2CONH2(Gln)", year:"2025年 前半", field:"アミノ酸・タンパク質",
     question:"図はアミノ酸の側鎖を示す。システインの側鎖はどれか。",
     choices:["-CH2OH", "-CH2SH", "-CH2CH2SCH3", "-CH2CONH2", "-CH2CH2CONH2"],
     answer:1,
