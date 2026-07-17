@@ -667,6 +667,16 @@
   .bkAdvanced summary:hover{color:var(--brand)}
   .bkAdvanced[open] summary{margin-bottom:10px}
 
+  /* ===== 新着バッジ（ホーム） ===== */
+  .hubBtn.hasNew{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+  .hubIcon{position:relative}
+  .hubDot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;
+    background:var(--bad);border:2px solid var(--card);animation:hubPulse 2s ease-in-out infinite}
+  @keyframes hubPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.18);opacity:.75}}
+  .hubBadge{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:900;line-height:1;
+    padding:3px 7px;border-radius:999px;background:var(--bad);color:#fff;vertical-align:middle}
+  .cmNew{color:var(--bad);font-weight:900}
+
   /* ===== コミュニティ（掲示板） ===== */
   .cmNewBtn{margin-bottom:14px}
   .cmListPanel{padding:6px 6px 8px}
@@ -1839,7 +1849,9 @@
     stopExamTimer(); closeFcLightbox();
     hideAllScreens();
     $("#home").classList.remove("hidden");
+    syncCmUnread();
     refreshData(); renderHub();
+    refreshCmUnread(false);
     window.scrollTo(0,0);
   }
   function openView(id){
@@ -1862,16 +1874,17 @@
       {icon:"📚",name:"問題演習",sub:"年度別・予想・分野別・本番",go:()=>openView("practiceView")},
       {icon:"📖",name:"問題一覧",sub:"年度別に全問題を閲覧",go:openQBrowse},
       {icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")},
-      {icon:"💬",name:"コミュニティ",sub:"掲示板で質問・情報交換",go:()=>openView("communityView")},
+      {icon:"💬",name:"コミュニティ",sub:cmUnread>0?`新しい書き込みが ${cmUnread} 件あります`:"掲示板で質問・情報交換",
+        badge:cmUnread>0?(cmUnread>99?"99+":String(cmUnread)):null, go:()=>openView("communityView")},
       {icon:"🔥",name:"復習・苦手",sub:`苦手 ${weakN} ・ 見直し ${bmN}`,go:()=>openView("reviewView")},
       {icon:"📊",name:"学習状況",sub:"進捗・アクティビティ・実績",go:()=>openView("statsView")},
       {icon:"🏆",name:"ランキング",sub:"解いた問題数でみんなと競う",go:()=>openView("rankView")},
       {icon:"🔍",name:"検索",sub:"キーワードで問題を探す",go:openSearch},
       {icon:"⚙️",name:"設定・データ",sub:"更新履歴・バックアップ",go:()=>openView("moreView")}
     ];
-    grid.innerHTML=items.map((it,i)=>`<button type="button" class="hubBtn" data-i="${i}">
-      <span class="hubIcon">${it.icon}</span>
-      <span class="hubBody"><span class="hubName">${esc(it.name)}</span><span class="hubSub">${esc(it.sub)}</span></span>
+    grid.innerHTML=items.map((it,i)=>`<button type="button" class="hubBtn${it.badge?' hasNew':''}" data-i="${i}">
+      <span class="hubIcon">${it.icon}${it.badge?`<span class="hubDot"></span>`:""}</span>
+      <span class="hubBody"><span class="hubName">${esc(it.name)}${it.badge?`<span class="hubBadge">${esc(it.badge)}</span>`:""}</span><span class="hubSub">${esc(it.sub)}</span></span>
       <span class="hubChev">›</span></button>`).join("");
     grid.querySelectorAll(".hubBtn").forEach(el=>{ el.onclick=items[+el.dataset.i].go; });
   }
@@ -1964,7 +1977,20 @@
 
   /* ---------- コミュニティ（掲示板・全公開） ---------- */
   function CM(){ return (window.STUDY_CORE && window.STUDY_CORE.community) || null; }
-  const cmState={boardId:null, boardTitle:"", creating:false, postSig:null, boardSig:null, scrollToEnd:false};
+  // ホームのバッジ用。描画は同期で行いたいので、値を持っておいて通信は裏で回す。
+  let cmUnread=0;
+  function syncCmUnread(){ const cm=CM(); cmUnread = (cm&&cm.enabled()) ? cm.unreadCount() : 0; }
+  function cmNewFor(b){ const cm=CM(); if(!cm) return 0; return Math.max(0, b.postCount - cm.seenCountFor(b.id)); }
+  let lastUnreadFetch=0;
+  async function refreshCmUnread(force){
+    const cm=CM(); if(!cm||!cm.enabled()) return;
+    const now=Date.now(); if(!force && now-lastUnreadFetch<120000) return;  // 2分に1回まで
+    lastUnreadFetch=now;
+    try{ await cm.refreshUnread(); }catch(e){}
+    const before=cmUnread; syncCmUnread();
+    if(before!==cmUnread && !$("#home").classList.contains("hidden")) renderHub();
+  }
+  const cmState={boardId:null, boardTitle:"", boardCount:0, creating:false, postSig:null, boardSig:null, scrollToEnd:false};
   let cmTimer=null;
   function startCmTimer(){ stopCmTimer(); cmTimer=setInterval(()=>{
     const v=$("#communityView"); if(!v||v.classList.contains("hidden")) return;
@@ -2053,11 +2079,11 @@
     cmState.boardSig=bsig;
     const scrollY=window.scrollY;
     const items = boards.length ? boards.map(b=>`<div class="cmBoardRow">
-        <button type="button" class="cmBoard" data-id="${esc(b.id)}" data-title="${esc(b.title)}">
+        <button type="button" class="cmBoard" data-id="${esc(b.id)}" data-title="${esc(b.title)}" data-count="${b.postCount}">
           <span class="cmBoardBody">
             <span class="cmBoardTitle">${esc(b.title)}</span>
             ${b.description?`<span class="cmBoardDesc">${esc(b.description)}</span>`:""}
-            <span class="cmBoardMeta">${esc(b.author)} ・ ${cmTime(b.lastPostAt)}${b.isMine?" ・ 自分":""}</span>
+            <span class="cmBoardMeta">${esc(b.author)} ・ ${cmTime(b.lastPostAt)}${b.isMine?" ・ 自分":""}${cmNewFor(b)>0?` ・ <b class="cmNew">新着${cmNewFor(b)}</b>`:""}</span>
           </span>
           <span class="cmBoardCount">${b.postCount}<small>件</small></span>
         </button>
@@ -2081,6 +2107,7 @@
     $("#cmRefresh").onclick=()=>renderCommunity();
     box.querySelectorAll(".cmBoard").forEach(el=>{ el.onclick=()=>{
       cmState.boardId=el.dataset.id; cmState.boardTitle=el.dataset.title; cmState.postSig=null;
+      cmState.boardCount=Number(el.dataset.count||0);
       renderCommunity(); window.scrollTo(0,0); }; });
     if(scrollY) window.scrollTo(0, scrollY);
     box.querySelectorAll("[data-bdel]").forEach(el=>{ el.onclick=async()=>{
@@ -2114,6 +2141,9 @@
     try{ posts=await cm.listPosts(cmState.boardId); }
     catch(e){ cmError(e, "書き込みを取得できませんでした。オンライン状態を確認してください。"); return; }
     const admin=cm.isAdminMode();
+    // 開いて読んだので既読にする（ホームの新着バッジが減る）
+    cm.markBoardSeen(cmState.boardId, Math.max(posts.length, cmState.boardCount||0));
+    syncCmUnread();
     // 内容が変わっていなければ作り直さない（読んでいる最中のちらつき・スクロール飛びを防ぐ）
     const sig=posts.map(p=>p.id).join(",")+"|"+admin+"|"+cmState.boardId;
     if(sig===cmState.postSig && box.querySelector(".cmPosts") && !cmState.scrollToEnd) return;
@@ -3351,8 +3381,8 @@
   /* コミュニティは階層があるため、掲示板を開いていれば一覧へ戻る */
   $("#cmBack").onclick=()=>{
     if(cmState.creating){ cmState.creating=false; renderCommunity(); return; }
-    if(cmState.boardId){ cmState.boardId=null; renderCommunity(); window.scrollTo(0,0); return; }
-    renderHome();
+    if(cmState.boardId){ cmState.boardId=null; cmState.postSig=null; renderCommunity(); window.scrollTo(0,0); return; }
+    syncCmUnread(); renderHome();
   };
 
   /* 問題検索 */
@@ -3652,9 +3682,10 @@
     // STUDY_CORE は module 読み込み後に生えるため、少し待ってから試す
     const kick=()=>{ const ds=DS(); if(ds&&ds.enabled()&&ds.isLinked()) doSync(true).then(()=>renderHome()); };
     setTimeout(kick, 1500);
-    window.addEventListener("online", ()=>{ lastAutoSync=0; kick(); });
+    setTimeout(()=>{ syncCmUnread(); refreshCmUnread(true); }, 1800);   // コミュニティの新着をホームに出す
+    window.addEventListener("online", ()=>{ lastAutoSync=0; kick(); refreshCmUnread(true); });
     // 別端末で進めた分を、戻ってきたときに取り込む
-    document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) maybeAutoSync(); });
+    document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ maybeAutoSync(); refreshCmUnread(false); } });
   })();
 
   /* ---------- ショートカット（?action=）起動 ---------- */

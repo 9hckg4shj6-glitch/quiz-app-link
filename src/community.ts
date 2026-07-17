@@ -75,6 +75,83 @@ export function hasName(): boolean {
   return getName().length > 0;
 }
 
+/* ---------- 新着の検出 ----------
+   掲示板ごとに「読んだ時点の投稿数」を控えておき、現在の投稿数との差を新着とする。
+   list_boards が post_count を返すので、専用のRPCは要らない。 */
+
+const SEEN_KEY = "cm_seen_v1"; // {boardId: 読んだ時点の投稿数}
+const LAST_KEY = "cm_last_v1"; // {boardId: 直近に取得した投稿数}
+
+function readMap(key: string): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(key);
+    const obj = raw ? (JSON.parse(raw) as unknown) : null;
+    return obj && typeof obj === "object" ? (obj as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeMap(key: string, value: Record<string, number>): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* noop */
+  }
+}
+
+// ホームで即座に表示するための同期版（通信しない）
+export function unreadCount(): number {
+  const last = readMap(LAST_KEY);
+  const seen = readMap(SEEN_KEY);
+  let n = 0;
+  for (const [id, count] of Object.entries(last)) n += Math.max(0, count - (seen[id] ?? 0));
+  return n;
+}
+
+// 通信して新着数を更新する。掲示板一覧を取得するだけなので専用RPCは不要。
+export async function refreshUnread(): Promise<number> {
+  if (!supabase) return 0;
+  if (typeof navigator !== "undefined" && !navigator.onLine) return unreadCount();
+  try {
+    const boards = await listBoards();
+    const last: Record<string, number> = {};
+    for (const b of boards) last[b.id] = b.postCount;
+    writeMap(LAST_KEY, last);
+    // 削除された掲示板の既読情報は捨てる（localStorageの肥大化を防ぐ）
+    const seen = readMap(SEEN_KEY);
+    const pruned: Record<string, number> = {};
+    for (const id of Object.keys(last)) if (seen[id] != null) pruned[id] = seen[id];
+    writeMap(SEEN_KEY, pruned);
+  } catch {
+    /* オフライン等は前回値のまま */
+  }
+  return unreadCount();
+}
+
+// 掲示板を開いて読んだ時点で既読にする
+export function markBoardSeen(boardId: string, postCount: number): void {
+  const seen = readMap(SEEN_KEY);
+  seen[boardId] = Math.max(seen[boardId] ?? 0, postCount);
+  writeMap(SEEN_KEY, seen);
+  // 実際の投稿数が一覧の値より新しいこともあるので、最新側にも反映しておく
+  const last = readMap(LAST_KEY);
+  if ((last[boardId] ?? 0) < postCount) {
+    last[boardId] = postCount;
+    writeMap(LAST_KEY, last);
+  }
+}
+
+// その掲示板で既読になっている投稿数（一覧の「新着N」表示に使う）
+export function seenCountFor(boardId: string): number {
+  return readMap(SEEN_KEY)[boardId] ?? 0;
+}
+
+// 一覧に出ている分をまとめて既読にする
+export function markAllSeen(): void {
+  writeMap(SEEN_KEY, readMap(LAST_KEY));
+}
+
 /* ---------- 管理者 ---------- */
 
 export function getAdminToken(): string {

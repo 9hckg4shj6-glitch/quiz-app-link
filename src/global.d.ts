@@ -49,6 +49,11 @@ declare global {
         disableAdmin: () => void;
         adminDeletePost: (postId: string) => Promise<void>;
         adminDeleteBoard: (boardId: string) => Promise<void>;
+        unreadCount: () => number;
+        refreshUnread: () => Promise<number>;
+        markBoardSeen: (boardId: string, postCount: number) => void;
+        markAllSeen: () => void;
+        seenCountFor: (boardId: string) => number;
       };
       datasync: {
         enabled: () => boolean;
