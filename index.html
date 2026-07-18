@@ -185,7 +185,15 @@
   .qbtn .qs{font-size:10.5px;color:var(--muted)}
   .qbtn.q-weak{border-color:rgba(255,93,108,.5)} .qbtn.q-weak .qi{filter:none}
   .qbtn.q-bookmark{border-color:rgba(255,209,102,.5)}
-  .qbtn.q-unmastered{border-color:rgba(47,210,122,.5)}
+  .countScope{display:flex;align-items:center;gap:11px;width:100%;text-align:left;font-family:inherit;cursor:pointer;
+    padding:11px 13px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);color:var(--text);margin-bottom:12px;transition:.15s}
+  .countScope:hover{border-color:var(--good)}
+  .countScope .csDot{flex:0 0 auto;width:20px;height:20px;border-radius:6px;border:2px solid var(--line);background:var(--card);position:relative;transition:.15s}
+  .countScope.on{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--card2))}
+  .countScope.on .csDot{background:var(--good);border-color:var(--good)}
+  .countScope.on .csDot::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900}
+  .csLabel{font-size:13.5px;font-weight:800;line-height:1.35}
+  .csLabel small{font-weight:600;color:var(--muted);font-size:11.5px}
   @media(max-width:460px){ .quick{grid-template-columns:1fr} .qbtn{flex-direction:row;justify-content:center;gap:10px} .qbtn .qs{margin-left:2px} }
   /* ===== 出題数モーダル ===== */
   .countModalBackdrop{position:fixed;inset:0;z-index:210;background:rgba(10,14,24,.55);
@@ -1001,6 +1009,10 @@
     <div class="cmKicker" id="countKicker">演習</div>
     <h3 id="countTitle">範囲</h3>
     <p class="cmSub">この範囲は <b id="countTotal">0</b> 問。<br>何問解きますか？</p>
+    <button type="button" class="countScope hidden" id="countScope" aria-pressed="false">
+      <span class="csDot"></span>
+      <span class="csLabel">未定着の問題だけ出す<small id="countScopeSub"></small></span>
+    </button>
     <div class="countChips" id="countChips">
       <button type="button" class="countChip" data-n="10">10問</button>
       <button type="button" class="countChip" data-n="20">20問</button>
@@ -1632,21 +1644,38 @@
   function saveLastCount(v){ try{ localStorage.setItem(LIMIT_KEY, String(v)); }catch(e){} }
   function clampCount(v,total){ v=Math.floor(v); if(isNaN(v)||v<1) v=1; if(v>total) v=total; return v; }
   function openCountModal(g, mode){
-    const total=g.items.length;
-    pendingSel={items:g.items,label:g.label,mode,key:g.key,total};
-    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="unmastered"?"未定着問題":mode==="playlist"?"プレイリスト":"演習");
+    pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN, unmasteredOnly:false};
+    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
-    $("#countTotal").textContent=total;
-    const last=loadLastCount();
-    const inp=$("#countInput"); inp.max=total;
-    // 既定は前回の出題数。未指定なら g.defaultN（試験日モードのようにプールが巨大な場合）か全問。
-    inp.value=(last>0?Math.min(last,total):(g.defaultN?Math.min(g.defaultN,total):total));
-    $("#countChips").querySelectorAll(".countChip").forEach(c=>{
-      const num=(c.dataset.n==="all")?total:parseInt(c.dataset.n,10);
-      c.classList.toggle("disabled", c.dataset.n!=="all" && num>total);
-    });
+    // 年度別・分野別・予想問題では「その範囲の未定着だけ」を選べる
+    const scopeable=(mode==="year"||mode==="prediction"||mode==="field");
+    $("#countScope").classList.toggle("hidden", !scopeable);
+    updateCountScope();
     $("#countModal").classList.remove("hidden");
-    setTimeout(()=>{ inp.focus(); inp.select&&inp.select(); },60);
+    setTimeout(()=>{ const inp=$("#countInput"); inp.focus(); inp.select&&inp.select(); },60);
+  }
+  // トグルの状態に応じて、出題プール・件数・チップ・入力欄を更新する
+  function updateCountScope(){
+    if(!pendingSel) return;
+    const base=pendingSel.baseItems;
+    const un=base.filter(q=>!cardMastered(q.id));
+    const on=pendingSel.unmasteredOnly && un.length>0;
+    pendingSel.items = on ? un : base;
+    pendingSel.total = pendingSel.items.length;
+    const btn=$("#countScope");
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-pressed", on?"true":"false");
+    const sub=$("#countScopeSub");
+    if(sub) sub.textContent = un.length ? `　未定着 ${un.length} / ${base.length}問` : `　この範囲はすべて定着済み`;
+    $("#countTotal").textContent=pendingSel.total;
+    const inp=$("#countInput"); inp.max=pendingSel.total;
+    const last=loadLastCount();
+    const want=(last>0?Math.min(last,pendingSel.total):(pendingSel.defaultN?Math.min(pendingSel.defaultN,pendingSel.total):pendingSel.total));
+    inp.value = pendingSel.total>0 ? Math.max(1,want) : 0;
+    $("#countChips").querySelectorAll(".countChip").forEach(c=>{
+      const num=(c.dataset.n==="all")?pendingSel.total:parseInt(c.dataset.n,10);
+      c.classList.toggle("disabled", c.dataset.n!=="all" && num>pendingSel.total);
+    });
   }
   function closeCountModal(){ $("#countModal").classList.add("hidden"); pendingSel=null; }
   function startFromCountModal(){
@@ -1658,10 +1687,10 @@
     // ランダム抽出だと、20問だけ解くときに危険な問題を取りこぼす。
     const prioritized = pendingSel.mode==="due" ? sortByUrgency(pendingSel.items)
                       : pendingSel.mode==="examday" ? sortByExamGain(pendingSel.items)
-                      : pendingSel.mode==="unmastered" ? sortByUnmastered(pendingSel.items)
+                      : pendingSel.unmasteredOnly ? sortByUnmastered(pendingSel.items)
                       : shuffle(pendingSel.items);
     const items=prioritized.slice(0,n);
-    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.mode==="unmastered";
+    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.unmasteredOnly;
     const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key};
     closeCountModal();
     startQuiz(items,label,ref,{keepOrder});
@@ -2302,8 +2331,7 @@
       <div class="kpi k-acc"><div class="v">${o.acc}%</div><div class="k">通算正答率</div></div>
       <div class="kpi k-weak"><div class="v">${o.weak}</div><div class="k">苦手</div></div>`;
   }
-  // 未定着＝定着認定(reps>=2 または interval>=21日)に達していない問題
-  function unmasteredItems(){ return DATA.filter(q=>!cardMastered(q.id)); }
+  // 未定着＝定着認定(reps>=2 または interval>=21日)に達していない問題。
   // 取り組んだ回数の少ない順（未着手→数回）で並べ、同点は毎回ランダム。
   // これで繰り返しても同じ問題ばかりでなく、手薄なものから回せる。
   function sortByUnmastered(items){
@@ -2321,11 +2349,9 @@
     $("#quick").innerHTML=`
       ${resume}
       <button class="qbtn" id="qRandom"><span class="qi">🎲</span><span class="qn">ランダム${Math.min(RANDOM_N,DATA.length)}問</span><span class="qs">腕試し</span></button>
-      <button class="qbtn q-unmastered" id="qUnmastered"><span class="qi">🌱</span><span class="qn">未定着問題</span><span class="qs">${unmasteredItems().length}問</span></button>
       <button class="qbtn q-weak" id="qWeak"><span class="qi">🔥</span><span class="qn">苦手を復習</span><span class="qs">${weakItems.length}問</span></button>
       <button class="qbtn q-bookmark" id="qBookmark"><span class="qi">🔖</span><span class="qn">見直したい問題</span><span class="qs">${bookmarkItems.length}問</span></button>`;
     $("#qRandom").onclick=()=>{ if(!DATA.length){ toast("問題データがありません"); return; } startQuiz(shuffle(DATA).slice(0,RANDOM_N),"ランダム演習"); };
-    $("#qUnmastered").onclick=()=>{ const items=unmasteredItems(); if(!items.length){ toast("🎉 すべての問題が定着しています！"); return; } openCountModal({items,label:"未定着問題",key:"__unmastered__",defaultN:RANDOM_N},"unmastered"); };
     $("#qWeak").onclick=()=>{ if(!weakItems.length){ toast("🎉 いまは苦手問題がありません"); return;} startQuiz(weakItems,"苦手問題"); };
     $("#qBookmark").onclick=()=>{ if(!bookmarkItems.length){ toast("🔖 見直したい問題としてマークしたものはまだありません"); return;} startQuiz(bookmarkItems,"見直したい問題"); };
     $("#qResume").onclick=()=>{
@@ -3661,6 +3687,13 @@
   $("#countClose").onclick=closeCountModal;
   $("#countModal").onclick=(e)=>{ if(e.target.id==="countModal") closeCountModal(); };
   $("#countStart").onclick=startFromCountModal;
+  $("#countScope").onclick=()=>{
+    if(!pendingSel) return;
+    const un=pendingSel.baseItems.filter(q=>!cardMastered(q.id));
+    if(!un.length){ toast("🎉 この範囲はすべて定着しています"); return; }
+    pendingSel.unmasteredOnly=!pendingSel.unmasteredOnly;
+    updateCountScope();
+  };
   $("#countStartFlash").onclick=()=>{ if(!pendingSel) return; const total=pendingSel.total; const n=clampCount(parseInt($("#countInput").value,10),total); saveLastCount(n===total?0:n); const items=shuffle(pendingSel.items).slice(0,n).map(questionToCard); const lbl=pendingSel.label; closeCountModal(); startFlash(items, lbl+"（カード）"); };
   $("#countInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); startFromCountModal(); } };
   $("#countMinus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)-1, pendingSel?pendingSel.total:1); };
