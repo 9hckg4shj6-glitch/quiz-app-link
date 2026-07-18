@@ -185,6 +185,7 @@
   .qbtn .qs{font-size:10.5px;color:var(--muted)}
   .qbtn.q-weak{border-color:rgba(255,93,108,.5)} .qbtn.q-weak .qi{filter:none}
   .qbtn.q-bookmark{border-color:rgba(255,209,102,.5)}
+  .qbtn.q-unmastered{border-color:rgba(47,210,122,.5)}
   @media(max-width:460px){ .quick{grid-template-columns:1fr} .qbtn{flex-direction:row;justify-content:center;gap:10px} .qbtn .qs{margin-left:2px} }
   /* ===== 出題数モーダル ===== */
   .countModalBackdrop{position:fixed;inset:0;z-index:210;background:rgba(10,14,24,.55);
@@ -1633,7 +1634,7 @@
   function openCountModal(g, mode){
     const total=g.items.length;
     pendingSel={items:g.items,label:g.label,mode,key:g.key,total};
-    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
+    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="unmastered"?"未定着問題":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
     $("#countTotal").textContent=total;
     const last=loadLastCount();
@@ -1657,9 +1658,10 @@
     // ランダム抽出だと、20問だけ解くときに危険な問題を取りこぼす。
     const prioritized = pendingSel.mode==="due" ? sortByUrgency(pendingSel.items)
                       : pendingSel.mode==="examday" ? sortByExamGain(pendingSel.items)
+                      : pendingSel.mode==="unmastered" ? sortByUnmastered(pendingSel.items)
                       : shuffle(pendingSel.items);
     const items=prioritized.slice(0,n);
-    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday";
+    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.mode==="unmastered";
     const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key};
     closeCountModal();
     startQuiz(items,label,ref,{keepOrder});
@@ -2300,6 +2302,15 @@
       <div class="kpi k-acc"><div class="v">${o.acc}%</div><div class="k">通算正答率</div></div>
       <div class="kpi k-weak"><div class="v">${o.weak}</div><div class="k">苦手</div></div>`;
   }
+  // 未定着＝定着認定(reps>=2 または interval>=21日)に達していない問題
+  function unmasteredItems(){ return DATA.filter(q=>!cardMastered(q.id)); }
+  // 取り組んだ回数の少ない順（未着手→数回）で並べ、同点は毎回ランダム。
+  // これで繰り返しても同じ問題ばかりでなく、手薄なものから回せる。
+  function sortByUnmastered(items){
+    return items.map(q=>{ const r=progress[q.id]||{}; return {q, reps:r.reps||0, seen:r.seen||0, k:Math.random()}; })
+      .sort((a,b)=> a.reps-b.reps || a.seen-b.seen || a.k-b.k)
+      .map(x=>x.q);
+  }
   function renderQuick(){
     const weakItems=DATA.filter(q=>syncWeak(rec(q.id)));
     const bookmarkItems=DATA.filter(q=>isBookmarked(q.id));
@@ -2310,9 +2321,11 @@
     $("#quick").innerHTML=`
       ${resume}
       <button class="qbtn" id="qRandom"><span class="qi">🎲</span><span class="qn">ランダム${Math.min(RANDOM_N,DATA.length)}問</span><span class="qs">腕試し</span></button>
+      <button class="qbtn q-unmastered" id="qUnmastered"><span class="qi">🌱</span><span class="qn">未定着問題</span><span class="qs">${unmasteredItems().length}問</span></button>
       <button class="qbtn q-weak" id="qWeak"><span class="qi">🔥</span><span class="qn">苦手を復習</span><span class="qs">${weakItems.length}問</span></button>
       <button class="qbtn q-bookmark" id="qBookmark"><span class="qi">🔖</span><span class="qn">見直したい問題</span><span class="qs">${bookmarkItems.length}問</span></button>`;
     $("#qRandom").onclick=()=>{ if(!DATA.length){ toast("問題データがありません"); return; } startQuiz(shuffle(DATA).slice(0,RANDOM_N),"ランダム演習"); };
+    $("#qUnmastered").onclick=()=>{ const items=unmasteredItems(); if(!items.length){ toast("🎉 すべての問題が定着しています！"); return; } openCountModal({items,label:"未定着問題",key:"__unmastered__",defaultN:RANDOM_N},"unmastered"); };
     $("#qWeak").onclick=()=>{ if(!weakItems.length){ toast("🎉 いまは苦手問題がありません"); return;} startQuiz(weakItems,"苦手問題"); };
     $("#qBookmark").onclick=()=>{ if(!bookmarkItems.length){ toast("🔖 見直したい問題としてマークしたものはまだありません"); return;} startQuiz(bookmarkItems,"見直したい問題"); };
     $("#qResume").onclick=()=>{
