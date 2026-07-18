@@ -1982,7 +1982,8 @@
 
   /* ---------- 公開ランキング（解いた問題数） ---------- */
   function LB(){ return (window.STUDY_CORE && window.STUDY_CORE.leaderboard) || null; }
-  function solvedCount(){ let n=0; DATA.forEach(q=>{ const r=progress[q.id]; if(r&&r.seen>0) n++; }); return n; }
+  // 「やった問題の数」＝延べ解答回数。同じ問題を複数回解いた分もすべて数える（seenの合計）。
+  function solvedCount(){ let n=0; DATA.forEach(q=>{ const r=progress[q.id]; if(r&&r.seen>0) n+=r.seen; }); return n; }
   function medal(rank){ return rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":String(rank); }
   function maybePublishRank(force){ const lb=LB(); if(lb&&lb.hasJoined()){ try{ lb.publish(solvedCount(), !!force); }catch(e){} } }
   let rankTimer=null;
@@ -2015,7 +2016,7 @@
     const meCard = (joined && view.myRank) ? `<div class="rankMe">
         <div class="rankMeRank">${view.myRank}<small>位</small></div>
         <div class="rankMeBody"><div class="rankMeName">${esc(lb.savedName())} <span class="youTag">あなた</span></div>
-        <div class="rankMeSolved">${view.mySolved!=null?view.mySolved:solved} 問を解いた</div></div></div>` : "";
+        <div class="rankMeSolved">のべ ${view.mySolved!=null?view.mySolved:solved} 問を解答</div></div></div>` : "";
     const list = view.rows.length ? view.rows.map(r=>`<div class="rankRow${r.you?' you':''}">
         <span class="rankNum${r.rank<=3?' medal':''}">${medal(r.rank)}</span>
         <span class="rankName">${esc(r.name)}${r.you?' <span class="youTag">あなた</span>':''}</span>
@@ -2023,7 +2024,7 @@
       : `<div class="rankEmpty">まだ参加者がいません。最初の1人になろう！</div>`;
     const joinPanel = joined ? "" : `<div class="panel rankIntro rankJoinPanel">
         <div class="rankTitle">🏆 あなたも参加する</div>
-        <p class="rankLead">名前を登録すると、あなたの「解いた問題数（現在 ${solved}問）」がこのランキングに掲載されます。ニックネームでの参加をおすすめします。</p>
+        <p class="rankLead">名前を登録すると、あなたの「やった問題数（のべ解答回数・現在 ${solved}問）」がこのランキングに掲載されます。同じ問題を解き直した分もすべて加算されます。ニックネームでの参加をおすすめします。</p>
         <div class="rankJoin">
           <input type="text" id="rankNameInput" maxlength="24" placeholder="名前（漢字・かなOK）" autocomplete="off" enterkeyhint="done">
           <button type="button" class="btn" id="rankJoinBtn">参加する</button>
