@@ -667,6 +667,45 @@
   .bkAdvanced summary:hover{color:var(--brand)}
   .bkAdvanced[open] summary{margin-bottom:10px}
 
+  /* ===== 誤答メモ（演習中） ===== */
+  .whyBox{margin-top:12px;padding:12px 14px;border-radius:14px;border:1px dashed color-mix(in srgb,var(--bad) 40%,var(--line));background:color-mix(in srgb,var(--bad) 5%,var(--card2))}
+  .whyLabel{display:block;font-size:12.5px;font-weight:900;color:var(--text);margin-bottom:7px}
+  .whyLabel small{font-weight:700;color:var(--muted);font-size:11px;margin-left:6px}
+  .whyInput,.maNote{width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;line-height:1.6;
+    padding:9px 11px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);resize:vertical}
+  .whyInput:focus,.maNote:focus{outline:none;border-color:var(--brand)}
+
+  /* ===== 誤答ノート・分析 ===== */
+  .maSummary{margin-bottom:14px}
+  .maStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .maStat{text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 4px}
+  .maStat b{display:block;font-size:18px;font-weight:900;color:var(--bad);line-height:1.15;overflow-wrap:anywhere}
+  .maStat span{font-size:10.5px;color:var(--muted);font-weight:700}
+  .maBars{display:flex;flex-direction:column;gap:7px}
+  .maBar{display:flex;align-items:center;gap:8px}
+  .maBarLabel{flex:0 0 88px;font-size:11.5px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .maBarTrack{flex:1 1 auto;height:9px;border-radius:99px;background:var(--card2);overflow:hidden}
+  .maBarFill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,color-mix(in srgb,var(--bad) 70%,var(--warn)),var(--bad))}
+  .maBarNum{flex:0 0 auto;font-size:11.5px;font-weight:800;color:var(--muted);min-width:18px;text-align:right}
+  .maFilters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+  .maChip{font-family:inherit;font-size:12.5px;font-weight:800;padding:7px 13px;border-radius:999px;
+    border:1.5px solid var(--line);background:var(--card2);color:var(--muted);cursor:pointer}
+  .maChip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .maChip b{font-weight:900;margin-left:3px}
+  .maPracticeAll{margin-bottom:14px}
+  .maList{display:flex;flex-direction:column;gap:12px}
+  .maItem{padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
+  .maQ{font-size:14px;font-weight:700;line-height:1.55;margin-bottom:8px}
+  .maFacts{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:8px}
+  .maField{font-size:10.5px;font-weight:800;color:var(--muted);background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+  .maWrong{font-size:11px;font-weight:900;color:var(--bad)}
+  .maUnsolved{font-size:10.5px;font-weight:900;color:#fff;background:var(--bad);border-radius:999px;padding:2px 8px}
+  .maAns{font-size:13px;line-height:1.6;margin-bottom:5px}
+  .maAns b{color:var(--good)}
+  .maMiss{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .maActions{margin-top:8px;text-align:right}
+  .maMore{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+
   /* ===== 新着バッジ（ホーム） ===== */
   .hubBtn.hasNew{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
   .hubIcon{position:relative}
@@ -1211,6 +1250,17 @@
       <span class="pill">復習・苦手</span>
     </div>
 
+    <div class="homeSection" id="mistakeEntrySection">
+      <button type="button" class="dueCard" id="mistakeEntryCard">
+        <span class="dueIcon">📓</span>
+        <span class="dueBody">
+          <span class="dueTitle">誤答ノート</span>
+          <span class="dueSub" id="mistakeEntrySub">間違えた問題とメモを見返して、弱点を分析します</span>
+        </span>
+        <span class="dueRight"><b class="dueCount" id="mistakeEntryCount">0</b><span class="dueUnit">問</span></span>
+      </button>
+    </div>
+
     <div class="homeSection" id="bookmarkSection">
       <div class="sectlabel">見直したい問題</div>
       <div id="bookmarkList" class="grid"></div>
@@ -1225,6 +1275,15 @@
       <div class="sectlabel">弱点プレイリスト</div>
       <div id="playlistList" class="plGrid"></div>
     </div>
+  </section>
+
+  <!-- ===== VIEW: 誤答ノート ===== -->
+  <section id="mistakesView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="mistakesBack">← 復習・苦手</button>
+      <span class="pill">誤答ノート</span>
+    </div>
+    <div class="homeSection" id="mistakesBody"></div>
   </section>
 
   <!-- ===== VIEW: 学習状況 ===== -->
@@ -1834,7 +1893,7 @@
   }
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
-  const VIEWS=["practiceView","cardsView","reviewView","statsView","rankView","communityView","moreView"];
+  const VIEWS=["practiceView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
   function hideAllScreens(){
     stopRankTimer(); stopCmTimer();
     ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
@@ -1843,7 +1902,7 @@
   function refreshData(){
     renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick();
     renderHero(); renderKpis(); renderHeatmap(); renderAch(); renderUpdatesHome();
-    renderExamDay();
+    renderExamDay(); renderMistakeEntry();
   }
   function renderHome(){
     stopExamTimer(); closeFcLightbox();
@@ -1864,6 +1923,7 @@
     if(id==="statsView"){ renderForgetCurve(); }
     if(id==="communityView"){ cmState.boardId=null; renderCommunity(); startCmTimer(); }
     if(id==="moreView"){ renderSyncBlock(); }
+    if(id==="mistakesView"){ renderMistakes(); }
     window.scrollTo(0,0);
   }
   function renderHub(){
@@ -2281,6 +2341,97 @@
       <div class="heat-foot"><span>直近13週間 ・ 学習日数 ${activeDays}日</span>
         <span class="heat-leg">少 <span class="cell l0" style="background:var(--h0)"></span><span class="cell l1"></span><span class="cell l2"></span><span class="cell l3"></span><span class="cell l4"></span> 多</span></div>`;
   }
+  /* ---------- 誤答ノート＋誤答分析 ---------- */
+  function saveNote(id, text){
+    const r=rec(id), v=String(text||"").slice(0,500);
+    if(v.trim()){ r.note=v; r.noteAt=new Date().toISOString(); }
+    else { delete r.note; delete r.noteAt; }
+    saveProgress();
+    const c=$("#mistakeEntryCount"); if(c) c.textContent=mistakeItems().length;
+  }
+  function mistakeItems(){
+    return DATA.filter(q=>{ const r=progress[q.id]; return r && ((r.wrong||0)>0 || (r.note&&r.note.trim())); });
+  }
+  // よく選んでしまう誤答（記録があれば）
+  function topMiss(q){
+    const r=progress[q.id]; if(!r||!r.miss) return null;
+    let bi=-1, bc=0; Object.keys(r.miss).forEach(k=>{ const i=+k; if(i!==q.answer && r.miss[k]>bc){ bc=r.miss[k]; bi=i; } });
+    return bi>=0 ? {text:q.choices[bi], count:bc} : null;
+  }
+  let mistakeFilter="all";
+  function renderMistakeEntry(){
+    const c=$("#mistakeEntryCount"); if(!c) return;
+    const items=mistakeItems(), notes=items.filter(q=>{ const r=progress[q.id]; return r.note&&r.note.trim(); }).length;
+    c.textContent=items.length;
+    const sub=$("#mistakeEntrySub");
+    if(sub) sub.textContent = items.length ? `間違えた ${items.length}問${notes?` ・ メモ ${notes}件`:""}を見返して分析` : "間違えた問題がここに集まります";
+  }
+  function renderMistakes(){
+    const box=$("#mistakesBody"); if(!box) return;
+    let items=mistakeItems();
+    if(!items.length){
+      box.innerHTML=`<div class="panel"><div class="empty">🎉 まだ誤答はありません。<br>問題を間違えると、ここに集まって見返せます。不正解の解説画面で「なぜ間違えた？」をメモしておくと、あとで弱点を分析できます。</div></div>`;
+      return;
+    }
+    // ---- 分析（分野別の誤答数）----
+    const byField={};
+    items.forEach(q=>{ const f=q.field||"その他", r=progress[q.id]; byField[f]=(byField[f]||0)+(r.wrong||0); });
+    const fields=Object.entries(byField).sort((a,b)=>b[1]-a[1]);
+    const maxW=Math.max(1,...fields.map(f=>f[1]));
+    const bars=fields.slice(0,6).map(([f,n])=>`<div class="maBar">
+      <span class="maBarLabel">${esc(f)}</span>
+      <span class="maBarTrack"><span class="maBarFill" style="width:${Math.round(n/maxW*100)}%"></span></span>
+      <span class="maBarNum">${n}</span></div>`).join("");
+    const notesN=items.filter(q=>{ const r=progress[q.id]; return r.note&&r.note.trim(); }).length;
+    // ---- フィルタ ----
+    let shown=items.slice();
+    if(mistakeFilter==="noted") shown=shown.filter(q=>{ const r=progress[q.id]; return r.note&&r.note.trim(); });
+    else if(mistakeFilter==="unnoted") shown=shown.filter(q=>{ const r=progress[q.id]; return !(r.note&&r.note.trim()); });
+    else if(mistakeFilter==="unsolved") shown=shown.filter(q=>{ const r=progress[q.id]; return (r.correct||0)===0; });
+    shown.sort((a,b)=>{ const ra=progress[a.id], rb=progress[b.id];
+      return String(rb.lastWrong||"").localeCompare(String(ra.lastWrong||"")) || (rb.wrong||0)-(ra.wrong||0); });
+    const chip=(k,label,n)=>`<button type="button" class="maChip${mistakeFilter===k?' on':''}" data-f="${k}">${label}${n!=null?` <b>${n}</b>`:""}</button>`;
+    const CAP=120, capped=shown.slice(0,CAP);
+    const rows=capped.map(q=>{
+      const r=progress[q.id], correct=q.choices[q.answer], miss=topMiss(q);
+      return `<div class="maItem">
+        <div class="maQ">${esc(q.question)}</div>
+        <div class="maFacts">
+          <span class="maField">${esc(q.field||"")}</span>
+          <span class="maWrong">✗ ${r.wrong||0}回</span>
+          ${(r.correct||0)===0?`<span class="maUnsolved">未正解</span>`:""}
+        </div>
+        <div class="maAns"><b>正解：</b>${esc(correct)}</div>
+        ${miss?`<div class="maMiss">よく選ぶ誤答：${esc(miss.text)}（${miss.count}回）</div>`:""}
+        <textarea class="maNote" data-id="${esc(q.id)}" rows="2" placeholder="📓 なぜ間違えた？ メモを書く">${esc(r.note||"")}</textarea>
+        <div class="maActions"><button type="button" class="btn small maSolve" data-id="${esc(q.id)}">▶ この問題を解く</button></div>
+      </div>`;
+    }).join("");
+    box.innerHTML=`
+      <div class="panel maSummary">
+        <div class="sectlabel" style="margin:0 0 10px">誤答分析</div>
+        <div class="maStats">
+          <div class="maStat"><b>${items.length}</b><span>誤答した問題</span></div>
+          <div class="maStat"><b>${notesN}</b><span>メモ済み</span></div>
+          <div class="maStat"><b>${esc(fields[0]?fields[0][0]:"—")}</b><span>最も苦手な分野</span></div>
+        </div>
+        <div class="maBars">${bars}</div>
+      </div>
+      <div class="maFilters">
+        ${chip("all","すべて",items.length)}
+        ${chip("unsolved","未正解",items.filter(q=>(progress[q.id].correct||0)===0).length)}
+        ${chip("noted","メモあり",notesN)}
+        ${chip("unnoted","メモなし",items.length-notesN)}
+      </div>
+      <button type="button" class="btn maPracticeAll" id="maPracticeAll">▶ 表示中の${Math.min(shown.length,CAP)}問をまとめて演習</button>
+      <div class="maList">${rows||`<div class="empty">この条件の誤答はありません。</div>`}</div>
+      ${shown.length>CAP?`<div class="maMore">ほか ${shown.length-CAP} 問（絞り込むと表示されます）</div>`:""}`;
+    box.querySelectorAll(".maChip").forEach(b=>{ b.onclick=()=>{ mistakeFilter=b.dataset.f; renderMistakes(); window.scrollTo(0,0); }; });
+    box.querySelectorAll(".maSolve").forEach(b=>{ b.onclick=()=>{ const q=DATA.find(x=>x.id===b.dataset.id); if(q) startQuiz([q],"誤答の復習"); }; });
+    const pa=$("#maPracticeAll"); if(pa) pa.onclick=()=>{ if(capped.length){ startQuiz(capped.slice(),"誤答ノートの復習"); } };
+    box.querySelectorAll(".maNote").forEach(t=>{ t.oninput=()=>{ clearTimeout(t._t); t._t=setTimeout(()=>saveNote(t.dataset.id, t.value), 500); }; });
+  }
+
   function renderScopeLists(){
     renderGroupList("year", "#yearList");
     renderGroupList("prediction", "#predictionList");
@@ -2505,10 +2656,17 @@
       const a=out[id], b=inc[id]; if(!b||typeof b!=="object") return;
       if(!a){ out[id]=b; return; }
       const later=(x,y)=>(x&&y)?(x>y?x:y):(x||y);
+      // メモは新しい方（noteAtが後）を採用。誤答内訳は選択肢ごとに多い方。
+      const an=a.noteAt||"", bn=b.noteAt||"";
+      const noteWin=((a.note||"")&&(b.note||"")) ? (bn>an?b:a) : ((a.note||"")?a:b);
+      const miss={}; [a.miss,b.miss].forEach(mm=>{ if(mm) Object.keys(mm).forEach(k=>{ miss[k]=Math.max(miss[k]||0, mm[k]||0); }); });
       out[id]={ seen:Math.max(a.seen||0,b.seen||0), correct:Math.max(a.correct||0,b.correct||0), wrong:Math.max(a.wrong||0,b.wrong||0),
         streak:Math.max(a.streak||0,b.streak||0), weak:!!(a.weak||b.weak), bookmarked:!!(a.bookmarked||b.bookmarked),
         reps:Math.max(a.reps||0,b.reps||0), interval:Math.max(a.interval||0,b.interval||0), ease:Math.max(a.ease||2.5,b.ease||2.5),
-        due:later(a.due,b.due), lastReviewed:later(a.lastReviewed,b.lastReviewed), lastWrong:later(a.lastWrong,b.lastWrong) };
+        due:later(a.due,b.due), lastReviewed:later(a.lastReviewed,b.lastReviewed), lastWrong:later(a.lastWrong,b.lastWrong),
+        note:noteWin.note||"", noteAt:noteWin.noteAt||"", miss:Object.keys(miss).length?miss:undefined };
+      if(!out[id].note){ delete out[id].note; delete out[id].noteAt; }
+      if(!out[id].miss) delete out[id].miss;
     });
     return out;
   }
@@ -3210,7 +3368,9 @@
     const r=rec(q.id); r.seen++;
     let lvup=0, gainXP=0, mult=1;
     if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
-    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text}); gainXP=XP_WRONG; lvup=addXP(gainXP); }
+    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text});
+      r.miss=r.miss||{}; r.miss[chosen.idx]=(r.miss[chosen.idx]||0)+1;   // どの誤答を選んだかを記録（誤答分析用）
+      gainXP=XP_WRONG; lvup=addXP(gainXP); }
     // 不正解は自動で「もう一度(Again)」。正解は下の手ごたえボタンで4段階評価をFSRSへ渡す。
     if(!isCorrect){ scheduleSRS(r, 1, q.id); s.graded=true; }
     meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
@@ -3235,13 +3395,22 @@
           <button type="button" class="confBtn" data-g="4">かんたん</button>
         </div>
         <div class="confResult hidden" id="confResult"></div></div>`:"";
+    const noteHTML=!isCorrect?`<div class="whyBox">
+        <label class="whyLabel">📓 なぜ間違えた？<small>自分用メモ（あとで誤答ノートから見返せます）</small></label>
+        <textarea class="whyInput" id="whyInput" rows="2" placeholder="例：イオン結合と水素結合を混同した／〇〇を覚えていなかった">${esc(r.note||"")}</textarea>
+      </div>`:"";
     $("#explainBox").innerHTML=`<div class="explain ${isCorrect?'ok':'ng'}">
         <div class="head">${isCorrect?`⭕ 正解！ +${gainXP}XP${mult>1?` <span style="color:var(--warn)">🔥コンボ×${mult}</span>`:''}`:'❌ 不正解 +'+XP_WRONG+'XP'}</div>
         ${note}
         ${!isCorrect?`<div class="body" style="margin-bottom:8px"><b>正解：</b>${esc(correctText)}</div>`:''}
         <div class="body">${renderExplainBody(q,cur,idx)}</div>
         ${confHTML}
+        ${noteHTML}
         ${pathwayHTML(q)}</div>`;
+    if(!isCorrect){
+      const wi=$("#whyInput");
+      if(wi) wi.oninput=()=>{ clearTimeout(wi._t); wi._t=setTimeout(()=>saveNote(q.id, wi.value), 500); };
+    }
     if(isCorrect){
       const row=$("#confRow");
       row&&row.querySelectorAll(".confBtn").forEach(btn=>{
@@ -3378,6 +3547,8 @@
 
   /* ビュー（各画面）の戻るボタン */
   document.querySelectorAll(".viewBack").forEach(b=>{ b.onclick=renderHome; });
+  $("#mistakeEntryCard").onclick=()=>{ mistakeFilter="all"; openView("mistakesView"); };
+  $("#mistakesBack").onclick=()=>openView("reviewView");
   /* コミュニティは階層があるため、掲示板を開いていれば一覧へ戻る */
   $("#cmBack").onclick=()=>{
     if(cmState.creating){ cmState.creating=false; renderCommunity(); return; }
