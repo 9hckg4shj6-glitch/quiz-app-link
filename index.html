@@ -1013,6 +1013,10 @@
       <span class="csDot"></span>
       <span class="csLabel">未定着の問題だけ出す<small id="countScopeSub"></small></span>
     </button>
+    <button type="button" class="countScope hidden" id="countUnseen" aria-pressed="false">
+      <span class="csDot"></span>
+      <span class="csLabel">まだ解いていない問題を優先<small id="countUnseenSub"></small></span>
+    </button>
     <div class="countChips" id="countChips">
       <button type="button" class="countChip" data-n="10">10問</button>
       <button type="button" class="countChip" data-n="20">20問</button>
@@ -1644,12 +1648,13 @@
   function saveLastCount(v){ try{ localStorage.setItem(LIMIT_KEY, String(v)); }catch(e){} }
   function clampCount(v,total){ v=Math.floor(v); if(isNaN(v)||v<1) v=1; if(v>total) v=total; return v; }
   function openCountModal(g, mode){
-    pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN, unmasteredOnly:false};
+    pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN, unmasteredOnly:false, unseenFirst:false};
     $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
     // 年度別・分野別・予想問題では「その範囲の未定着だけ」を選べる
     const scopeable=(mode==="year"||mode==="prediction"||mode==="field");
     $("#countScope").classList.toggle("hidden", !scopeable);
+    $("#countUnseen").classList.toggle("hidden", !scopeable);
     updateCountScope();
     $("#countModal").classList.remove("hidden");
     setTimeout(()=>{ const inp=$("#countInput"); inp.focus(); inp.select&&inp.select(); },60);
@@ -1668,6 +1673,11 @@
     const sub=$("#countScopeSub");
     if(sub) sub.textContent = un.length ? `　未定着 ${un.length} / ${base.length}問` : `　この範囲はすべて定着済み`;
     $("#countTotal").textContent=pendingSel.total;
+    // 未着手（まだ解いていない）優先トグルの表示
+    const unseenN=base.filter(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); }).length;
+    const ub=$("#countUnseen");
+    if(ub){ ub.classList.toggle("on", !!pendingSel.unseenFirst); ub.setAttribute("aria-pressed", pendingSel.unseenFirst?"true":"false");
+      const us=$("#countUnseenSub"); if(us) us.textContent = unseenN ? `　未着手 ${unseenN} / ${base.length}問` : `　この範囲はすべて着手済み`; }
     const inp=$("#countInput"); inp.max=pendingSel.total;
     const last=loadLastCount();
     const want=(last>0?Math.min(last,pendingSel.total):(pendingSel.defaultN?Math.min(pendingSel.defaultN,pendingSel.total):pendingSel.total));
@@ -1678,19 +1688,23 @@
     });
   }
   function closeCountModal(){ $("#countModal").classList.add("hidden"); pendingSel=null; }
+  // 出題順を一元管理：復習=忘れかけ順／試験日=伸び順／未定着=薄い順／未着手優先=未解答先頭／既定=ランダム
+  function orderedPool(){
+    if(!pendingSel) return [];
+    const it=pendingSel.items;
+    if(pendingSel.mode==="due") return sortByUrgency(it);
+    if(pendingSel.mode==="examday") return sortByExamGain(it);
+    if(pendingSel.unmasteredOnly) return sortByUnmastered(it);
+    if(pendingSel.unseenFirst) return sortByUnseen(it);
+    return shuffle(it);
+  }
   function startFromCountModal(){
     if(!pendingSel) return;
     const total=pendingSel.total;
     const n=clampCount(parseInt($("#countInput").value,10), total);
     saveLastCount(n===total?0:n);
-    // 復習は「最も忘れかけている順」、試験日モードは「点が伸びる順」に選ぶ。
-    // ランダム抽出だと、20問だけ解くときに危険な問題を取りこぼす。
-    const prioritized = pendingSel.mode==="due" ? sortByUrgency(pendingSel.items)
-                      : pendingSel.mode==="examday" ? sortByExamGain(pendingSel.items)
-                      : pendingSel.unmasteredOnly ? sortByUnmastered(pendingSel.items)
-                      : shuffle(pendingSel.items);
-    const items=prioritized.slice(0,n);
-    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.unmasteredOnly;
+    const items=orderedPool().slice(0,n);
+    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.unmasteredOnly || pendingSel.unseenFirst;
     const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key};
     closeCountModal();
     startQuiz(items,label,ref,{keepOrder});
@@ -2338,6 +2352,12 @@
   function sortByUnmastered(items){
     return items.map(q=>{ const r=progress[q.id]||{}; return {q, reps:r.reps||0, seen:r.seen||0, k:Math.random()}; })
       .sort((a,b)=> a.reps-b.reps || a.seen-b.seen || a.k-b.k)
+      .map(x=>x.q);
+  }
+  // まだ解いていない問題（seen=0）を先頭に。次に解答回数の少ない順、同点はランダム。
+  function sortByUnseen(items){
+    return items.map(q=>{ const r=progress[q.id]||{}; return {q, seen:r.seen||0, k:Math.random()}; })
+      .sort((a,b)=> a.seen-b.seen || a.k-b.k)
       .map(x=>x.q);
   }
   function renderQuick(){
@@ -3695,7 +3715,14 @@
     pendingSel.unmasteredOnly=!pendingSel.unmasteredOnly;
     updateCountScope();
   };
-  $("#countStartFlash").onclick=()=>{ if(!pendingSel) return; const total=pendingSel.total; const n=clampCount(parseInt($("#countInput").value,10),total); saveLastCount(n===total?0:n); const items=shuffle(pendingSel.items).slice(0,n).map(questionToCard); const lbl=pendingSel.label; closeCountModal(); startFlash(items, lbl+"（カード）"); };
+  $("#countUnseen").onclick=()=>{
+    if(!pendingSel) return;
+    const unseenN=pendingSel.baseItems.filter(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); }).length;
+    if(!unseenN){ toast("🎉 この範囲はすべて着手済みです"); return; }
+    pendingSel.unseenFirst=!pendingSel.unseenFirst;   // 件数は変わらないので見た目だけ更新（入力値を保持）
+    const ub=$("#countUnseen"); ub.classList.toggle("on", pendingSel.unseenFirst); ub.setAttribute("aria-pressed", pendingSel.unseenFirst?"true":"false");
+  };
+  $("#countStartFlash").onclick=()=>{ if(!pendingSel) return; const total=pendingSel.total; const n=clampCount(parseInt($("#countInput").value,10),total); saveLastCount(n===total?0:n); const items=orderedPool().slice(0,n).map(questionToCard); const lbl=pendingSel.label; closeCountModal(); startFlash(items, lbl+"（カード）"); };
   $("#countInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); startFromCountModal(); } };
   $("#countMinus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)-1, pendingSel?pendingSel.total:1); };
   $("#countPlus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)+1, pendingSel?pendingSel.total:1); };
