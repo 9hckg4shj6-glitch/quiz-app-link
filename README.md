@@ -120,6 +120,15 @@ update public.app_secrets set value = '任意の管理者トークン' where key
 
 アプリ本体（`index.html`）を触る必要はありません。
 
+### 資料の原本（`materials/`）
+
+問題や解説を作るときに参照する講義スライド・過去問PDFは `materials/<科目id>/` に置き、
+各フォルダの `INDEX.md` に内容と使い方をまとめています（例: `materials/genome/INDEX.md`）。
+
+**`materials/` は `.gitignore` で除外しています。** このリポジトリは公開されており、
+資料には教科書の図版が含まれるためコミットしません。アプリに入れてよいのは、
+自分で書き起こした問題文・解説と、原本から切り出した図（`public/images/<科目id>/`）までです。
+
 問題形式:
 
 ```js

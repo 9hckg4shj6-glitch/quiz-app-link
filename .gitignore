@@ -7,3 +7,8 @@ coverage/
 playwright-report/
 .DS_Store
 .tools/
+
+# 授業資料・過去問の原本（PDF）。
+# このリポジトリは公開されているため、教科書の図版を含む資料は絶対にコミットしない。
+# 解説を作るときの参照用にローカルにだけ置く。索引は materials/*/INDEX.md
+materials/
