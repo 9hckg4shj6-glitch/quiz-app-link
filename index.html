@@ -3056,10 +3056,18 @@
       mergeRemote(got.payload);
       const put=await ds.push(code, syncSnapshot());
       if(!put.ok){ if(!silent) toast(syncErrText(put.error)); return false; }
-      if(!silent){ toast("✅ 同期しました"); renderHome(); }
+      if(!silent){ toast("✅ 同期しました"); refreshCurrentScreen(); }
       return true;
     } catch(e){ if(!silent) toast("同期に失敗しました"); return false; }
     finally{ syncBusy=false; renderSyncBlock(); }
+  }
+  // 同期のあとに表示を最新化する。いま開いている画面を更新するだけで、画面は移動しない。
+  // （起動直後の自動同期が科目えらびからホームへ飛ばしてしまう不具合の対策）
+  function refreshCurrentScreen(){
+    if(!$("#subjectPicker").classList.contains("hidden")){ updateSubjectStats(); renderSubjectPicker(); return; }
+    if(!$("#home").classList.contains("hidden")){ renderHome(); return; }
+    // 演習中・カード中などは何もしない（操作の邪魔をしない）
+    if(VIEWS.some(v=>!$("#"+v).classList.contains("hidden"))) refreshData();
   }
   function renderSyncBlock(){
     const box=$("#syncBlock"); if(!box) return;
@@ -3095,7 +3103,7 @@
         mergeRemote(res.payload);
         await ds.push(code, syncSnapshot());
         toast("✅ 記録を取り込みました");
-        renderSyncBlock(); renderHome();
+        renderSyncBlock(); refreshCurrentScreen();   // 設定画面から勝手にホームへ移動しない
       };
       $("#syncJoin").onclick=join;
       inp.onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); join(); } };
@@ -4275,7 +4283,7 @@
   /* ---------- 起動時とオンライン復帰時に自動同期 ---------- */
   (function autoSyncBoot(){
     // STUDY_CORE は module 読み込み後に生えるため、少し待ってから試す
-    const kick=()=>{ const ds=DS(); if(ds&&ds.enabled()&&ds.isLinked()) doSync(true).then(()=>renderHome()); };
+    const kick=()=>{ const ds=DS(); if(ds&&ds.enabled()&&ds.isLinked()) doSync(true).then(()=>refreshCurrentScreen()); };
     setTimeout(kick, 1500);
     setTimeout(()=>{ syncCmUnread(); refreshCmUnread(true); }, 1800);   // コミュニティの新着をホームに出す
     window.addEventListener("online", ()=>{ lastAutoSync=0; kick(); refreshCmUnread(true); });
