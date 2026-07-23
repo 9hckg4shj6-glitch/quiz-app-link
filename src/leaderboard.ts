@@ -74,16 +74,33 @@ export async function joinLeaderboard(rawName: string, solved: number, subject?:
   }
 }
 
+/* サーバー側のマイグレーション（007_leaderboard_subject.sql）がまだ適用されていない環境では、
+   p_subject を受け取るRPCが存在しない。その場合は科目なしの旧シグネチャで呼び直し、
+   ランキングが「取得できません」になってしまうのを防ぐ。
+   （旧RPCで動いている間は、全科目まとめた1本のランキングとして表示される） */
+function isMissingFunction(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === "PGRST202" || /Could not find the function|does not exist/i.test(error.message ?? "");
+}
+async function rpcWithSubjectFallback(
+  fn: string,
+  argsWithSubject: Record<string, unknown>,
+  argsWithoutSubject: Record<string, unknown>,
+): Promise<unknown> {
+  if (!supabase) return null;
+  const first = await supabase.rpc(fn, argsWithSubject);
+  if (!first.error) return first.data;
+  if (!isMissingFunction(first.error)) throw first.error;
+  const second = await supabase.rpc(fn, argsWithoutSubject);
+  if (second.error) throw second.error;
+  return second.data;
+}
+
 async function sendScore(name: string, solved: number, subject?: string): Promise<void> {
   if (!supabase) return;
   const deviceId = await getDeviceId();
-  const { error } = await supabase.rpc("publish_score", {
-    p_device_id: deviceId,
-    p_name: name,
-    p_solved: Math.max(0, Math.floor(solved)),
-    p_subject: normSubject(subject),
-  });
-  if (error) throw error;
+  const base = { p_device_id: deviceId, p_name: name, p_solved: Math.max(0, Math.floor(solved)) };
+  await rpcWithSubjectFallback("publish_score", { ...base, p_subject: normSubject(subject) }, base);
 }
 
 let lastPublish = 0;
@@ -108,8 +125,11 @@ export async function fetchLeaderboard(subject?: string): Promise<LeaderboardVie
   if (!supabase) return null;
   const deviceId = await getDeviceId();
   const p_subject = normSubject(subject);
-  const { data, error } = await supabase.rpc("get_leaderboard", { p_device_id: deviceId, p_subject });
-  if (error) throw error;
+  const data = await rpcWithSubjectFallback(
+    "get_leaderboard",
+    { p_device_id: deviceId, p_subject },
+    { p_device_id: deviceId },
+  );
   const rows: RankRow[] = ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     rank: Number(r.rank),
     name: String(r.display_name),
@@ -121,7 +141,11 @@ export async function fetchLeaderboard(subject?: string): Promise<LeaderboardVie
     return { rows, myRank: mine.rank, mySolved: mine.solved, inTop: true };
   }
   if (hasJoined()) {
-    const { data: mr } = await supabase.rpc("get_my_rank", { p_device_id: deviceId, p_subject });
+    const mr = await rpcWithSubjectFallback(
+      "get_my_rank",
+      { p_device_id: deviceId, p_subject },
+      { p_device_id: deviceId },
+    ).catch(() => null);
     const row = Array.isArray(mr) ? (mr[0] as Record<string, unknown> | undefined) : null;
     if (row) return { rows, myRank: Number(row.rank), mySolved: Number(row.solved_count), inTop: false };
   }
