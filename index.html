@@ -106,8 +106,25 @@
   .svPage{margin-bottom:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
   .svPageCap{font-size:11.5px;font-weight:900;color:var(--muted);padding:9px 12px;background:var(--card2);border-bottom:1px solid var(--line)}
   .svPage img{display:block;width:100%;height:auto;background:#fff;cursor:zoom-in}
-  .svPage.zoomed img{cursor:zoom-out;width:auto;max-width:none}
-  .svPage.zoomed{overflow-x:auto}
+  .svHint{font-size:12px;font-weight:800;color:var(--muted);margin:-6px 0 12px 2px}
+  /* スライドの全画面ビューア。縦横どちらにもスクロールできるので、拡大しても画像が辿れなくならない */
+  .slideLb{position:fixed;inset:0;z-index:1300;background:rgba(2,6,23,.96);display:flex;flex-direction:column}
+  .slideLb.hidden{display:none}
+  .slideLbBar{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:10px 12px;
+    padding-top:max(10px,env(safe-area-inset-top));background:rgba(2,6,23,.92)}
+  .slideLbCap{flex:1;min-width:0;color:#fff;font-size:13px;font-weight:800;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .slideLbBtn{flex:0 0 auto;border:none;border-radius:11px;background:rgba(255,255,255,.18);color:#fff;
+    font-family:inherit;font-size:13px;font-weight:900;padding:10px 14px;cursor:pointer;transition:.15s}
+  .slideLbBtn:hover{background:rgba(255,255,255,.3)}
+  .slideLbBody{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;
+    display:flex;align-items:flex-start;justify-content:center;padding:10px;
+    padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  .slideLbBody img{display:block;background:#fff;border-radius:8px;
+    max-width:100%;max-height:100%;width:auto;height:auto;cursor:zoom-in}
+  /* 拡大時は原寸で表示し、はみ出した分は縦横どちらもスクロールで見られる */
+  .slideLb.zoom .slideLbBody{display:block}
+  .slideLb.zoom .slideLbBody img{max-width:none;max-height:none;width:1280px;margin:0 auto;cursor:zoom-out}
   .svNote{margin:18px 0 30px;font-size:12.5px;line-height:1.9;color:var(--muted);
     padding:13px 15px;border:1px dashed var(--line);border-radius:14px}
   /* 「解説をさらに見る」ボタン */
@@ -1600,6 +1617,15 @@
   </section>
 
   <!-- ===== 図の拡大（フラッシュカード用ライトボックス） ===== -->
+  <div id="slideLightbox" class="slideLb hidden">
+    <div class="slideLbBar">
+      <span class="slideLbCap" id="slideLbCap"></span>
+      <button type="button" class="slideLbBtn" id="slideLbZoom">🔍 拡大</button>
+      <button type="button" class="slideLbBtn" id="slideLbClose" aria-label="閉じる">✕ 閉じる</button>
+    </div>
+    <div class="slideLbBody" id="slideLbBody"><img id="slideLbImg" alt=""></div>
+  </div>
+
   <div id="fcLightbox" class="fcLightbox hidden">
     <button type="button" class="fcLightboxClose" id="fcLightboxClose" aria-label="閉じる">✕</button>
     <img id="fcLightboxImg" alt="">
@@ -3684,10 +3710,42 @@
   // 「解説をさらに見る」ボタンを配線する（描画のたびに呼ぶ）
   function wireMoreExpl(root){
     if(!root) return;
+    root.querySelectorAll("img[data-slidefig]").forEach(img=>{
+      img.style.cursor="zoom-in";
+      img.onclick=(e)=>{ e.stopPropagation(); openSlideLightbox(img.getAttribute("src"), img.getAttribute("alt")||"授業スライドの図"); };
+    });
     root.querySelectorAll("[data-more]").forEach(el=>{
       el.onclick=(e)=>{ e.stopPropagation(); const q=DATA.find(x=>x.id===el.dataset.more); if(q) openSlideView(q); };
     });
   }
+  /* スライドの全画面ビューア。
+     以前はカード内で画像を原寸にしていたが、枠が小さいと画像が枠外へ出てしまい、
+     縦方向はスクロールできず見えなくなっていた。全画面にして縦横とも辿れるようにした。 */
+  function openSlideLightbox(src,cap){
+    const lb=$("#slideLightbox"); if(!lb) return;
+    $("#slideLbImg").src=src; $("#slideLbImg").alt=cap||"スライド";
+    $("#slideLbCap").textContent=cap||"";
+    lb.classList.remove("zoom"); $("#slideLbZoom").textContent="🔍 拡大";
+    lb.classList.remove("hidden");
+    document.body.style.overflow="hidden";       // 背面がスクロールしないように
+  }
+  function closeSlideLightbox(){
+    const lb=$("#slideLightbox"); if(!lb || lb.classList.contains("hidden")) return false;
+    lb.classList.add("hidden"); lb.classList.remove("zoom");
+    $("#slideLbImg").removeAttribute("src");
+    document.body.style.overflow="";
+    return true;
+  }
+  function toggleSlideZoom(){
+    const lb=$("#slideLightbox"), body=$("#slideLbBody");
+    const on=!lb.classList.contains("zoom");
+    lb.classList.toggle("zoom", on);
+    $("#slideLbZoom").textContent = on ? "🔍 全体を表示" : "🔍 拡大";
+    // 拡大直後は中央あたりから見えるようにする
+    if(on){ body.scrollTop=0; body.scrollLeft=Math.max(0,(body.scrollWidth-body.clientWidth)/2); }
+    else { body.scrollTop=0; body.scrollLeft=0; }
+  }
+
   let slideBackTarget=null;
   function openSlideView(q){
     const ids=["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker"].concat(VIEWS.map(v=>"#"+v));
@@ -3721,15 +3779,18 @@
     const note=others.length
       ? `<div class="svNote">この問題は <b>${others.map(r=>esc(r.name)).join("・")}</b> の内容全体にも関わります。</div>`
       : `<div class="svNote">出題元の授業スライドのうち、この問題の根拠になるページだけを表示しています。</div>`;
-    body.innerHTML=blocks+note;
-    body.querySelectorAll(".svPage").forEach(fig=>{ fig.querySelector("img").onclick=()=>fig.classList.toggle("zoomed"); });
+    body.innerHTML=(blocks?`<div class="svHint">画像をタップすると全画面で開き、さらに拡大できます</div>`:"")+blocks+note;
+    body.querySelectorAll(".svPage").forEach(fig=>{
+      const img=fig.querySelector("img"), cap=fig.querySelector(".svPageCap").textContent;
+      img.onclick=()=>openSlideLightbox(img.getAttribute("src"), cap);
+    });
   }
 
   // 授業スライドから切り出した補足図。問題の図と混同しないよう見出しを付けて解説内に出す。
   function explainFigureHTML(q){
     if(!q || !q.explainImage) return "";
-    return `<figure class="explFig"><figcaption>📘 授業スライドの図</figcaption>
-      <img src="${esc(q.explainImage)}" alt="${esc(q.explainImageAlt||"解説の補足図")}" loading="lazy"></figure>`;
+    return `<figure class="explFig"><figcaption>📘 授業スライドの図（タップで拡大）</figcaption>
+      <img src="${esc(q.explainImage)}" alt="${esc(q.explainImageAlt||"解説の補足図")}" loading="lazy" data-slidefig="1"></figure>`;
   }
   function renderExplainBody(q,cur,chosen){
     const picked=Array.isArray(chosen)?chosen:(chosen==null?[]:[chosen]);
@@ -4045,6 +4106,10 @@
 
   /* 問題検索 */
   $("#slideBack").onclick=closeSlideView;
+  $("#slideLbClose").onclick=closeSlideLightbox;
+  $("#slideLbZoom").onclick=toggleSlideZoom;
+  $("#slideLbImg").onclick=toggleSlideZoom;
+  $("#slideLbBody").onclick=(e)=>{ if(e.target.id==="slideLbBody") closeSlideLightbox(); };   // 余白タップで閉じる
   $("#searchBack").onclick=closeSearch;
   $("#searchInput").oninput=()=>{ clearTimeout(searchDebounce); searchDebounce=setTimeout(runSearch,160); };
   $("#searchInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=searchMatches($("#searchInput").value); if(m.length) startQuiz(m, `「${$("#searchInput").value.trim()}」の検索結果`); } };
@@ -4226,6 +4291,7 @@
     const lbOpen=!$("#fcLightbox").classList.contains("hidden");
     closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
     if(lbOpen) return;
+    if(closeSlideLightbox()) return;
     if(!$("#slideView").classList.contains("hidden")){ closeSlideView(); return; }
     if(!$("#browse").classList.contains("hidden")) browseBackStep();
     else if(!$("#qbrowse").classList.contains("hidden")) qbBackStep();
