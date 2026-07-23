@@ -58,6 +58,12 @@
 
   header.app{display:flex;align-items:center;gap:12px;margin-bottom:16px;position:relative}
   .menuWrap{position:relative;flex:0 0 auto}
+  /* 空の科目（まだ問題を入れていない科目）の案内 */
+  .emptySubject{display:flex;align-items:center;gap:14px;padding:20px 18px}
+  .emptySubject .esIcon{font-size:28px;flex:0 0 auto}
+  .emptySubject .esBody{display:grid;gap:4px;min-width:0}
+  .emptySubject .esTitle{font-size:15px;font-weight:900}
+  .emptySubject .esSub{font-size:13px;color:var(--muted);line-height:1.7}
   /* 科目切替（科目が2つ以上あるときだけ表示） */
   .titleWrap{min-width:0}
   .subjectWrap{position:relative;margin-top:5px}
@@ -1138,11 +1144,11 @@
     </div>
     <div class="logo" id="appLogo">🧠</div>
     <div class="titleWrap">
-      <h1>代謝演習アプリ</h1>
+      <h1 id="appTitle">代謝演習アプリ</h1>
       <p id="subtitle">読み込み中…</p>
       <div class="subjectWrap hidden" id="subjectWrap">
         <button type="button" class="subjectChip" id="subjectBtn" aria-expanded="false" aria-haspopup="true">
-          <span class="sjEmoji" id="subjectEmoji">🧬</span><span class="sjName" id="subjectName">科目</span><span class="sjChev">▾</span>
+          <span class="sjName">科目を切り替え</span><span class="sjChev">▾</span>
         </button>
         <div class="menuPanel subjectPanel hidden" id="subjectPanel"></div>
       </div>
@@ -1191,6 +1197,16 @@
     <div class="reviewTop">
       <button class="btn ghost small viewBack">← ホーム</button>
       <span class="pill">問題演習</span>
+    </div>
+
+    <div class="homeSection hidden" id="emptySubjectNotice">
+      <div class="panel emptySubject">
+        <div class="esIcon">📥</div>
+        <div class="esBody">
+          <b class="esTitle">この科目にはまだ問題が入っていません</b>
+          <span class="esSub">問題データを追加すると、年度別・分野別の演習や本番モードが使えるようになります。</span>
+        </div>
+      </div>
     </div>
 
     <div class="homeSection" id="qbrowseSection">
@@ -1676,9 +1692,13 @@
     // 科目が1つしかないうちは何も出さない（今までの見た目のまま）
     wrap.classList.toggle("hidden", SUBJECTS.length<2 || !sub);
     if(!sub) return;
-    $("#subjectEmoji").textContent=sub.emoji||"📘";
-    $("#subjectName").textContent=sub.name||sub.id;
-    const logo=$("#appLogo"); if(logo && SUBJECTS.length>1) logo.textContent=sub.emoji||"🧠";
+    // 複数科目のときはヘッダーを「選択中の科目」の見た目にする。
+    // 1科目のときは今までどおり「代謝演習アプリ」のまま変えない。
+    if(SUBJECTS.length>1){
+      const logo=$("#appLogo"); if(logo) logo.textContent=sub.emoji||"📘";
+      const title=$("#appTitle"); if(title) title.textContent=sub.name||sub.id;
+      document.title=`${sub.name||sub.id} 問題演習`;
+    }
     $("#subjectPanel").innerHTML=SUBJECTS.map(x=>{
       const n=SUBJECT_CACHE[x.id] ? `${SUBJECT_CACHE[x.id].questions.length}問` : "";
       return `<button type="button" class="sjItem ${x.id===currentSubjectId?"on":""}" data-subject="${esc(x.id)}" style="--sj-accent:${esc(x.accent||"var(--brand)")}">
@@ -2630,6 +2650,16 @@
   }
 
   function renderScopeLists(){
+    // 問題が1問も無い科目では、開発者向けの空メッセージではなく案内パネルを出す
+    const empty = DATA.length===0;
+    const notice=$("#emptySubjectNotice"); if(notice) notice.classList.toggle("hidden", !empty);
+    ["yearSection","predictionSection","specialSection","fieldSection","qbrowseSection","quickSection","examSection","examDaySection"]
+      .forEach(id=>{ const el=$("#"+id); if(el && empty) el.classList.add("hidden"); });
+    if(empty){ ["#yearList","#predictionList","#fieldList","#specialList","#weakList","#bookmarkList"]
+      .forEach(sel=>{ const el=$(sel); if(el) el.innerHTML=""; }); return; }
+    ["qbrowseSection","quickSection","examSection","examDaySection"]
+      .forEach(id=>{ const el=$("#"+id); if(el) el.classList.remove("hidden"); });
+    ["yearSection","fieldSection"].forEach(id=>{ const el=$("#"+id); if(el) el.classList.remove("hidden"); });
     renderGroupList("year", "#yearList");
     renderGroupList("prediction", "#predictionList");
     renderGroupList("special", "#specialList");

@@ -69,7 +69,8 @@ for (const subject of subjects) {
   if (typeof subject.expectTerms === "number" && terms.length !== subject.expectTerms) {
     errors.push(`[${label}] 用語カード数が想定と異なります: ${terms.length} / ${subject.expectTerms}`);
   }
-  if (!questions.length && !terms.length) errors.push(`[${label}] 問題もカードも0件です`);
+  // draft の科目はこれから中身を入れるところなので、0件でもエラーにしない
+  if (!subject.draft && !questions.length && !terms.length) errors.push(`[${label}] 問題もカードも0件です`);
 }
 
 if (errors.length) {

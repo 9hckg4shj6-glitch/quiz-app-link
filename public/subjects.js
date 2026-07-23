@@ -21,12 +21,21 @@ window.SUBJECTS = [
   {
     id: "metabolism",
     name: "代謝・生化学",
-    emoji: "🧬",
+    emoji: "⚗️",
     accent: "#147d8f",
     questions: "subjects/metabolism/questions.js",
     terms: "subjects/metabolism/terms.js",
     idPrefix: null,          // 既存科目のみ例外的にプレフィックス検査を免除
     expectQuestions: 1039,   // 件数の取りこぼし検知（増減させたらこの数も更新する）
     expectTerms: 558,
+  },
+  {
+    id: "genome",
+    name: "ゲノム",
+    emoji: "🧬",
+    accent: "#7c3aed",
+    questions: "subjects/genome/questions.js",
+    // draft:true の科目は、まだ問題が0件でも検査を通す（これから入れていく科目）
+    draft: true,
   },
 ];
