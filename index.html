@@ -94,6 +94,28 @@
     .spLead h2{font-size:22px}
   }
 
+  /* 根拠スライド画面 */
+  .svQ{padding:16px 18px}
+  .svQLabel{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
+  .svQText{font-size:15.5px;font-weight:800;line-height:1.7;margin-bottom:10px}
+  .svExpl{font-size:14px;line-height:1.85;color:var(--text)}
+  .svDeck{margin:22px 0 10px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .svDeckName{font-size:15px;font-weight:900}
+  .svDeckTag{font-size:11px;font-weight:900;padding:3px 9px;border-radius:99px;
+    background:color-mix(in srgb,var(--brand) 14%,var(--card2));color:var(--brand);border:1px solid var(--line)}
+  .svPage{margin-bottom:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
+  .svPageCap{font-size:11.5px;font-weight:900;color:var(--muted);padding:9px 12px;background:var(--card2);border-bottom:1px solid var(--line)}
+  .svPage img{display:block;width:100%;height:auto;background:#fff;cursor:zoom-in}
+  .svPage.zoomed img{cursor:zoom-out;width:auto;max-width:none}
+  .svPage.zoomed{overflow-x:auto}
+  .svNote{margin:18px 0 30px;font-size:12.5px;line-height:1.9;color:var(--muted);
+    padding:13px 15px;border:1px dashed var(--line);border-radius:14px}
+  /* 「解説をさらに見る」ボタン */
+  .moreExpl{display:inline-flex;align-items:center;gap:8px;margin-top:12px;
+    border:1px solid var(--line);background:var(--card2);color:var(--text);
+    font-family:inherit;font-size:13.5px;font-weight:900;padding:10px 15px;border-radius:12px;cursor:pointer;transition:.15s}
+  .moreExpl:hover{border-color:var(--brand);color:var(--brand)}
+  .moreExpl .meChev{color:var(--muted);font-weight:800}
   /* 解説の補足図（授業スライドからの切り抜き） */
   .explFig{margin:12px 0 4px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--card2)}
   .explFig figcaption{font-size:11.5px;font-weight:900;color:var(--muted);margin-bottom:8px;letter-spacing:.02em}
@@ -1194,6 +1216,18 @@
     </div>
   </header>
 
+  <!-- ===== 根拠スライド（解説をさらに見る） ===== -->
+  <section id="slideView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="slideBack">← もどる</button>
+      <span class="pill">解説の根拠スライド</span>
+    </div>
+    <div class="homeSection">
+      <div class="panel svQ" id="slideViewQ"></div>
+    </div>
+    <div id="slideViewBody"></div>
+  </section>
+
   <!-- ===== 科目えらび（起動時の入口） ===== -->
   <section id="subjectPicker" class="hidden">
     <div class="spLead">
@@ -1821,6 +1855,7 @@
       imageAlt: q.imageAlt || "",
       explainImage: q.explainImage || null,          // 解説の補足図（問題の図とは別枠で出す）
       explainImageAlt: q.explainImageAlt || "",
+      slideRefs: Array.isArray(q.slideRefs) ? q.slideRefs.map(r=>({deck:String(r.deck||""),name:String(r.name||""),pages:Array.isArray(r.pages)?r.pages.slice():[]})) : null,
       choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null
     })).filter(q=>q.question && q.choices.length>=2);
   }
@@ -2181,7 +2216,7 @@
   const VIEWS=["practiceView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
   function hideAllScreens(){
     stopRankTimer(); stopCmTimer();
-    ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
+    ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker","#slideView"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
     VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
   }
   function refreshData(){
@@ -3468,7 +3503,7 @@
       const ok=ansIdxs(q).indexOf(i)>=0, note=notes[i]?`<div class="qbCNote">${esc(notes[i])}</div>`:"";
       return `<li class="qbChoice${ok?' ok':''}"><span class="qbCL">${qLetter(i)}</span><span class="qbCBody"><span class="qbCText">${esc(c)}${ok?' <span class="qbOk">✓ 正解</span>':''}</span>${note}</span></li>`;
     }).join("");
-    const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${esc(q.explanation)}${explainFigureHTML(q)}</div>`:"";
+    const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${esc(q.explanation)}${explainFigureHTML(q)}${moreExplHTML(q)}</div>`:"";
     return `${img}<ol class="qbChoices">${choices}</ol>${expl}`;
   }
   function qbPagerHTML(page,pages){
@@ -3510,6 +3545,7 @@
       el.querySelector(".brHead").onclick=()=>{ const open=back.classList.contains("hidden"); back.classList.toggle("hidden",!open); el.classList.toggle("open",open); };
       const pb=el.querySelector(".qbPractice"); if(pb) pb.onclick=(e)=>{ e.stopPropagation(); startQuiz([q], g.label); };
       back.querySelectorAll(".fcImgWrap").forEach(w=>{ w.onclick=(e)=>{ const img=w.querySelector("img"); if(img){ e.stopPropagation(); openFcLightbox(img.getAttribute("src"),img.getAttribute("alt")); } }; });
+      wireMoreExpl(back);
     });
     $("#qbrowsePager").querySelectorAll(".qbPageBtn").forEach(b=>{ if(b.disabled) return; b.onclick=()=>{ qbrowseState.page=+b.dataset.page; renderQBrowseGroup(); window.scrollTo(0,0); }; });
   }
@@ -3635,6 +3671,60 @@
     });
   }
 
+  /* ---------- 根拠スライド（解説をさらに見る） ----------
+     いまのところ「ゲノム」だけが slideRefs を持つ。持たない問題ではボタンも出ない。 */
+  const SLIDE_DIR="images/genome/slides/";
+  function hasSlides(q){ return !!(q && Array.isArray(q.slideRefs) && q.slideRefs.some(r=>r.pages && r.pages.length)); }
+  function slidePageSrc(deck,page){ return `${SLIDE_DIR}${deck}-p${String(page).padStart(3,"0")}.webp`; }
+  function moreExplHTML(q){
+    if(!hasSlides(q)) return "";
+    const n=q.slideRefs.reduce((s,r)=>s+(r.pages?r.pages.length:0),0);
+    return `<button type="button" class="moreExpl" data-more="${esc(q.id)}">📖 解説をさらに見る<span class="meChev">・根拠スライド ${n}枚 ›</span></button>`;
+  }
+  // 「解説をさらに見る」ボタンを配線する（描画のたびに呼ぶ）
+  function wireMoreExpl(root){
+    if(!root) return;
+    root.querySelectorAll("[data-more]").forEach(el=>{
+      el.onclick=(e)=>{ e.stopPropagation(); const q=DATA.find(x=>x.id===el.dataset.more); if(q) openSlideView(q); };
+    });
+  }
+  let slideBackTarget=null;
+  function openSlideView(q){
+    const ids=["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker"].concat(VIEWS.map(v=>"#"+v));
+    slideBackTarget = ids.find(id=>{ const el=$(id); return el && !el.classList.contains("hidden"); }) || "#home";
+    // 演習中に開いても中断しないよう、画面を隠すだけで状態は保つ
+    ids.forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
+    renderSlideView(q);
+    $("#slideView").classList.remove("hidden");
+    window.scrollTo(0,0);
+  }
+  function closeSlideView(){
+    $("#slideView").classList.add("hidden");
+    const el=$(slideBackTarget||"#home"); if(el) el.classList.remove("hidden");
+    window.scrollTo(0,0);
+  }
+  function renderSlideView(q){
+    const ansIdx=ansIdxs(q), ansText_=ansIdx.map(i=>q.choices[i]).join(" ／ ");
+    $("#slideViewQ").innerHTML=`<div class="svQLabel">${esc([q.year,q.field].filter(Boolean).join(" ・ "))}</div>
+      <div class="svQText">${esc(q.question)}</div>
+      <div class="svExpl"><b>正解：</b>${esc(ansText_)}<br>${esc(q.explanation.replace(/▶該当スライド：.*$/,"").trim())}</div>`;
+    const body=$("#slideViewBody");
+    const blocks=q.slideRefs.filter(r=>r.pages&&r.pages.length).map(r=>{
+      const pages=r.pages.map(pg=>`<figure class="svPage">
+          <figcaption class="svPageCap">${esc(r.name)} ・ p${pg}</figcaption>
+          <img src="${esc(slidePageSrc(r.deck,pg))}" alt="${esc(r.name)} ${pg}ページ" loading="lazy">
+        </figure>`).join("");
+      return `<div class="svDeck"><span class="svDeckName">📘 ${esc(r.name)}</span>
+        <span class="svDeckTag">${r.pages.length}ページ</span></div>${pages}`;
+    }).join("");
+    const others=q.slideRefs.filter(r=>!r.pages||!r.pages.length);
+    const note=others.length
+      ? `<div class="svNote">この問題は <b>${others.map(r=>esc(r.name)).join("・")}</b> の内容全体にも関わります。</div>`
+      : `<div class="svNote">出題元の授業スライドのうち、この問題の根拠になるページだけを表示しています。</div>`;
+    body.innerHTML=blocks+note;
+    body.querySelectorAll(".svPage").forEach(fig=>{ fig.querySelector("img").onclick=()=>fig.classList.toggle("zoomed"); });
+  }
+
   // 授業スライドから切り出した補足図。問題の図と混同しないよう見出しを付けて解説内に出す。
   function explainFigureHTML(q){
     if(!q || !q.explainImage) return "";
@@ -3645,11 +3735,11 @@
     const picked=Array.isArray(chosen)?chosen:(chosen==null?[]:[chosen]);
     if(Array.isArray(q.choiceNotes)&&q.choiceNotes.length){
       return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>${explainFigureHTML(q)}
-        <p class="explainSummary" style="color:var(--muted);font-size:12.5px;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>`;
+        <p class="explainSummary" style="color:var(--muted);font-size:12.5px;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>${moreExplHTML(q)}`;
     }
     const parsed=parseChoiceExplanations(q.explanation);
     if(!parsed){
-      return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>`;
+      return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>${explainFigureHTML(q)}${moreExplHTML(q)}`;
     }
     const keys=["A","B","C","D","E","F"];
     const rows=cur.choices.map((c,i)=>{
@@ -3825,7 +3915,7 @@
         };
       });
     }
-    wirePathButtons($("#explainBox"));
+    wirePathButtons($("#explainBox")); wireMoreExpl($("#explainBox"));
     const sp=$("#streakPill"); sp.textContent=mult>1?`🔥 ${s.streak} ×${mult}`:`🔥 ${s.streak}`; sp.classList.toggle("combo", mult>1);
     const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"結果を見る →"; nb.classList.remove("hidden");
     nb.scrollIntoView({behavior:"smooth",block:"nearest"});
@@ -3954,6 +4044,7 @@
   };
 
   /* 問題検索 */
+  $("#slideBack").onclick=closeSlideView;
   $("#searchBack").onclick=closeSearch;
   $("#searchInput").oninput=()=>{ clearTimeout(searchDebounce); searchDebounce=setTimeout(runSearch,160); };
   $("#searchInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const m=searchMatches($("#searchInput").value); if(m.length) startQuiz(m, `「${$("#searchInput").value.trim()}」の検索結果`); } };
@@ -4135,6 +4226,7 @@
     const lbOpen=!$("#fcLightbox").classList.contains("hidden");
     closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
     if(lbOpen) return;
+    if(!$("#slideView").classList.contains("hidden")){ closeSlideView(); return; }
     if(!$("#browse").classList.contains("hidden")) browseBackStep();
     else if(!$("#qbrowse").classList.contains("hidden")) qbBackStep();
     else if(VIEWS.some(v=>!$("#"+v).classList.contains("hidden"))) renderHome();
