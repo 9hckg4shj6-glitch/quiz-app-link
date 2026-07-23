@@ -1169,7 +1169,7 @@
         <span class="dueIcon">📖</span>
         <span class="dueBody">
           <span class="dueTitle">問題一覧（年度別）</span>
-          <span class="dueSub">年度・予想問題ごとに全問を1ページ10問で閲覧</span>
+          <span class="dueSub">年度・予想問題・直前スペシャルごとに全問を1ページ10問で閲覧</span>
         </span>
         <span class="dueRight"><span class="dueUnit" style="font-size:15px">一覧 →</span></span>
       </button>
@@ -1219,6 +1219,14 @@
         <span class="stCount"></span><span class="stChev">›</span>
       </button>
       <div id="predictionList" class="grid hidden"></div>
+    </div>
+
+    <div class="homeSection rangeSection" id="specialSection">
+      <button type="button" class="sectToggle" data-toggle="specialList" aria-expanded="false" style="--accent:#c2410c">
+        <span class="stMain"><span class="stLabel">直前スペシャル問題</span><span class="stHint">タップして表示</span></span>
+        <span class="stCount"></span><span class="stChev">›</span>
+      </button>
+      <div id="specialList" class="grid hidden"></div>
     </div>
 
     <div class="homeSection rangeSection" id="fieldSection">
@@ -1581,6 +1589,7 @@
       year: q.year || "", field: q.field || "",
       category: q.category || "",
       mockTitle: q.mockTitle || "",
+      specialTitle: q.specialTitle || "",
       question: q.question || "",
       choices: Array.isArray(q.choices) ? q.choices.slice() : [],
       answer: (typeof q.answer==="number") ? q.answer : Number(q.answer)||0,
@@ -1649,10 +1658,10 @@
   function clampCount(v,total){ v=Math.floor(v); if(isNaN(v)||v<1) v=1; if(v>total) v=total; return v; }
   function openCountModal(g, mode){
     pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN, unmasteredOnly:false, unseenFirst:false};
-    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
+    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
-    // 年度別・分野別・予想問題では「その範囲の未定着だけ」を選べる
-    const scopeable=(mode==="year"||mode==="prediction"||mode==="field");
+    // 年度別・分野別・予想問題・直前スペシャルでは「その範囲の未定着だけ」を選べる
+    const scopeable=(mode==="year"||mode==="prediction"||mode==="special"||mode==="field");
     $("#countScope").classList.toggle("hidden", !scopeable);
     $("#countUnseen").classList.toggle("hidden", !scopeable);
     updateCountScope();
@@ -1910,11 +1919,14 @@
     DATA.forEach(q=>{
       let key="";
       if(mode==="year"){
-        if(q.category==="予想問題") return;
+        if(q.category==="予想問題"||q.category==="直前スペシャル") return;
         key=q.year;
       } else if(mode==="prediction"){
         if(q.category!=="予想問題") return;
         key=q.mockTitle || q.year || "予想問題";
+      } else if(mode==="special"){
+        if(q.category!=="直前スペシャル") return;
+        key=q.specialTitle || q.year || "直前スペシャル問題";
       } else {
         key=q.field;
       }
@@ -1976,7 +1988,7 @@
     const weakN=DATA.filter(q=>syncWeak(rec(q.id))).length;
     const bmN=DATA.filter(q=>isBookmarked(q.id)).length;
     const items=[
-      {icon:"📚",name:"問題演習",sub:"年度別・予想・分野別・本番",go:()=>openView("practiceView")},
+      {icon:"📚",name:"問題演習",sub:"年度別・予想・直前SP・分野別",go:()=>openView("practiceView")},
       {icon:"📖",name:"問題一覧",sub:"年度別に全問題を閲覧",go:openQBrowse},
       {icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")},
       {icon:"💬",name:"コミュニティ",sub:cmUnread>0?`新しい書き込みが ${cmUnread} 件あります`:"掲示板で質問・情報交換",
@@ -2495,6 +2507,7 @@
   function renderScopeLists(){
     renderGroupList("year", "#yearList");
     renderGroupList("prediction", "#predictionList");
+    renderGroupList("special", "#specialList");
     renderGroupList("field", "#fieldList");
     renderGroupList("weak", "#weakList");
     renderGroupList("bookmark", "#bookmarkList");
@@ -2508,18 +2521,18 @@
         ?`<div class="empty">🎉 まだ苦手問題はありません。<br>同じ問題を2回間違えると、ここに自動で追加されます。</div>`
         :mode==="bookmark"
         ?`<div class="empty">🔖 まだ見直したい問題としてマークしたものはありません。<br>問題演習中の「☆ 見直す」ボタンでいつでも保存できます。</div>`
-        :`<div class="empty">この分類の問題がありません。<br>questions.js に <b>${mode==="year"?"year":mode==="prediction"?"category":"field"}</b> を設定してください。</div>`;
+        :`<div class="empty">この分類の問題がありません。<br>questions.js に <b>${mode==="year"?"year":mode==="prediction"||mode==="special"?"category":"field"}</b> を設定してください。</div>`;
       return;
     }
     list.innerHTML=gs.map(g=>{
       const s=catStats(g.items), isWeak=g.key==="__weak__", isBookmark=g.key==="__bookmark__";
       const accent=isWeak?"var(--bad)":isBookmark?"var(--gold)":ACCENTS[(g.idx||0)%ACCENTS.length];
       const pct=Math.round(s.seen/s.total*100);
-      const kicker=isWeak?"苦手復習":isBookmark?"見直したい問題":(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":"分野別演習");
+      const kicker=isWeak?"苦手復習":isBookmark?"見直したい問題":(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":"分野別演習");
       const accText=s.seen?`正答率 ${s.acc}%`:"未学習";
       const mastered=s.mastered?`<span class="mastered">${s.mastered}問定着</span>`:`<span class="mastered" style="color:var(--muted)">開始前</span>`;
       const right=(isWeak||isBookmark)?`<span class="badge">${g.items.length}問</span>`:`<span class="badge">${s.total}問</span>${mastered}`;
-      return `<button type="button" class="cat ${isWeak?'weakcat':''} ${isBookmark?'bookmarkcat':''} ${mode==="year"||mode==="prediction"?'cat-year':'cat-field'}" data-key="${esc(g.key)}" style="--accent:${accent};--pct:${pct}%">
+      return `<button type="button" class="cat ${isWeak?'weakcat':''} ${isBookmark?'bookmarkcat':''} ${mode==="year"||mode==="prediction"||mode==="special"?'cat-year':'cat-field'}" data-key="${esc(g.key)}" style="--accent:${accent};--pct:${pct}%">
         <div class="info">
           <div class="cat-kicker">${kicker}</div>
           <h3>${esc(g.label)}</h3>
@@ -2529,7 +2542,7 @@
         <div class="rt">${right}<span class="chev">開始</span></div>
       </button>`;
     }).join("");
-    list.querySelectorAll(".cat").forEach(el=>{ el.onclick=()=>{ const g=groups(mode).find(x=>String(x.key)===el.dataset.key); if(!g) return; if((mode==="year"||mode==="prediction"||mode==="field") && g.items.length>1){ openCountModal(g,mode); } else { startQuiz(g.items,g.label,{mode,key:g.key}); } }; });
+    list.querySelectorAll(".cat").forEach(el=>{ el.onclick=()=>{ const g=groups(mode).find(x=>String(x.key)===el.dataset.key); if(!g) return; if((mode==="year"||mode==="prediction"||mode==="special"||mode==="field") && g.items.length>1){ openCountModal(g,mode); } else { startQuiz(g.items,g.label,{mode,key:g.key}); } }; });
   }
 
   const ACH=[
@@ -3122,6 +3135,7 @@
   const QB_PAGE=10;
   const QB_EXAM_ICONS=["📄","📝","🗓"];
   const QB_PRED_ICONS=["🔮","📗","📘","📙"];
+  const QB_SPEC_ICONS=["🔥","⚡"];
   function qbNum(id){ const m=String(id).match(/\d+/g); return m?parseInt(m[m.length-1],10):0; }
   function qbKanjiOrder(label){
     // 「代謝第十三回予想問題」→ 13。模試などは末尾に回す。
@@ -3134,18 +3148,21 @@
     return n;
   }
   function qbGroups(){
-    const exam=new Map(), pred=new Map();
+    const exam=new Map(), pred=new Map(), spec=new Map();
     DATA.forEach(q=>{
       if(q.category==="予想問題"){ const k=q.mockTitle||q.year||"予想問題"; if(!pred.has(k))pred.set(k,[]); pred.get(k).push(q); }
+      else if(q.category==="直前スペシャル"){ const k=q.specialTitle||q.year||"直前スペシャル問題"; if(!spec.has(k))spec.set(k,[]); spec.get(k).push(q); }
       else { const k=q.year; if(!k)return; if(!exam.has(k))exam.set(k,[]); exam.get(k).push(q); }
     });
     const ek=[...exam.keys()].sort().reverse();
     const pk=[...pred.keys()].sort((a,b)=>qbKanjiOrder(a)-qbKanjiOrder(b)||a.localeCompare(b,"ja",{numeric:true}));
+    const sk=[...spec.keys()].sort().reverse();
     return { exam:ek.map(k=>({key:k,label:k,items:exam.get(k)})),
-             pred:pk.map(k=>({key:k,label:k,items:pred.get(k)})) };
+             pred:pk.map(k=>({key:k,label:k,items:pred.get(k)})),
+             spec:sk.map(k=>({key:k,label:k,items:spec.get(k)})) };
   }
   function qbFindGroup(key){
-    const g=qbGroups(); return g.exam.find(x=>x.key===key)||g.pred.find(x=>x.key===key)||null;
+    const g=qbGroups(); return g.exam.find(x=>x.key===key)||g.pred.find(x=>x.key===key)||g.spec.find(x=>x.key===key)||null;
   }
   function renderQBrowse(){
     const g=qbrowseState.group;
@@ -3177,6 +3194,10 @@
     if(g.pred.length){
       html+=`<div class="qbSectLabel">🔮 予想問題・模試</div><div class="qbGroupList">`+
         g.pred.map((x,i)=>qbGroupBtn(x,QB_PRED_ICONS[i%QB_PRED_ICONS.length])).join("")+`</div>`;
+    }
+    if(g.spec.length){
+      html+=`<div class="qbSectLabel">🔥 直前スペシャル問題</div><div class="qbGroupList">`+
+        g.spec.map((x,i)=>qbGroupBtn(x,QB_SPEC_ICONS[i%QB_SPEC_ICONS.length])).join("")+`</div>`;
     }
     box.innerHTML=html||`<div class="empty">問題データがありません。</div>`;
     box.querySelectorAll(".brDeck2").forEach(el=>{ el.onclick=()=>{
