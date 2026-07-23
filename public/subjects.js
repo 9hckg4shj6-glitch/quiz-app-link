@@ -35,7 +35,6 @@ window.SUBJECTS = [
     emoji: "🧬",
     accent: "#7c3aed",
     questions: "subjects/genome/questions.js",
-    // draft:true の科目は、まだ問題が0件でも検査を通す（これから入れていく科目）
-    draft: true,
+    expectQuestions: 100,
   },
 ];
