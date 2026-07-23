@@ -250,6 +250,9 @@
   .pill.timer.danger{background:color-mix(in srgb,var(--bad) 20%,var(--card2));color:var(--bad);animation:pulseT 1s infinite}
   @keyframes pulseT{50%{opacity:.55}}
   .choice.selected{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 14%,var(--card2));box-shadow:0 0 0 1px var(--brand) inset}
+  /* 「2つ選べ」問題の決定ボタン */
+  .multiConfirm{width:100%;margin-top:4px}
+  .multiConfirm:disabled{opacity:.55;cursor:not-allowed}
   .fieldBreak{text-align:left;margin:6px 0 4px}
   .fbRow{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:12.5px}
   .fbName{flex:0 0 40%;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1406,6 +1409,7 @@
         <img id="qfigureImg" alt="">
       </figure>
       <div class="choices" id="choices"></div>
+      <button type="button" class="btn primary multiConfirm hidden" id="multiConfirm"></button>
       <div id="explainBox"></div>
     </div>
     <button class="btn hidden" id="nextBtn">次の問題 →</button>
@@ -1593,6 +1597,7 @@
       question: q.question || "",
       choices: Array.isArray(q.choices) ? q.choices.slice() : [],
       answer: (typeof q.answer==="number") ? q.answer : Number(q.answer)||0,
+      answers: Array.isArray(q.answers)&&q.answers.length ? q.answers.map(Number) : null,
       explanation: q.explanation || "",
       image: q.image || null,
       imageAlt: q.imageAlt || "",
@@ -2427,7 +2432,8 @@
   // よく選んでしまう誤答（記録があれば）
   function topMiss(q){
     const r=progress[q.id]; if(!r||!r.miss) return null;
-    let bi=-1, bc=0; Object.keys(r.miss).forEach(k=>{ const i=+k; if(i!==q.answer && r.miss[k]>bc){ bc=r.miss[k]; bi=i; } });
+    const okSet=new Set(ansIdxs(q));
+    let bi=-1, bc=0; Object.keys(r.miss).forEach(k=>{ const i=+k; if(!okSet.has(i) && r.miss[k]>bc){ bc=r.miss[k]; bi=i; } });
     return bi>=0 ? {text:q.choices[bi], count:bc} : null;
   }
   let mistakeFilter="all";
@@ -2465,7 +2471,7 @@
     const chip=(k,label,n)=>`<button type="button" class="maChip${mistakeFilter===k?' on':''}" data-f="${k}">${label}${n!=null?` <b>${n}</b>`:""}</button>`;
     const CAP=120, capped=shown.slice(0,CAP);
     const rows=capped.map(q=>{
-      const r=progress[q.id], correct=q.choices[q.answer], miss=topMiss(q);
+      const r=progress[q.id], correct=ansText(q), miss=topMiss(q);
       return `<div class="maItem">
         <div class="maQ">${esc(q.question)}</div>
         <div class="maFacts">
@@ -2607,11 +2613,14 @@
     const t=todayStr();
     let correct=0, run=0, maxRun=0;
     s.queue.forEach((cur,i)=>{
-      const chosenIdx=(s.answers[i]===undefined?null:s.answers[i]);
-      const isCorrect = chosenIdx!==null && cur.choices[chosenIdx] && cur.choices[chosenIdx].correct;
+      const raw=(s.answers[i]===undefined?null:s.answers[i]);
+      const picks=raw===null?[]:(Array.isArray(raw)?raw:[raw]);
+      const correctPos=cur.choices.map((c,k)=>c.correct?k:-1).filter(k=>k>=0);
+      const isCorrect = picks.length>0 && sameSet(picks,correctPos);
+      const chosenLabel = picks.length? picks.map(k=>cur.choices[k].text).join(" ／ ") : "（未回答）";
       const r=rec(cur.q.id); r.seen++;
       if(isCorrect){ r.correct++; r.streak++; correct++; run++; maxRun=Math.max(maxRun,run); }
-      else { r.wrong++; r.streak=0; r.lastWrong=t; run=0; s.wrongList.push({q:cur.q, chosen: chosenIdx===null?"（未回答）":cur.choices[chosenIdx].text}); }
+      else { r.wrong++; r.streak=0; r.lastWrong=t; run=0; s.wrongList.push({q:cur.q, chosen: chosenLabel}); }
       syncWeak(r); scheduleSRS(r, isCorrect?3:1, cur.q.id);
     });
     s.correct=correct; s.maxStreak=maxRun;
@@ -2627,13 +2636,15 @@
     const gained=meta.xp-s.xpStart, el=s.elapsedSec||0, mm=Math.floor(el/60), ss=el%60;
     // 分野別内訳
     const byF={};
-    s.queue.forEach((cur,i)=>{ const f=cur.q.field||"その他"; const ci=s.answers[i]; const ok=ci!=null&&cur.choices[ci]&&cur.choices[ci].correct;
+    s.queue.forEach((cur,i)=>{ const f=cur.q.field||"その他"; const raw=s.answers[i];
+      const picks=raw==null?[]:(Array.isArray(raw)?raw:[raw]);
+      const ok=picks.length>0&&sameSet(picks,cur.choices.map((c,k)=>c.correct?k:-1).filter(k=>k>=0));
       (byF[f]=byF[f]||{c:0,n:0}); byF[f].n++; if(ok)byF[f].c++; });
     const fieldRows=Object.keys(byF).sort((a,b)=>(byF[a].c/byF[a].n)-(byF[b].c/byF[b].n)).map(f=>{
       const o=byF[f], p=Math.round(o.c/o.n*100);
       return `<div class="fbRow"><span class="fbName">${esc(f)}</span><span class="fbBar"><i style="width:${p}%"></i></span><span class="fbNum">${o.c}/${o.n}</span></div>`;
     }).join("");
-    const wrong=s.wrongList.map(w=>{ const ans=w.q.choices[w.q.answer];
+    const wrong=s.wrongList.map(w=>{ const ans=ansText(w.q);
       return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">あなた: ${esc(w.chosen)}</div><div class="a ans">正解: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${esc(w.q.explanation)}</div>`:""}</div>`; }).join("");
     const msg=score>=90?"🏆 素晴らしい！":score>=70?"🎉 合格ライン！":score>=50?"💪 あと一歩！":"📚 復習しよう！";
     $("#quiz").classList.add("hidden");
@@ -2886,7 +2897,7 @@
 
   /* ---------- フラッシュカード ---------- */
   let flashSession=null, flashTouch=null, lastFlashTouch=0, flashAnimating=false;
-  function questionToCard(q){ return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:q.choices[q.answer],expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""}; }
+  function questionToCard(q){ return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:ansText(q),expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""}; }
   function termToCard(t,i){ return {id:t.id||("tc"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:t.image||null,imageAlt:t.imageAlt||"",backImageOnly:!!t.backImageOnly}; }
   function fcImgHTML(c){ return c.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:""; }
   function escML(s){ return esc(s).replace(/\n/g,"<br>"); }
@@ -3210,7 +3221,7 @@
     const img=q.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(q.image)}" alt="${esc(q.imageAlt||"")}" loading="lazy"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:"";
     const notes=Array.isArray(q.choiceNotes)?q.choiceNotes:[];
     const choices=(q.choices||[]).map((c,i)=>{
-      const ok=i===q.answer, note=notes[i]?`<div class="qbCNote">${esc(notes[i])}</div>`:"";
+      const ok=ansIdxs(q).indexOf(i)>=0, note=notes[i]?`<div class="qbCNote">${esc(notes[i])}</div>`:"";
       return `<li class="qbChoice${ok?' ok':''}"><span class="qbCL">${qLetter(i)}</span><span class="qbCBody"><span class="qbCText">${esc(c)}${ok?' <span class="qbOk">✓ 正解</span>':''}</span>${note}</span></li>`;
     }).join("");
     const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${esc(q.explanation)}</div>`:"";
@@ -3271,11 +3282,21 @@
   }
   function closeQBrowse(){ $("#qbrowse").classList.add("hidden"); renderHome(); }
 
+  /* ---------- 複数正解（「2つ選べ」）のためのヘルパー ---------- */
+  // answers が無い従来問題は [answer] を返すので、既存954問の挙動は変わらない。
+  function ansIdxs(q){ return (Array.isArray(q.answers)&&q.answers.length) ? q.answers : [q.answer]; }
+  function ansCount(q){ return ansIdxs(q).length; }
+  function isMulti(q){ return ansCount(q)>1; }
+  function ansText(q){ return ansIdxs(q).map(i=>(q.choices||[])[i]).filter(v=>v!=null).join(" ／ "); }
+  function sameSet(a,b){ if(a.length!==b.length) return false; const s2=new Set(b); return a.every(v=>s2.has(v)); }
+
   function startQuiz(items,label,catRef,opts){
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const ordered = opts.keepOrder ? items.slice() : shuffle(items);  // 復習・試験日モードは並びに意味があるので崩さない
-    const queue=ordered.map(q=>{ let ch=q.choices.map((c,i)=>({text:c,correct:i===q.answer,idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch); return {q,choices:ch}; });
+    const queue=ordered.map(q=>{ const ok=new Set(ansIdxs(q));
+      let ch=q.choices.map((c,i)=>({text:c,correct:ok.has(i),idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch);
+      return {q,choices:ch,need:ok.size}; });
     session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
     hideAllScreens(); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
@@ -3370,7 +3391,8 @@
     });
   }
 
-  function renderExplainBody(q,cur,chosenIdx){
+  function renderExplainBody(q,cur,chosen){
+    const picked=Array.isArray(chosen)?chosen:(chosen==null?[]:[chosen]);
     if(Array.isArray(q.choiceNotes)&&q.choiceNotes.length){
       return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>
         <p class="explainSummary" style="color:var(--muted);font-size:12.5px;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>`;
@@ -3382,8 +3404,9 @@
     const keys=["A","B","C","D","E","F"];
     const rows=cur.choices.map((c,i)=>{
       const item=parsed[c.idx], exp=item?item.text:"";
-      const cls=c.correct?"ce-correct":(i===chosenIdx?"ce-wrongchosen":"");
-      const tag=c.correct?'<span class="etag">正解</span>':(i===chosenIdx?'<span class="etag">あなたの回答</span>':"");
+      const mine=picked.indexOf(i)>=0;
+      const cls=c.correct?"ce-correct":(mine?"ce-wrongchosen":"");
+      const tag=c.correct?'<span class="etag">正解</span>':(mine?'<span class="etag">あなたの回答</span>':"");
       return `<li class="${cls}"><span class="ekey">${keys[i]}</span><span class="etext"><span class="echoice">${esc(c.text)}${tag}</span>${exp?`<span class="edesc">${esc(exp)}</span>`:""}</span></li>`;
     }).join("");
     return `<div class="lead">選択肢別の解説</div><ul class="choiceExplainList">${rows}</ul>`;
@@ -3409,30 +3432,71 @@
       figImg.onclick=()=>fig.classList.toggle("zoomed"); }
     else { figImg.removeAttribute("src"); fig.classList.add("hidden"); }
     const keys=["A","B","C","D","E","F"], box=$("#choices"); box.innerHTML="";
+    const need=cur.need||1, multi=need>1;
+    s.picks=[];
     cur.choices.forEach((ch,idx)=>{
       const b=document.createElement("button"); b.className="choice";
       b.innerHTML=`<span class="key">${keys[idx]}</span><span class="choiceBody"><span class="choiceText">${esc(ch.text)}</span></span>`;
-      b.onclick=()=>answer(idx); box.appendChild(b);
+      b.onclick=()=>multi?togglePick(idx):answer([idx]); box.appendChild(b);
       const note=document.createElement("div"); note.className="choiceNote hidden"; box.appendChild(note);
     });
+    // 「2つ選べ」問題：選択をトグルし、必要数そろったら決定ボタンで採点する
+    const mc=$("#multiConfirm");
+    if(multi){
+      mc.classList.remove("hidden"); mc.disabled=true;
+      mc.textContent=`${need}つ選んでください（0/${need}）`;
+      mc.onclick=()=>{ if((s.picks||[]).length===need) answer(s.picks.slice()); };
+    } else mc.classList.add("hidden");
     if(s.exam){
       const sel=s.answers[s.i];
-      if(sel!==undefined){ const bs=box.querySelectorAll(".choice"); if(bs[sel]) bs[sel].classList.add("selected"); }
+      if(sel!==undefined){
+        const bs=box.querySelectorAll(".choice"), arr=Array.isArray(sel)?sel:[sel];
+        arr.forEach(i=>{ if(bs[i]) bs[i].classList.add("selected"); });
+        if(multi){ s.picks=arr.slice(); updateMultiConfirm(need); }
+      }
       const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"採点する →"; nb.classList.remove("hidden");
     }
   }
-  function answer(idx){
-    const s=session,cur=s.queue[s.i],q=cur.q,chosen=cur.choices[idx],isCorrect=chosen.correct;
+  function updateMultiConfirm(need){
+    const s=session, n=(s.picks||[]).length, mc=$("#multiConfirm");
+    if(!mc) return;
+    mc.disabled = n!==need;
+    mc.textContent = n===need ? `この${need}つで決定 →` : `${need}つ選んでください（${n}/${need}）`;
+  }
+  function togglePick(idx){
+    const s=session, cur=s.queue[s.i], need=cur.need||1;
+    s.picks=s.picks||[];
+    const at=s.picks.indexOf(idx);
+    if(at>=0) s.picks.splice(at,1);
+    else { if(s.picks.length>=need) s.picks.shift(); s.picks.push(idx); }   // 上限を超えたら古い選択から外す
+    [...$("#choices").querySelectorAll(".choice")].forEach((b,i)=>b.classList.toggle("selected", s.picks.indexOf(i)>=0));
     if(s.exam){
-      s.answers[s.i]=idx;
-      [...$("#choices").querySelectorAll(".choice")].forEach((b,i)=>b.classList.toggle("selected",i===idx));
+      s.answers[s.i]=s.picks.slice();
+      updateMultiConfirm(need);
       const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"採点する →"; nb.classList.remove("hidden");
       return;
     }
+    updateMultiConfirm(need);
+  }
+  function answer(sel){
+    const s=session,cur=s.queue[s.i],q=cur.q;
+    const picks=Array.isArray(sel)?sel.slice():[sel];
+    if(s.exam){
+      s.answers[s.i]=(cur.need>1)?picks:picks[0];
+      [...$("#choices").querySelectorAll(".choice")].forEach((b,i)=>b.classList.toggle("selected",picks.indexOf(i)>=0));
+      const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"採点する →"; nb.classList.remove("hidden");
+      return;
+    }
+    // 複数正解のときは「選んだ集合が正解の集合と完全一致」したときだけ正解
+    const correctPos=cur.choices.map((c,i)=>c.correct?i:-1).filter(i=>i>=0);
+    const isCorrect=sameSet(picks,correctPos);
+    const chosen=cur.choices[picks[0]];
+    const mcx=$("#multiConfirm"); if(mcx) mcx.classList.add("hidden");
     const hasNotes=Array.isArray(q.choiceNotes)&&q.choiceNotes.length>0;
     const btns=[...$("#choices").querySelectorAll(".choice")], notes=[...$("#choices").querySelectorAll(".choiceNote")];
     btns.forEach((b,i)=>{
-      if(cur.choices[i].correct) b.classList.add("correct"); else if(i===idx) b.classList.add("wrong");
+      b.classList.remove("selected");
+      if(cur.choices[i].correct) b.classList.add("correct"); else if(picks.indexOf(i)>=0) b.classList.add("wrong");
       const noteText=hasNotes?q.choiceNotes[cur.choices[i].idx]:null;
       if(noteText){
         const hint=document.createElement("span"); hint.className="revealHint"; hint.textContent="▾ 解説を見る";
@@ -3449,8 +3513,10 @@
     const r=rec(q.id); r.seen++;
     let lvup=0, gainXP=0, mult=1;
     if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
-    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0; s.wrongList.push({q,chosen:chosen.text});
-      r.miss=r.miss||{}; r.miss[chosen.idx]=(r.miss[chosen.idx]||0)+1;   // どの誤答を選んだかを記録（誤答分析用）
+    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0;
+      s.wrongList.push({q,chosen:picks.map(i=>cur.choices[i].text).join(" ／ ")});
+      r.miss=r.miss||{};   // どの誤答を選んだかを記録（誤答分析用）
+      picks.forEach(i=>{ const c=cur.choices[i]; if(!c.correct) r.miss[c.idx]=(r.miss[c.idx]||0)+1; });
       gainXP=XP_WRONG; lvup=addXP(gainXP); }
     // 不正解は自動で「もう一度(Again)」。正解は下の手ごたえボタンで4段階評価をFSRSへ渡す。
     if(!isCorrect){ scheduleSRS(r, 1, q.id); s.graded=true; }
@@ -3459,7 +3525,7 @@
     if(lvup){ s.leveledUp=lvup; toast(`🎉 レベルアップ！ Lv.${lvup} に到達`); }
     const ach=checkAch(); if(ach) setTimeout(()=>toast(`🏅 実績解除：${ach.n}`),lvup?1400:0);
 
-    const correctText=cur.choices.find(c=>c.correct).text, remain=Math.max(0,MASTER_HITS-r.streak);
+    const correctText=cur.choices.filter(c=>c.correct).map(c=>c.text).join(" ／ "), remain=Math.max(0,MASTER_HITS-r.streak);
     let note="";
     if(!isCorrect){
       const untilWeak=Math.max(0,WEAK_WRONGS-r.wrong);
@@ -3484,7 +3550,7 @@
         <div class="head">${isCorrect?`⭕ 正解！ +${gainXP}XP${mult>1?` <span style="color:var(--warn)">🔥コンボ×${mult}</span>`:''}`:'❌ 不正解 +'+XP_WRONG+'XP'}</div>
         ${note}
         ${!isCorrect?`<div class="body" style="margin-bottom:8px"><b>正解：</b>${esc(correctText)}</div>`:''}
-        <div class="body">${renderExplainBody(q,cur,idx)}</div>
+        <div class="body">${renderExplainBody(q,cur,picks)}</div>
         ${confHTML}
         ${noteHTML}
         ${pathwayHTML(q)}</div>`;
@@ -3754,7 +3820,7 @@
     const s=session,total=s.queue.length,pct=Math.round(s.correct/total*100),gained=meta.xp-s.xpStart;
     $("#quiz").classList.add("hidden");
     const msg=pct===100?"🏆 全問正解！完璧です！":pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
-    const wrong=s.wrongList.map(w=>{ const ans=w.q.choices[w.q.answer];
+    const wrong=s.wrongList.map(w=>{ const ans=ansText(w.q);
       return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">あなた: ${esc(w.chosen)}</div><div class="a ans">正解: ${esc(ans)}</div></div>`; }).join("");
     $("#result").innerHTML=`
       <div class="result">
