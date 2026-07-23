@@ -94,6 +94,10 @@
     .spLead h2{font-size:22px}
   }
 
+  /* 解説の補足図（授業スライドからの切り抜き） */
+  .explFig{margin:12px 0 4px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--card2)}
+  .explFig figcaption{font-size:11.5px;font-weight:900;color:var(--muted);margin-bottom:8px;letter-spacing:.02em}
+  .explFig img{display:block;width:100%;height:auto;border-radius:10px;background:#fff}
   /* 空の科目（まだ問題を入れていない科目）の案内 */
   .emptySubject{display:flex;align-items:center;gap:14px;padding:20px 18px}
   .emptySubject .esIcon{font-size:28px;flex:0 0 auto}
@@ -1815,6 +1819,8 @@
       explanation: q.explanation || "",
       image: q.image || null,
       imageAlt: q.imageAlt || "",
+      explainImage: q.explainImage || null,          // 解説の補足図（問題の図とは別枠で出す）
+      explainImageAlt: q.explainImageAlt || "",
       choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null
     })).filter(q=>q.question && q.choices.length>=2);
   }
@@ -3454,7 +3460,7 @@
       const ok=ansIdxs(q).indexOf(i)>=0, note=notes[i]?`<div class="qbCNote">${esc(notes[i])}</div>`:"";
       return `<li class="qbChoice${ok?' ok':''}"><span class="qbCL">${qLetter(i)}</span><span class="qbCBody"><span class="qbCText">${esc(c)}${ok?' <span class="qbOk">✓ 正解</span>':''}</span>${note}</span></li>`;
     }).join("");
-    const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${esc(q.explanation)}</div>`:"";
+    const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${esc(q.explanation)}${explainFigureHTML(q)}</div>`:"";
     return `${img}<ol class="qbChoices">${choices}</ol>${expl}`;
   }
   function qbPagerHTML(page,pages){
@@ -3621,10 +3627,16 @@
     });
   }
 
+  // 授業スライドから切り出した補足図。問題の図と混同しないよう見出しを付けて解説内に出す。
+  function explainFigureHTML(q){
+    if(!q || !q.explainImage) return "";
+    return `<figure class="explFig"><figcaption>📘 授業スライドの図</figcaption>
+      <img src="${esc(q.explainImage)}" alt="${esc(q.explainImageAlt||"解説の補足図")}" loading="lazy"></figure>`;
+  }
   function renderExplainBody(q,cur,chosen){
     const picked=Array.isArray(chosen)?chosen:(chosen==null?[]:[chosen]);
     if(Array.isArray(q.choiceNotes)&&q.choiceNotes.length){
-      return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>
+      return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>${explainFigureHTML(q)}
         <p class="explainSummary" style="color:var(--muted);font-size:12.5px;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>`;
     }
     const parsed=parseChoiceExplanations(q.explanation);
