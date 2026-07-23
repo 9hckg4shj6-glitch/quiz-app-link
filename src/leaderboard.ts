@@ -48,8 +48,15 @@ export function cleanName(raw: string): string {
   return raw.replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, MAX_NAME);
 }
 
+// ランキングは科目ごとに分かれている。呼び出し側から現在の科目idを渡す。
+const DEFAULT_SUBJECT = "metabolism";
+function normSubject(subject?: string | null): string {
+  const s = (subject ?? "").trim();
+  return s.length ? s.slice(0, 48) : DEFAULT_SUBJECT;
+}
+
 // 名前を保存して参加登録し、現在の解答数を送信する。
-export async function joinLeaderboard(rawName: string, solved: number): Promise<{ ok: boolean; error?: string }> {
+export async function joinLeaderboard(rawName: string, solved: number, subject?: string): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "ランキングは現在利用できません" };
   const name = cleanName(rawName);
   if (name.length < 1) return { ok: false, error: "名前を入力してください" };
@@ -60,44 +67,48 @@ export async function joinLeaderboard(rawName: string, solved: number): Promise<
     /* localStorage 不可でも送信は試みる */
   }
   try {
-    await sendScore(name, solved);
+    await sendScore(name, solved, subject);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
-async function sendScore(name: string, solved: number): Promise<void> {
+async function sendScore(name: string, solved: number, subject?: string): Promise<void> {
   if (!supabase) return;
   const deviceId = await getDeviceId();
   const { error } = await supabase.rpc("publish_score", {
     p_device_id: deviceId,
     p_name: name,
     p_solved: Math.max(0, Math.floor(solved)),
+    p_subject: normSubject(subject),
   });
   if (error) throw error;
 }
 
 let lastPublish = 0;
+let lastSubject: string | undefined;
 
 // 演習中に随時呼ぶ。参加済みかつオンラインのときだけ、最短30秒間隔で送信する。
-export async function publishScore(solved: number, force = false): Promise<void> {
+export async function publishScore(solved: number, force = false, subject?: string): Promise<void> {
   if (!supabase || !hasJoined()) return;
   if (typeof navigator !== "undefined" && !navigator.onLine) return;
   const now = Date.now();
-  if (!force && now - lastPublish < 30_000) return;
-  lastPublish = now;
+  // 科目を切り替えた直後は間隔をおかずに送る（別科目のスコアなので待つ意味がない）
+  if (!force && subject === lastSubject && now - lastPublish < 30_000) return;
+  lastPublish = now; lastSubject = subject;
   try {
-    await sendScore(getSavedName(), solved);
+    await sendScore(getSavedName(), solved, subject);
   } catch {
     lastPublish = 0; // 失敗時は次回すぐ再試行できるように
   }
 }
 
-export async function fetchLeaderboard(): Promise<LeaderboardView | null> {
+export async function fetchLeaderboard(subject?: string): Promise<LeaderboardView | null> {
   if (!supabase) return null;
   const deviceId = await getDeviceId();
-  const { data, error } = await supabase.rpc("get_leaderboard", { p_device_id: deviceId });
+  const p_subject = normSubject(subject);
+  const { data, error } = await supabase.rpc("get_leaderboard", { p_device_id: deviceId, p_subject });
   if (error) throw error;
   const rows: RankRow[] = ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     rank: Number(r.rank),
@@ -110,7 +121,7 @@ export async function fetchLeaderboard(): Promise<LeaderboardView | null> {
     return { rows, myRank: mine.rank, mySolved: mine.solved, inTop: true };
   }
   if (hasJoined()) {
-    const { data: mr } = await supabase.rpc("get_my_rank", { p_device_id: deviceId });
+    const { data: mr } = await supabase.rpc("get_my_rank", { p_device_id: deviceId, p_subject });
     const row = Array.isArray(mr) ? (mr[0] as Record<string, unknown> | undefined) : null;
     if (row) return { rows, myRank: Number(row.rank), mySolved: Number(row.solved_count), inTop: false };
   }

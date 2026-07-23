@@ -36,7 +36,9 @@ export default defineConfig({
             handler: "CacheFirst",
             options: {
               cacheName: "study-images-v2",
-              expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              // 科目が増えると図も増える。上限が総枚数を下回ると、
+              // 古い科目の図がキャッシュから追い出されてオフラインで見られなくなる。
+              expiration: { maxEntries: 3000, maxAgeSeconds: 60 * 60 * 24 * 90 },
               cacheableResponse: { statuses: [0, 200] }
             }
           }

@@ -58,6 +58,26 @@
 
   header.app{display:flex;align-items:center;gap:12px;margin-bottom:16px;position:relative}
   .menuWrap{position:relative;flex:0 0 auto}
+  /* 科目切替（科目が2つ以上あるときだけ表示） */
+  .titleWrap{min-width:0}
+  .subjectWrap{position:relative;margin-top:5px}
+  .subjectChip{display:inline-flex;align-items:center;gap:6px;max-width:100%;
+    border:1px solid var(--line);background:var(--card2);color:var(--text);
+    border-radius:999px;padding:4px 11px 4px 8px;font-family:inherit;font-size:12.5px;font-weight:800;
+    cursor:pointer;transition:.15s}
+  .subjectChip:hover{border-color:var(--subject-accent,var(--brand));color:var(--subject-accent,var(--brand))}
+  .subjectChip .sjEmoji{font-size:14px}
+  .subjectChip .sjName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .subjectChip .sjChev{color:var(--muted);font-size:11px}
+  /* .menuPanel は後段のスキンで position:fixed になるため、詳細度を上げて上書きする */
+  .subjectWrap > .subjectPanel{position:absolute;top:34px;left:0;right:auto;width:min(260px,calc(100vw - 32px));
+    background:var(--card);backdrop-filter:none;z-index:130}
+  .subjectPanel .sjItem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+    border:0;background:none;color:var(--text);font-family:inherit;font-size:14px;font-weight:700;
+    padding:11px 12px;border-radius:11px;cursor:pointer}
+  .subjectPanel .sjItem:hover{background:var(--card2)}
+  .subjectPanel .sjItem.on{color:var(--sj-accent,var(--brand));font-weight:900}
+  .subjectPanel .sjItem .sjCount{margin-left:auto;font-size:11.5px;color:var(--muted);font-weight:800}
   .notifyWrap{position:relative;flex:0 0 auto}
   .updateDot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;
     background:var(--bad);border:2px solid var(--card)}
@@ -1116,10 +1136,16 @@
         <a href="#moreView" data-menu-view="moreView"><span class="mi">⚙️</span>設定・データ</a>
       </div>
     </div>
-    <div class="logo">🧠</div>
-    <div>
+    <div class="logo" id="appLogo">🧠</div>
+    <div class="titleWrap">
       <h1>代謝演習アプリ</h1>
       <p id="subtitle">読み込み中…</p>
+      <div class="subjectWrap hidden" id="subjectWrap">
+        <button type="button" class="subjectChip" id="subjectBtn" aria-expanded="false" aria-haspopup="true">
+          <span class="sjEmoji" id="subjectEmoji">🧬</span><span class="sjName" id="subjectName">科目</span><span class="sjChev">▾</span>
+        </button>
+        <div class="menuPanel subjectPanel hidden" id="subjectPanel"></div>
+      </div>
     </div>
     <div class="lvbadge" id="lvBadge" title="レベル"><div class="dot" id="lvDot">1</div><div><b id="lvNum">Lv.1</b><small id="lvXp">0 XP</small></div></div>
     <div class="notifyWrap">
@@ -1376,7 +1402,7 @@
   <section id="rankView" class="hidden">
     <div class="reviewTop">
       <button class="btn ghost small viewBack">← ホーム</button>
-      <span class="pill">ランキング</span>
+      <span class="pill" id="rankPill">ランキング</span>
     </div>
     <div class="homeSection" id="rankBody"></div>
   </section>
@@ -1492,9 +1518,8 @@
   <section id="result" class="hidden"></section>
 </div>
 
-<script src="questions.js"></script>
+<script src="subjects.js"></script>
 <script src="updates.js"></script>
-<script src="terms.js"></script>
 <script>
 (function(){
   "use strict";
@@ -1507,6 +1532,7 @@
   const UPDATES_SEEN_KEY = "quizUpdatesSeen_v1";
   const SECTION_OPEN_KEY = "quizSectionOpen_v1";
   const LIMIT_KEY   = "quizSessionLimit_v1";   // 1回の出題数（0=すべて）
+  const SUBJECT_KEY = "quizSubject_v1";        // 最後に選んでいた科目のid
   const MASTER_HITS = 2;      // 苦手を「克服」して外すのに必要な連続正解数
   const WEAK_WRONGS = 2;      // 「苦手問題」に分類する累計誤答数
   const SHUFFLE_CHOICES = true;
@@ -1572,6 +1598,97 @@
     $("#updatesModalBackdrop").classList.remove("hidden");
   }
   function closeUpdatesModal(){ $("#updatesModalBackdrop").classList.add("hidden"); }
+  /* ---------- 科目（マルチ科目対応） ----------
+     データは「今えらんでいる科目のぶんだけ」を後から読み込む。
+     こうしておくと科目をいくら足しても、起動時に読む量は1科目ぶんのまま変わらない。 */
+  const SUBJECTS = Array.isArray(window.SUBJECTS) ? window.SUBJECTS.filter(s=>s&&s.id) : [];
+  const SUBJECT_CACHE = {};        // id -> {questions:[], terms:[]}（一度読んだ科目は再取得しない）
+  let currentSubjectId = null;
+  let subjectLoading = false;
+
+  function subjectById(id){ return SUBJECTS.find(s=>s.id===id) || null; }
+  function defaultSubjectId(){ return SUBJECTS.length ? SUBJECTS[0].id : null; }
+  function currentSubject(){ return subjectById(currentSubjectId); }
+  function savedSubjectId(){ try{ return localStorage.getItem(SUBJECT_KEY); }catch(e){ return null; } }
+  function saveSubjectId(id){ try{ localStorage.setItem(SUBJECT_KEY, id); }catch(e){} }
+
+  function loadScript(src){
+    return new Promise((resolve,reject)=>{
+      const el=document.createElement("script");
+      el.src=src; el.async=false;
+      el.onload=()=>resolve();
+      el.onerror=()=>reject(new Error("読み込みに失敗: "+src));
+      document.head.appendChild(el);
+    });
+  }
+  async function fetchSubjectData(sub){
+    if(SUBJECT_CACHE[sub.id]) return SUBJECT_CACHE[sub.id];
+    window.QUIZ_DATA=[]; window.TERM_CARDS=[];
+    if(sub.questions) await loadScript(sub.questions);
+    if(sub.terms)     await loadScript(sub.terms);
+    const data={
+      questions: Array.isArray(window.QUIZ_DATA) ? window.QUIZ_DATA : [],
+      terms:     Array.isArray(window.TERM_CARDS) ? window.TERM_CARDS : []
+    };
+    SUBJECT_CACHE[sub.id]=data;
+    return data;
+  }
+  // 科目を有効化して DATA を組み直す。成功したら true。
+  async function activateSubject(id){
+    const sub = subjectById(id) || subjectById(defaultSubjectId());
+    if(!sub) return false;
+    const data = await fetchSubjectData(sub);
+    window.QUIZ_DATA = data.questions;
+    window.TERM_CARDS = data.terms;
+    currentSubjectId = sub.id;
+    saveSubjectId(sub.id);
+    document.documentElement.style.setProperty("--subject-accent", sub.accent || "");
+    loadData();
+    return true;
+  }
+  // ユーザー操作での切替。失敗したら元の科目に戻す。
+  async function switchSubject(id){
+    if(subjectLoading || id===currentSubjectId) { closeSubjectPanel(); return; }
+    const prev=currentSubjectId;
+    subjectLoading=true; closeSubjectPanel();
+    $("#subtitle").textContent="読み込み中…";
+    try{
+      session=null; flashSession=null; stopExamTimer();
+      meta.lastCategory=null; saveMeta();     // 別科目のキーを指したままにしない
+      await activateSubject(id);
+      renderSubjectUI(); renderHome();
+      const sub=currentSubject();
+      toast(`${sub.emoji||"📘"} ${sub.name} に切り替えました`);
+    }catch(e){
+      if(prev) await activateSubject(prev).catch(()=>{});
+      renderSubjectUI(); renderHome();
+      toast("⚠️ 科目の読み込みに失敗しました");
+    }finally{ subjectLoading=false; }
+  }
+  function closeSubjectPanel(){
+    const p=$("#subjectPanel"), b=$("#subjectBtn");
+    if(p) p.classList.add("hidden");
+    if(b) b.setAttribute("aria-expanded","false");
+  }
+  function renderSubjectUI(){
+    const wrap=$("#subjectWrap"); if(!wrap) return;
+    const sub=currentSubject();
+    // 科目が1つしかないうちは何も出さない（今までの見た目のまま）
+    wrap.classList.toggle("hidden", SUBJECTS.length<2 || !sub);
+    if(!sub) return;
+    $("#subjectEmoji").textContent=sub.emoji||"📘";
+    $("#subjectName").textContent=sub.name||sub.id;
+    const logo=$("#appLogo"); if(logo && SUBJECTS.length>1) logo.textContent=sub.emoji||"🧠";
+    $("#subjectPanel").innerHTML=SUBJECTS.map(x=>{
+      const n=SUBJECT_CACHE[x.id] ? `${SUBJECT_CACHE[x.id].questions.length}問` : "";
+      return `<button type="button" class="sjItem ${x.id===currentSubjectId?"on":""}" data-subject="${esc(x.id)}" style="--sj-accent:${esc(x.accent||"var(--brand)")}">
+        <span>${esc(x.emoji||"📘")}</span><span>${esc(x.name||x.id)}</span><span class="sjCount">${n}</span></button>`;
+    }).join("");
+    $("#subjectPanel").querySelectorAll(".sjItem").forEach(el=>{
+      el.onclick=()=>switchSubject(el.dataset.subject);
+    });
+  }
+
   function loadData(){
     let custom = null;
     try{ const raw = localStorage.getItem(DATA_KEY); if(raw) custom = JSON.parse(raw); }catch(e){}
@@ -2000,7 +2117,7 @@
         badge:cmUnread>0?(cmUnread>99?"99+":String(cmUnread)):null, go:()=>openView("communityView")},
       {icon:"🔥",name:"復習・苦手",sub:`苦手 ${weakN} ・ 見直し ${bmN}`,go:()=>openView("reviewView")},
       {icon:"📊",name:"学習状況",sub:"進捗・アクティビティ・実績",go:()=>openView("statsView")},
-      {icon:"🏆",name:"ランキング",sub:"解いた問題数でみんなと競う",go:()=>openView("rankView")},
+      {icon:"🏆",name:"ランキング",sub:(SUBJECTS.length>1&&currentSubject())?`${currentSubject().name}で競う`:"解いた問題数でみんなと競う",go:()=>openView("rankView")},
       {icon:"🔍",name:"検索",sub:"キーワードで問題を探す",go:openSearch},
       {icon:"⚙️",name:"設定・データ",sub:"更新履歴・バックアップ",go:()=>openView("moreView")}
     ];
@@ -2016,7 +2133,7 @@
   // 「やった問題の数」＝延べ解答回数。同じ問題を複数回解いた分もすべて数える（seenの合計）。
   function solvedCount(){ let n=0; DATA.forEach(q=>{ const r=progress[q.id]; if(r&&r.seen>0) n+=r.seen; }); return n; }
   function medal(rank){ return rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":String(rank); }
-  function maybePublishRank(force){ const lb=LB(); if(lb&&lb.hasJoined()){ try{ lb.publish(solvedCount(), !!force); }catch(e){} } }
+  function maybePublishRank(force){ const lb=LB(); if(lb&&lb.hasJoined()){ try{ lb.publish(solvedCount(), !!force, currentSubjectId); }catch(e){} } }
   let rankTimer=null;
   function startRankTimer(){ stopRankTimer(); rankTimer=setInterval(()=>{
     const v=$("#rankView"); if(!v||v.classList.contains("hidden")) return;
@@ -2025,6 +2142,8 @@
   function stopRankTimer(){ if(rankTimer){ clearInterval(rankTimer); rankTimer=null; } }
   async function renderRank(doPublish){
     const box=$("#rankBody"); if(!box) return;
+    const pill=$("#rankPill"), sub=currentSubject();
+    if(pill) pill.textContent=(SUBJECTS.length>1&&sub)?`${sub.emoji||""} ${sub.name} のランキング`:"ランキング";
     const lb=LB();
     if(!lb || !lb.enabled()){
       box.innerHTML=`<div class="panel rankIntro"><div class="rankTitle">🏆 ランキング</div>
@@ -2035,11 +2154,11 @@
     // 名前を入れていなくてもランキングは閲覧できる。参加は任意（下のCTAから）。
     const typed=$("#rankNameInput")?$("#rankNameInput").value:null;
     if(!box.querySelector(".rankListPanel")) box.innerHTML=`<div class="rankLoading">読み込み中…</div>`;
-    if(doPublish && joined){ try{ await lb.publish(solved, true); }catch(e){} }
+    if(doPublish && joined){ try{ await lb.publish(solved, true, currentSubjectId); }catch(e){} }
     let view=null;
-    try{ view=await lb.fetch(); }
+    try{ view=await lb.fetch(currentSubjectId); }
     catch(e){
-      box.innerHTML=`<div class="panel rankIntro"><p class="rankLead">ランキングを取得できませんでした。オンライン状態を確認してください。</p>
+      box.innerHTML=`<div class="panel rankIntro"><p class="rankLead">ランキングを取得できませんでした。オンライン状態を確認してください。<br><small style="color:var(--muted)">（サーバー側の更新が済んでいない場合も、しばらくすると表示されます）</small></p>
         <button type="button" class="btn ghost" id="rankRetry">再読み込み</button></div>`;
       const rr=$("#rankRetry"); if(rr) rr.onclick=()=>renderRank(true); return;
     }
@@ -2079,7 +2198,7 @@
       const doJoin=async()=>{
         const nm=inp.value; if(!nm.trim()){ toast("名前を入力してください"); return; }
         const btn=$("#rankJoinBtn"); btn.disabled=true; btn.textContent="登録中…";
-        const res=await lb.join(nm, solvedCount());
+        const res=await lb.join(nm, solvedCount(), currentSubjectId);
         if(res.ok){ toast("🏆 ランキングに参加しました"); renderRank(false); }
         else { toast(res.error||"参加に失敗しました"); btn.disabled=false; btn.textContent="参加する"; }
       };
@@ -2089,7 +2208,7 @@
     }
     $("#rankRename").onclick=()=>{
       const nm=prompt("新しい名前（24文字まで）", lb.savedName());
-      if(nm&&nm.trim()){ lb.join(nm, solvedCount()).then(res=>{ if(res.ok){ toast("名前を変更しました"); renderRank(false); } else toast(res.error||"変更に失敗しました"); }); }
+      if(nm&&nm.trim()){ lb.join(nm, solvedCount(), currentSubjectId).then(res=>{ if(res.ok){ toast("名前を変更しました"); renderRank(false); } else toast(res.error||"変更に失敗しました"); }); }
     };
     $("#rankLeave").onclick=async()=>{
       if(confirm("ランキングから抜けますか？あなたの掲載が削除されます。")){
@@ -3876,12 +3995,20 @@
   function closeUpdates(){
     updatesPanel.classList.add("hidden"); updatesBtn.setAttribute("aria-expanded","false"); syncBackdrop();
   }
-  menuBtn.onclick=()=>{ closeUpdates(); menuPanel.classList.contains("hidden") ? openMenu() : closeMenu(); };
-  updatesBtn.onclick=()=>{ closeMenu(); updatesPanel.classList.contains("hidden") ? openUpdates() : closeUpdates(); };
-  menuBackdrop.onclick=()=>{ closeMenu(); closeUpdates(); };
+  menuBtn.onclick=()=>{ closeUpdates(); closeSubjectPanel(); menuPanel.classList.contains("hidden") ? openMenu() : closeMenu(); };
+  updatesBtn.onclick=()=>{ closeMenu(); closeSubjectPanel(); updatesPanel.classList.contains("hidden") ? openUpdates() : closeUpdates(); };
+  menuBackdrop.onclick=()=>{ closeMenu(); closeUpdates(); closeSubjectPanel(); };
+  // 科目チップ
+  $("#subjectBtn").onclick=(e)=>{
+    e.stopPropagation(); closeMenu(); closeUpdates();
+    const p=$("#subjectPanel"), open=p.classList.contains("hidden");
+    p.classList.toggle("hidden", !open);
+    $("#subjectBtn").setAttribute("aria-expanded", open?"true":"false");
+  };
+  document.addEventListener("click",e=>{ if(!e.target.closest("#subjectWrap")) closeSubjectPanel(); });
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"){
     const lbOpen=!$("#fcLightbox").classList.contains("hidden");
-    closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
+    closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal(); closeSubjectPanel();
     if(lbOpen) return;
     if(!$("#browse").classList.contains("hidden")) browseBackStep();
     else if(!$("#qbrowse").classList.contains("hidden")) qbBackStep();
@@ -3916,9 +4043,14 @@
       sectionOpenState[key]=open; saveSectionOpenState();
     };
   });
+  // 科目によっては「予想問題」「直前スペシャル」が存在しないので、
+  // 0件のときはセクションごと隠す（空の案内文を出さない）。
+  const OPTIONAL_SECTIONS={ predictionList:"predictionSection", specialList:"specialSection" };
   function updateSectionCount(key, count){
     const badge=document.querySelector(`.sectToggle[data-toggle="${key}"] .stCount`);
     if(badge) badge.textContent = count>0 ? count+"件" : "";
+    const optional=OPTIONAL_SECTIONS[key];
+    if(optional){ const sec=$("#"+optional); if(sec) sec.classList.toggle("hidden", count===0); }
   }
 
   /* ---------- テーマ切替 ---------- */
@@ -3975,18 +4107,23 @@
   }
 
   /* ---------- 起動 ---------- */
-  const firstLaunch = isFirstEverLaunch();
-  loadProgress(); loadMeta(); loadData(); loadUpdates();
-  if(firstLaunch) markUpdatesSeen();
-  renderUpdatesPanel(); renderUpdatesHome(); refreshUpdateDot();
-  if(!DATA.length){
+  // 科目データは非同期で読むため、DATAが入るまで renderHome() を待つ。
+  window.__legacyAppRefresh=()=>{ if(!currentSubjectId) return; loadProgress(); loadData(); renderHome(); };
+  (async function boot(){
+    const firstLaunch = isFirstEverLaunch();
+    loadProgress(); loadMeta(); loadUpdates();
+    try{
+      await activateSubject(savedSubjectId() || defaultSubjectId());
+    }catch(e){
+      $("#subtitle").textContent="問題データを読み込めませんでした";
+    }
+    renderSubjectUI();
+    if(firstLaunch) markUpdatesSeen();
+    renderUpdatesPanel(); renderUpdatesHome(); refreshUpdateDot();
     renderHome();
-    $("#subtitle").textContent="問題データがありません";
-  } else {
-    renderHome();
-  }
-  if(!firstLaunch && unreadUpdatesCount()>0) openUpdatesModal();
-  window.__legacyAppRefresh=()=>{ loadProgress(); loadData(); renderHome(); };
+    if(!DATA.length) $("#subtitle").textContent="問題データがありません";
+    if(!firstLaunch && unreadUpdatesCount()>0) openUpdatesModal();
+  })();
 
   /* ---------- PWA：Service Worker / 更新通知 / インストール導線 ---------- */
   updateThemeColor();
