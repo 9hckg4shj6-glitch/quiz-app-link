@@ -58,6 +58,42 @@
 
   header.app{display:flex;align-items:center;gap:12px;margin-bottom:16px;position:relative}
   .menuWrap{position:relative;flex:0 0 auto}
+  /* ===== 科目えらび画面 ===== */
+  .spLead{margin:6px 0 18px}
+  .spLead h2{margin:2px 0 6px;font-size:26px;font-weight:900;letter-spacing:-.02em}
+  .spLead p{margin:0;color:var(--muted);font-size:14px;line-height:1.8}
+  /* 3列までにして、タイルが小さくなりすぎないようにする */
+  .spGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;max-width:800px}
+  .spCard{position:relative;aspect-ratio:1;display:flex;flex-direction:column;justify-content:space-between;
+    text-align:left;font-family:inherit;color:var(--text);cursor:pointer;overflow:hidden;
+    background:var(--card);border:1.5px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);
+    transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+  .spCard::after{content:"";position:absolute;inset:auto -30% -45% auto;width:75%;aspect-ratio:1;border-radius:50%;
+    background:var(--sp-accent,var(--brand));opacity:.10;pointer-events:none}
+  .spCard:hover{transform:translateY(-3px);border-color:var(--sp-accent,var(--brand));box-shadow:0 26px 60px rgba(29,45,68,.20)}
+  .spCard:active{transform:scale(.99)}
+  .spCard:focus-visible{outline:3px solid color-mix(in srgb,var(--sp-accent,var(--brand)) 45%,transparent);outline-offset:3px}
+  .spCard.busy{opacity:.6;pointer-events:none}
+  .spCard.soon{border-style:dashed}
+  .spIcon{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;font-size:29px;
+    background:color-mix(in srgb,var(--sp-accent,var(--brand)) 15%,var(--card2));border:1px solid var(--line)}
+  .spName{display:block;font-size:22px;font-weight:900;letter-spacing:-.01em;line-height:1.35;margin-bottom:6px}
+  .spMeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--muted)}
+  .spMeta .spNum{color:var(--sp-accent,var(--brand))}
+  .spBar{display:block;margin-top:10px;height:6px;border-radius:99px;background:var(--card2);overflow:hidden}
+  .spBar i{display:block;height:100%;border-radius:99px;background:var(--sp-accent,var(--brand))}
+  .spTag{position:absolute;top:16px;right:16px;font-size:10.5px;font-weight:900;letter-spacing:.03em;
+    padding:4px 9px;border-radius:99px;background:color-mix(in srgb,var(--sp-accent,var(--brand)) 16%,var(--card2));
+    color:var(--sp-accent,var(--brand));border:1px solid color-mix(in srgb,var(--sp-accent,var(--brand)) 30%,transparent)}
+  .spTag.soonTag{background:var(--card2);color:var(--muted);border-color:var(--line)}
+  @media(max-width:560px){
+    .spGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .spCard{padding:15px;border-radius:20px}
+    .spIcon{width:44px;height:44px;font-size:23px;border-radius:14px}
+    .spName{font-size:16px}
+    .spLead h2{font-size:22px}
+  }
+
   /* 空の科目（まだ問題を入れていない科目）の案内 */
   .emptySubject{display:flex;align-items:center;gap:14px;padding:20px 18px}
   .emptySubject .esIcon{font-size:28px;flex:0 0 auto}
@@ -75,15 +111,6 @@
   .subjectChip .sjEmoji{font-size:14px}
   .subjectChip .sjName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .subjectChip .sjChev{color:var(--muted);font-size:11px}
-  /* .menuPanel は後段のスキンで position:fixed になるため、詳細度を上げて上書きする */
-  .subjectWrap > .subjectPanel{position:absolute;top:34px;left:0;right:auto;width:min(260px,calc(100vw - 32px));
-    background:var(--card);backdrop-filter:none;z-index:130}
-  .subjectPanel .sjItem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
-    border:0;background:none;color:var(--text);font-family:inherit;font-size:14px;font-weight:700;
-    padding:11px 12px;border-radius:11px;cursor:pointer}
-  .subjectPanel .sjItem:hover{background:var(--card2)}
-  .subjectPanel .sjItem.on{color:var(--sj-accent,var(--brand));font-weight:900}
-  .subjectPanel .sjItem .sjCount{margin-left:auto;font-size:11.5px;color:var(--muted);font-weight:800}
   .notifyWrap{position:relative;flex:0 0 auto}
   .updateDot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;
     background:var(--bad);border:2px solid var(--card)}
@@ -1131,6 +1158,7 @@
     <div class="menuWrap">
       <button class="menuBtn" id="menuBtn" type="button" aria-label="メニュー" aria-expanded="false">☰</button>
       <div class="menuPanel hidden" id="menuPanel">
+        <button type="button" id="menuSubjects" data-menu-action="subjects"><span class="mi">🗂</span>科目をえらぶ</button>
         <button type="button" id="menuSearch" data-menu-action="search"><span class="mi">🔍</span>問題検索</button>
         <button type="button" id="menuBrowse" data-menu-action="browse"><span class="mi">🗂</span>カード一覧</button>
         <button type="button" id="menuQBrowse" data-menu-action="qbrowse"><span class="mi">📖</span>問題一覧</button>
@@ -1147,10 +1175,9 @@
       <h1 id="appTitle">代謝演習アプリ</h1>
       <p id="subtitle">読み込み中…</p>
       <div class="subjectWrap hidden" id="subjectWrap">
-        <button type="button" class="subjectChip" id="subjectBtn" aria-expanded="false" aria-haspopup="true">
-          <span class="sjName">科目を切り替え</span><span class="sjChev">▾</span>
+        <button type="button" class="subjectChip" id="subjectBtn" title="科目をえらぶ">
+          <span class="sjEmoji">🗂</span><span class="sjName">科目をえらぶ</span>
         </button>
-        <div class="menuPanel subjectPanel hidden" id="subjectPanel"></div>
       </div>
     </div>
     <div class="lvbadge" id="lvBadge" title="レベル"><div class="dot" id="lvDot">1</div><div><b id="lvNum">Lv.1</b><small id="lvXp">0 XP</small></div></div>
@@ -1162,6 +1189,16 @@
       </div>
     </div>
   </header>
+
+  <!-- ===== 科目えらび（起動時の入口） ===== -->
+  <section id="subjectPicker" class="hidden">
+    <div class="spLead">
+      <div class="leadEyebrow">Subjects</div>
+      <h2>どの科目を勉強する？</h2>
+      <p>科目をえらぶと、その科目の問題演習・カード・復習にうつります。あとからいつでも切り替えられます。</p>
+    </div>
+    <div class="spGrid" id="spGrid"></div>
+  </section>
 
   <!-- ===== HOME（ハブ） ===== -->
   <section id="home">
@@ -1662,51 +1699,91 @@
     loadData();
     return true;
   }
-  // ユーザー操作での切替。失敗したら元の科目に戻す。
-  async function switchSubject(id){
-    if(subjectLoading || id===currentSubjectId) { closeSubjectPanel(); return; }
-    const prev=currentSubjectId;
-    subjectLoading=true; closeSubjectPanel();
-    $("#subtitle").textContent="読み込み中…";
-    try{
-      session=null; flashSession=null; stopExamTimer();
-      meta.lastCategory=null; saveMeta();     // 別科目のキーを指したままにしない
-      await activateSubject(id);
-      renderSubjectUI(); renderHome();
-      const sub=currentSubject();
-      toast(`${sub.emoji||"📘"} ${sub.name} に切り替えました`);
-    }catch(e){
-      if(prev) await activateSubject(prev).catch(()=>{});
-      renderSubjectUI(); renderHome();
-      toast("⚠️ 科目の読み込みに失敗しました");
-    }finally{ subjectLoading=false; }
-  }
-  function closeSubjectPanel(){
-    const p=$("#subjectPanel"), b=$("#subjectBtn");
-    if(p) p.classList.add("hidden");
-    if(b) b.setAttribute("aria-expanded","false");
-  }
   function renderSubjectUI(){
     const wrap=$("#subjectWrap"); if(!wrap) return;
     const sub=currentSubject();
-    // 科目が1つしかないうちは何も出さない（今までの見た目のまま）
+    // 科目が1つしかないうちは切替ボタンを出さない（今までの見た目のまま）
     wrap.classList.toggle("hidden", SUBJECTS.length<2 || !sub);
-    if(!sub) return;
-    // 複数科目のときはヘッダーを「選択中の科目」の見た目にする。
-    // 1科目のときは今までどおり「代謝演習アプリ」のまま変えない。
-    if(SUBJECTS.length>1){
-      const logo=$("#appLogo"); if(logo) logo.textContent=sub.emoji||"📘";
-      const title=$("#appTitle"); if(title) title.textContent=sub.name||sub.id;
+    if(SUBJECTS.length<2) return;
+    const logo=$("#appLogo"), title=$("#appTitle");
+    if(sub){
+      // 複数科目のときはヘッダーを「選択中の科目」の見た目にする
+      if(logo) logo.textContent=sub.emoji||"📘";
+      if(title) title.textContent=sub.name||sub.id;
       document.title=`${sub.name||sub.id} 問題演習`;
+    }else{
+      if(logo) logo.textContent="🧠";
+      if(title) title.textContent="問題演習";
+      document.title="問題演習";
     }
-    $("#subjectPanel").innerHTML=SUBJECTS.map(x=>{
-      const n=SUBJECT_CACHE[x.id] ? `${SUBJECT_CACHE[x.id].questions.length}問` : "";
-      return `<button type="button" class="sjItem ${x.id===currentSubjectId?"on":""}" data-subject="${esc(x.id)}" style="--sj-accent:${esc(x.accent||"var(--brand)")}">
-        <span>${esc(x.emoji||"📘")}</span><span>${esc(x.name||x.id)}</span><span class="sjCount">${n}</span></button>`;
+  }
+
+  /* ---------- 科目えらび画面 ---------- */
+  // タイルに出す件数・学習済は meta に控えておく。
+  // そうすると、その科目のデータをまだ読み込んでいなくても数字を出せる。
+  function updateSubjectStats(){
+    if(!currentSubjectId) return;
+    let seen=0; DATA.forEach(q=>{ const r=progress[q.id]; if(r&&r.seen>0) seen++; });
+    meta.subjectStats=meta.subjectStats||{};
+    meta.subjectStats[currentSubjectId]={total:DATA.length, seen};
+    saveMeta();
+  }
+  function subjectTileStats(sub){
+    const cached=SUBJECT_CACHE[sub.id], saved=(meta.subjectStats||{})[sub.id];
+    const total = cached ? cached.questions.length
+                : (saved && typeof saved.total==="number") ? saved.total
+                : (typeof sub.expectQuestions==="number" ? sub.expectQuestions : 0);
+    return { total, seen: (saved && saved.seen) || 0 };
+  }
+  function renderSubjectPicker(){
+    const grid=$("#spGrid"); if(!grid) return;
+    const last=savedSubjectId();
+    grid.innerHTML=SUBJECTS.map(sub=>{
+      const st=subjectTileStats(sub), empty=st.total===0;
+      const pct=st.total?Math.round(st.seen/st.total*100):0;
+      const tag = empty ? `<span class="spTag soonTag">準備中</span>`
+                : (sub.id===last ? `<span class="spTag">前回のつづき</span>` : "");
+      const meta_ = empty
+        ? `<span class="spMeta"><span>問題はこれから追加されます</span></span>`
+        : `<span class="spMeta"><span><b class="spNum">${st.total}</b> 問</span><span>学習済 ${st.seen}問</span></span>
+           <span class="spBar"><i style="width:${pct}%"></i></span>`;
+      return `<button type="button" class="spCard${empty?" soon":""}" data-subject="${esc(sub.id)}"
+          style="--sp-accent:${esc(sub.accent||"var(--brand)")}">
+        ${tag}
+        <span class="spIcon">${esc(sub.emoji||"📘")}</span>
+        <span class="spFoot">
+          <span class="spName">${esc(sub.name||sub.id)}</span>
+          ${meta_}
+        </span>
+      </button>`;
     }).join("");
-    $("#subjectPanel").querySelectorAll(".sjItem").forEach(el=>{
-      el.onclick=()=>switchSubject(el.dataset.subject);
-    });
+    grid.querySelectorAll(".spCard").forEach(el=>{ el.onclick=()=>chooseSubject(el.dataset.subject, el); });
+  }
+  function openSubjectPicker(){
+    stopExamTimer(); closeFcLightbox();
+    hideAllScreens();
+    updateSubjectStats();
+    renderBadge();
+    $("#subtitle").textContent="科目をえらんでください";
+    currentSubjectId=null; renderSubjectUI();
+    renderSubjectPicker();
+    $("#subjectPicker").classList.remove("hidden");
+    window.scrollTo(0,0);
+  }
+  // タイルをタップして科目に入る（データはこのタイミングで読み込む）
+  async function chooseSubject(id, el){
+    if(subjectLoading) return;
+    const prev=savedSubjectId();
+    subjectLoading=true; if(el) el.classList.add("busy");
+    try{
+      session=null; flashSession=null; stopExamTimer();
+      if(id!==prev){ meta.lastCategory=null; saveMeta(); }
+      await activateSubject(id);
+      renderSubjectUI(); renderHome();
+    }catch(e){
+      toast("⚠️ 科目の読み込みに失敗しました");
+      renderSubjectPicker();
+    }finally{ subjectLoading=false; if(el) el.classList.remove("busy"); }
   }
 
   function loadData(){
@@ -1752,6 +1829,9 @@
   let meta = {};
   function loadProgress(){ try{ progress = JSON.parse(localStorage.getItem(STORE_KEY))||{}; }catch(e){ progress={}; } }
   function saveProgress(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(progress)); }catch(e){}
+    // 科目えらび画面のタイルに出す数字も一緒に更新しておく
+    // （演習の途中でアプリを閉じても、次に開いたとき数字が古いままにならない）
+    try{ updateSubjectStats(); }catch(e){}
     try{ window.STUDY_CORE && window.STUDY_CORE.saveLegacyProgress && window.STUDY_CORE.saveLegacyProgress(progress); }catch(e){} }
   function loadMeta(){
     try{ meta = JSON.parse(localStorage.getItem(META_KEY))||{}; }catch(e){ meta={}; }
@@ -2095,10 +2175,11 @@
   const VIEWS=["practiceView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
   function hideAllScreens(){
     stopRankTimer(); stopCmTimer();
-    ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
+    ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
     VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
   }
   function refreshData(){
+    updateSubjectStats();
     renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick();
     renderHero(); renderKpis(); renderHeatmap(); renderAch(); renderUpdatesHome();
     renderExamDay(); renderMistakeEntry();
@@ -4025,20 +4106,14 @@
   function closeUpdates(){
     updatesPanel.classList.add("hidden"); updatesBtn.setAttribute("aria-expanded","false"); syncBackdrop();
   }
-  menuBtn.onclick=()=>{ closeUpdates(); closeSubjectPanel(); menuPanel.classList.contains("hidden") ? openMenu() : closeMenu(); };
-  updatesBtn.onclick=()=>{ closeMenu(); closeSubjectPanel(); updatesPanel.classList.contains("hidden") ? openUpdates() : closeUpdates(); };
-  menuBackdrop.onclick=()=>{ closeMenu(); closeUpdates(); closeSubjectPanel(); };
-  // 科目チップ
-  $("#subjectBtn").onclick=(e)=>{
-    e.stopPropagation(); closeMenu(); closeUpdates();
-    const p=$("#subjectPanel"), open=p.classList.contains("hidden");
-    p.classList.toggle("hidden", !open);
-    $("#subjectBtn").setAttribute("aria-expanded", open?"true":"false");
-  };
-  document.addEventListener("click",e=>{ if(!e.target.closest("#subjectWrap")) closeSubjectPanel(); });
+  menuBtn.onclick=()=>{ closeUpdates(); menuPanel.classList.contains("hidden") ? openMenu() : closeMenu(); };
+  updatesBtn.onclick=()=>{ closeMenu(); updatesPanel.classList.contains("hidden") ? openUpdates() : closeUpdates(); };
+  menuBackdrop.onclick=()=>{ closeMenu(); closeUpdates(); };
+  // ヘッダーの「科目をえらぶ」で科目選択画面へ戻る
+  $("#subjectBtn").onclick=()=>{ closeMenu(); closeUpdates(); openSubjectPicker(); };
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"){
     const lbOpen=!$("#fcLightbox").classList.contains("hidden");
-    closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal(); closeSubjectPanel();
+    closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
     if(lbOpen) return;
     if(!$("#browse").classList.contains("hidden")) browseBackStep();
     else if(!$("#qbrowse").classList.contains("hidden")) qbBackStep();
@@ -4100,7 +4175,10 @@
     else if(e.target.closest('[data-menu-action="search"]')){ closeMenu(); openSearch(); }
     else if(e.target.closest('[data-menu-action="browse"]')){ closeMenu(); openBrowse(); }
     else if(e.target.closest('[data-menu-action="qbrowse"]')){ closeMenu(); openQBrowse(); }
+    else if(e.target.closest('[data-menu-action="subjects"]')){ closeMenu(); openSubjectPicker(); }
   });
+  // 科目が1つしかないときはメニューの「科目をえらぶ」も出さない
+  (function(){ const b=$("#menuSubjects"); if(b && SUBJECTS.length<2) b.classList.add("hidden"); })();
 
   /* ---------- データ読込 / リセット ---------- */
   $("#importBtn").onclick=()=>$("#fileInput").click();
@@ -4142,16 +4220,22 @@
   (async function boot(){
     const firstLaunch = isFirstEverLaunch();
     loadProgress(); loadMeta(); loadUpdates();
-    try{
-      await activateSubject(savedSubjectId() || defaultSubjectId());
-    }catch(e){
-      $("#subtitle").textContent="問題データを読み込めませんでした";
-    }
-    renderSubjectUI();
     if(firstLaunch) markUpdatesSeen();
     renderUpdatesPanel(); renderUpdatesHome(); refreshUpdateDot();
-    renderHome();
-    if(!DATA.length) $("#subtitle").textContent="問題データがありません";
+    // ショートカット（?action=）から来たときは科目えらびを挟まず前回の科目で開く
+    let action=null; try{ action=new URLSearchParams(location.search).get("action"); }catch(e){}
+    if(SUBJECTS.length>1 && !action){
+      openSubjectPicker();
+    }else{
+      try{
+        await activateSubject(savedSubjectId() || defaultSubjectId());
+      }catch(e){
+        $("#subtitle").textContent="問題データを読み込めませんでした";
+      }
+      renderSubjectUI();
+      renderHome();
+      if(!DATA.length) $("#subtitle").textContent="問題データがありません";
+    }
     if(!firstLaunch && unreadUpdatesCount()>0) openUpdatesModal();
   })();
 
