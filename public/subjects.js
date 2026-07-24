@@ -35,6 +35,6 @@ window.SUBJECTS = [
     emoji: "🧬",
     accent: "#7c3aed",
     questions: "subjects/genome/questions.js",
-    expectQuestions: 200,
+    expectQuestions: 300,
   },
 ];
