@@ -5,6 +5,8 @@
    slideRefs[].deck と完全一致させる（問題・スライドの紐付けキー）。
 
      deck       必須。"01" など2桁
+     hidden     任意。true にすると「学習」の授業回一覧に出さない
+                （出題範囲外の回。問題側の根拠スライド表示には影響しない）
      title      任意。章名の上書き（既定は slideRefs の name）
      intro      任意。その回を1〜2文で要約
      sections[] 任意。{ heading, body, slides:[頁番号] }
@@ -195,4 +197,6 @@ window.LESSONS = [
       },
     ],
   },
+  // ヘムの合成と分解はゲノム解析学の出題範囲ではないので、学習の授業回一覧には出さない。
+  { deck: "12", hidden: true },
 ];

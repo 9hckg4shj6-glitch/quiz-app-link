@@ -3886,9 +3886,10 @@
         (r.pages||[]).forEach(p=>{ const n=Number(p); if(n>0) e.pages.add(n); });
       });
     });
-    // スライドが1枚も無く要点も無い回は章として成立しないので出さない（例：参考文献だけの回）
+    // スライドが1枚も無く要点も無い回は章として成立しないので出さない（例：参考文献だけの回）。
+    // lessons.js で hidden:true にした回（出題範囲外）も出さない。
     return [...m.values()]
-      .filter(e=>e.pages.size>0 || lessonEntry(e.deck))
+      .filter(e=>{ const ls=lessonEntry(e.deck); return !(ls&&ls.hidden) && (e.pages.size>0 || ls); })
       .map(e=>{
         const ls=lessonEntry(e.deck);
         return { deck:e.deck, name:(ls&&ls.title)?String(ls.title):e.name, items:e.items,
