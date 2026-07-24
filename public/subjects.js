@@ -8,7 +8,9 @@
      2. public/subjects/<id>/terms.js を作る  （window.TERM_CARDS = [...]）
         ※ カードが無い科目は terms を省略してよい
      3. 図があれば public/images/<id>/ に置く
-     4. この配列に1行足す
+     4. 「学習」画面を出す科目は public/subjects/<id>/lessons.js を作る
+        （window.LESSONS = [...]。授業回は問題の slideRefs から自動で並ぶので省略可）
+     5. この配列に1行足す
 
    【重要】問題ID・カードIDは必ず科目ごとに一意にすること。
    進捗（localStorage）とFSRSの復習予定（IndexedDB）はIDで紐づいているため、
@@ -35,6 +37,7 @@ window.SUBJECTS = [
     emoji: "🧬",
     accent: "#7c3aed",
     questions: "subjects/genome/questions.js",
+    lessons: "subjects/genome/lessons.js",   // 「📖 学習」画面の要点テキスト（省略可）
     expectQuestions: 500,
     hideCards: true,     // この科目では「カード」機能を出さない（メニュー・ハブ・カード一覧）
     hideExamDay: true,   // この科目では「試験日モード」を出さない

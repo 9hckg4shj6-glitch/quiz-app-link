@@ -127,6 +127,38 @@
   .slideLb.zoom .slideLbBody img{max-width:none;max-height:none;width:1280px;margin:0 auto;cursor:zoom-out}
   .svNote{margin:18px 0 30px;font-size:12.5px;line-height:1.9;color:var(--muted);
     padding:13px 15px;border:1px dashed var(--line);border-radius:14px}
+  /* 学習（インプット）画面 */
+  .lsLead{padding:15px 17px;display:flex;flex-direction:column;gap:5px}
+  .lsLeadTitle{font-size:15px;font-weight:900}
+  .lsLeadSub{font-size:12.5px;line-height:1.85;color:var(--muted)}
+  /* 章名は長くなることがあるので、一覧では省略せず折り返す */
+  #lessonList .cat .info h3{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.45}
+  .lsHead{padding:16px 18px}
+  .lsHeadKicker{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
+  .lsHeadTitle{font-size:19px;font-weight:900;line-height:1.5;margin-bottom:9px}
+  .lsHeadMeta{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:11px}
+  .lsHeadMeta span{border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:3px 9px;font-weight:800}
+  .lsIntro{font-size:14.5px;line-height:1.95}
+  .lsSect{margin:20px 0 0}
+  .lsSectHead{display:flex;align-items:baseline;gap:9px;margin:0 2px 10px}
+  .lsSectNo{flex:0 0 auto;font-size:11px;font-weight:900;color:var(--brand);
+    border:1px solid var(--line);background:color-mix(in srgb,var(--brand) 12%,var(--card2));
+    border-radius:999px;padding:3px 9px}
+  .lsSectName{font-size:16.5px;font-weight:900;line-height:1.5}
+  .lsBody{padding:15px 17px;font-size:14.5px;line-height:2.0;white-space:pre-wrap;word-break:break-word}
+  .lsFigs{margin-top:11px}
+  .lsSolve{margin:26px 0 34px}
+  .lsSolveBtn{width:100%;display:flex;align-items:center;gap:13px;text-align:left;
+    border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);
+    font-family:inherit;padding:15px 17px;cursor:pointer;transition:.15s}
+  .lsSolveBtn:hover{border-color:var(--brand)}
+  .lsSolveIcon{flex:0 0 auto;font-size:22px}
+  .lsSolveBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .lsSolveTitle{font-size:15.5px;font-weight:900}
+  .lsSolveSub{font-size:12px;color:var(--muted)}
+  .lsSolveChev{flex:0 0 auto;color:var(--muted);font-size:22px}
+  .lsSoon{margin:16px 0 4px;font-size:13px;line-height:1.95;color:var(--muted);
+    padding:14px 16px;border:1px dashed var(--line);border-radius:14px}
   /* 「解説をさらに見る」ボタン */
   .moreExpl{display:inline-flex;align-items:center;gap:8px;margin-top:12px;
     border:1px solid var(--line);background:var(--card2);color:var(--text);
@@ -1206,6 +1238,7 @@
         <button type="button" id="menuBrowse" data-menu-action="browse"><span class="mi">🗂</span>カード一覧</button>
         <button type="button" id="menuQBrowse" data-menu-action="qbrowse"><span class="mi">📖</span>問題一覧</button>
         <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">🌓</span>テーマ切替</button>
+        <a href="#inputView" data-menu-view="inputView"><span class="mi">📖</span>学習</a>
         <a href="#practiceView" data-menu-view="practiceView"><span class="mi">📚</span>問題演習</a>
         <a href="#cardsView" data-menu-view="cardsView"><span class="mi">🎴</span>カード</a>
         <a href="#reviewView" data-menu-view="reviewView"><span class="mi">🔥</span>復習・苦手</a>
@@ -1245,6 +1278,15 @@
     <div id="slideViewBody"></div>
   </section>
 
+  <!-- ===== 学習（1回分の要点） ===== -->
+  <section id="lessonView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="lessonBack">← 授業回一覧</button>
+      <span class="pill">学習</span>
+    </div>
+    <div id="lessonBody"></div>
+  </section>
+
   <!-- ===== 科目えらび（起動時の入口） ===== -->
   <section id="subjectPicker" class="hidden">
     <div class="spLead">
@@ -1282,6 +1324,22 @@
     </div>
 
     <div class="hubGrid" id="hubGrid"></div>
+  </section>
+
+  <!-- ===== VIEW: 学習（授業回の一覧） ===== -->
+  <section id="inputView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small viewBack">← ホーム</button>
+      <span class="pill">学習</span>
+    </div>
+    <div class="homeSection">
+      <div class="panel lsLead">
+        <b class="lsLeadTitle">📖 授業回ごとに要点を読む</b>
+        <span class="lsLeadSub">問題を解く前のインプット。要点を読み、授業スライドの図で確かめてから、その回の問題に進みます。</span>
+      </div>
+    </div>
+    <div class="sectlabel">授業回</div>
+    <div id="lessonList" class="grid"></div>
   </section>
 
   <!-- ===== VIEW: 問題演習 ===== -->
@@ -1742,12 +1800,14 @@
   }
   async function fetchSubjectData(sub){
     if(SUBJECT_CACHE[sub.id]) return SUBJECT_CACHE[sub.id];
-    window.QUIZ_DATA=[]; window.TERM_CARDS=[];
+    window.QUIZ_DATA=[]; window.TERM_CARDS=[]; window.LESSONS=[];
     if(sub.questions) await loadScript(sub.questions);
     if(sub.terms)     await loadScript(sub.terms);
+    if(sub.lessons)   await loadScript(sub.lessons);
     const data={
       questions: Array.isArray(window.QUIZ_DATA) ? window.QUIZ_DATA : [],
-      terms:     Array.isArray(window.TERM_CARDS) ? window.TERM_CARDS : []
+      terms:     Array.isArray(window.TERM_CARDS) ? window.TERM_CARDS : [],
+      lessons:   Array.isArray(window.LESSONS) ? window.LESSONS : []
     };
     SUBJECT_CACHE[sub.id]=data;
     return data;
@@ -1759,6 +1819,7 @@
     const data = await fetchSubjectData(sub);
     window.QUIZ_DATA = data.questions;
     window.TERM_CARDS = data.terms;
+    window.LESSONS = data.lessons;
     currentSubjectId = sub.id;
     saveSubjectId(sub.id);
     document.documentElement.style.setProperty("--subject-accent", sub.accent || "");
@@ -2241,10 +2302,10 @@
   }
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
-  const VIEWS=["practiceView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
+  const VIEWS=["inputView","practiceView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
   function hideAllScreens(){
     stopRankTimer(); stopCmTimer();
-    ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker","#slideView"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
+    ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker","#slideView","#lessonView"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
     VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
   }
   // 科目ごとの機能ON/OFFをメニューに反映する（ハブ・各セクションは各render側で処理）
@@ -2253,6 +2314,10 @@
     // メニュー内の「カード」「カード一覧」は、カード非対応の科目では出さない
     document.querySelectorAll('[data-menu-view="cardsView"],[data-menu-action="browse"]')
       .forEach(el=>el.classList.toggle("hidden", hideCards));
+    // 「学習」は授業回（slideRefs の deck）を持つ科目だけに出す
+    const noLessons=lessonDecks().length===0;
+    document.querySelectorAll('[data-menu-view="inputView"]')
+      .forEach(el=>el.classList.toggle("hidden", noLessons));
   }
   function refreshData(){
     updateSubjectStats();
@@ -2276,6 +2341,7 @@
     hideAllScreens();
     refreshData();
     $("#"+id).classList.remove("hidden");
+    if(id==="inputView"){ renderLessonList(); }
     if(id==="rankView"){ renderRank(true); startRankTimer(); }
     if(id==="statsView"){ renderForgetCurve(); }
     if(id==="communityView"){ cmState.boardId=null; renderCommunity(); startCmTimer(); }
@@ -2287,7 +2353,9 @@
     const grid=$("#hubGrid"); if(!grid) return;
     const weakN=DATA.filter(q=>syncWeak(rec(q.id))).length;
     const bmN=DATA.filter(q=>isBookmarked(q.id)).length;
+    const decks=lessonDecks();
     const items=[
+      ...(decks.length?[{icon:"📖",name:"学習",sub:`授業回ごとに要点を読む（全${decks.length}回）`,go:()=>openView("inputView")}]:[]),
       {icon:"📚",name:"問題演習",sub:"年度別・予想・直前SP・分野別",go:()=>openView("practiceView")},
       {icon:"📖",name:"問題一覧",sub:"年度別に全問題を閲覧",go:openQBrowse},
       ...(subjectFlag("hideCards")?[]:[{icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")}]),
@@ -3711,9 +3779,9 @@
 
   /* ---------- 根拠スライド（解説をさらに見る） ----------
      いまのところ「ゲノム」だけが slideRefs を持つ。持たない問題ではボタンも出ない。 */
-  const SLIDE_DIR="images/genome/slides/";
+  function slideDir(){ return `images/${currentSubjectId||"genome"}/slides/`; }
   function hasSlides(q){ return !!(q && Array.isArray(q.slideRefs) && q.slideRefs.some(r=>r.pages && r.pages.length)); }
-  function slidePageSrc(deck,page){ return `${SLIDE_DIR}${deck}-p${String(page).padStart(3,"0")}.webp`; }
+  function slidePageSrc(deck,page){ return `${slideDir()}${deck}-p${String(page).padStart(3,"0")}.webp`; }
   function moreExplHTML(q){
     if(!hasSlides(q)) return "";
     const n=q.slideRefs.reduce((s,r)=>s+(r.pages?r.pages.length:0),0);
@@ -3796,6 +3864,135 @@
       const img=fig.querySelector("img"), cap=fig.querySelector(".svPageCap").textContent;
       img.onclick=()=>openSlideLightbox(img.getAttribute("src"), cap);
     });
+  }
+
+  /* ---------- 学習（インプット） ----------
+     授業回（章）は問題データの slideRefs から導き出す。章名・問題数・スライドの
+     ページはそこから分かるので、lessons.js に持たせるのは要点テキストだけでよい。
+     要点をまだ書いていない回も、スライドと「この回を解く」だけで章として成立する。 */
+  function lessonEntries(){ return Array.isArray(window.LESSONS) ? window.LESSONS : []; }
+  function lessonEntry(deck){ return lessonEntries().find(l=>l && String(l.deck)===String(deck)) || null; }
+  function lessonWritten(ls){ return !!(ls && (ls.intro || (Array.isArray(ls.sections) && ls.sections.length))); }
+  function deckLabel(deck){ const n=String(deck).replace(/^0+/,""); return n?`第${n}回`:String(deck); }
+  function lessonDecks(){
+    const m=new Map();
+    DATA.forEach(q=>{
+      (q.slideRefs||[]).forEach(r=>{
+        const deck=String(r.deck||""); if(!deck) return;
+        let e=m.get(deck);
+        if(!e){ e={deck, name:String(r.name||deck), ids:new Set(), items:[], pages:new Set()}; m.set(deck,e); }
+        if(r.name && e.name===deck) e.name=String(r.name);
+        if(!e.ids.has(q.id)){ e.ids.add(q.id); e.items.push(q); }
+        (r.pages||[]).forEach(p=>{ const n=Number(p); if(n>0) e.pages.add(n); });
+      });
+    });
+    // スライドが1枚も無く要点も無い回は章として成立しないので出さない（例：参考文献だけの回）
+    return [...m.values()]
+      .filter(e=>e.pages.size>0 || lessonEntry(e.deck))
+      .map(e=>{
+        const ls=lessonEntry(e.deck);
+        return { deck:e.deck, name:(ls&&ls.title)?String(ls.title):e.name, items:e.items,
+                 pages:[...e.pages].sort((a,b)=>a-b), lesson:ls };
+      })
+      .sort((a,b)=>a.deck.localeCompare(b.deck,"en",{numeric:true}));
+  }
+  function renderLessonList(){
+    const list=$("#lessonList"); if(!list) return;
+    const decks=lessonDecks();
+    if(!decks.length){ list.innerHTML=`<div class="empty">この科目にはまだ学習コンテンツがありません。</div>`; return; }
+    list.innerHTML=decks.map((d,i)=>{
+      const s=catStats(d.items), pct=s.total?Math.round(s.seen/s.total*100):0;
+      const written=lessonWritten(d.lesson);
+      return `<button type="button" class="cat cat-field" data-deck="${esc(d.deck)}"
+          style="--accent:${ACCENTS[i%ACCENTS.length]};--pct:${pct}%">
+        <div class="info">
+          <div class="cat-kicker">${esc(deckLabel(d.deck))}${written?" ・ 要点あり":" ・ 要点は準備中"}</div>
+          <h3>${esc(d.name)}</h3>
+          <div class="meta"><span>問題 ${s.total}問</span><span>スライド ${d.pages.length}枚</span>${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
+          <div class="pbar"><i></i></div>
+        </div>
+        <div class="rt"><span class="badge">${written?"読む":"図で確認"}</span><span class="chev">›</span></div>
+      </button>`;
+    }).join("");
+    list.querySelectorAll(".cat").forEach(el=>{ el.onclick=()=>openLesson(el.dataset.deck); });
+  }
+  function openLesson(deck){
+    const d=lessonDecks().find(x=>x.deck===String(deck));
+    if(!d){ openView("inputView"); return; }
+    stopExamTimer(); closeFcLightbox();
+    hideAllScreens();
+    renderLesson(d);
+    $("#lessonView").classList.remove("hidden");
+    window.scrollTo(0,0);
+  }
+  // 図のかたまりを組み立てる（根拠スライド画面と同じ .svPage を使う）
+  // キャプションは章名だと長くなるので「第1回 ・ p30」の形にする
+  function lessonFigsHTML(deck, name, pages){
+    const list=(pages||[]).map(Number).filter(n=>n>0);
+    if(!list.length) return "";
+    return `<div class="lsFigs">`+list.map(pg=>`<figure class="svPage">
+        <figcaption class="svPageCap">${esc(deckLabel(deck))} ・ p${pg}</figcaption>
+        <img src="${esc(slidePageSrc(deck,pg))}" alt="${esc(name)} ${pg}ページ" loading="lazy">
+      </figure>`).join("")+`</div>`;
+  }
+  // 図をタップで全画面（根拠スライド画面と同じ挙動）
+  function wireLessonFigs(root){
+    if(!root) return;
+    root.querySelectorAll(".svPage").forEach(fig=>{
+      const img=fig.querySelector("img"), cap=fig.querySelector(".svPageCap");
+      if(!img || img.dataset.wired) return;
+      img.dataset.wired="1";
+      img.onclick=()=>openSlideLightbox(img.getAttribute("src"), cap?cap.textContent:"");
+    });
+  }
+  function renderLesson(d){
+    const body=$("#lessonBody"); if(!body) return;
+    const s=catStats(d.items), ls=d.lesson||{};
+    const sects=(Array.isArray(ls.sections)?ls.sections:[]).filter(x=>x && (x.heading||x.body));
+    const figs=(pages)=>lessonFigsHTML(d.deck, d.name, pages);
+
+    const head=`<div class="homeSection"><div class="panel lsHead">
+        <div class="lsHeadKicker">${esc(deckLabel(d.deck))} ・ 学習</div>
+        <div class="lsHeadTitle">${esc(d.name)}</div>
+        <div class="lsHeadMeta"><span>問題 ${s.total}問</span><span>スライド ${d.pages.length}枚</span>${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
+        ${ls.intro?`<div class="lsIntro">${esc(String(ls.intro))}</div>`:""}
+      </div></div>`;
+    const keyFigs=figs(ls.keySlides);
+    const sectHTML=sects.map((sc,i)=>`<div class="lsSect">
+        <div class="lsSectHead"><span class="lsSectNo">${i+1}</span><span class="lsSectName">${esc(sc.heading||"")}</span></div>
+        ${sc.body?`<div class="panel lsBody">${esc(String(sc.body))}</div>`:""}
+        ${figs(sc.slides)}
+      </div>`).join("");
+    const soon=sects.length?"":`<div class="lsSoon">この回の要点テキストはまだ準備中です。授業スライドの図を見ながら、下のボタンで問題を解いてみてください。</div>`;
+    // この回のスライド全ページ。枚数が多いので、開いたときにだけ組み立てる
+    const all=d.pages.length?`<div class="lsSolve"><button type="button" class="lsSolveBtn" id="lessonAllBtn">
+        <span class="lsSolveIcon">📘</span>
+        <span class="lsSolveBody"><span class="lsSolveTitle">この回のスライドをすべて見る</span>
+          <span class="lsSolveSub">解説の根拠になった ${d.pages.length}ページ</span></span>
+        <span class="lsSolveChev">›</span></button><div id="lessonAllFigs" class="hidden"></div></div>`:"";
+    const solve=`<div class="lsSolve"><button type="button" class="lsSolveBtn" id="lessonSolveBtn">
+        <span class="lsSolveIcon">📚</span>
+        <span class="lsSolveBody"><span class="lsSolveTitle">この回を解く（${s.total}問）</span>
+          <span class="lsSolveSub">${s.seen?`学習済 ${s.seen}/${s.total}問 ・ 正答率 ${s.acc}%`:"まだ解いていません"}</span></span>
+        <span class="lsSolveChev">›</span></button></div>`;
+
+    body.innerHTML=head+keyFigs+soon+sectHTML+solve+all;
+    wireLessonFigs(body);
+    const solveBtn=$("#lessonSolveBtn");
+    if(solveBtn) solveBtn.onclick=()=>{
+      if(!d.items.length){ toast("この回の問題が見つかりません"); return; }
+      if(d.items.length<2){ startQuiz(d.items, `${deckLabel(d.deck)} ${d.name}`, {mode:"playlist", key:"__lesson_"+d.deck}); return; }
+      openCountModal({items:d.items, label:`${deckLabel(d.deck)} ${d.name}`, key:"__lesson_"+d.deck}, "playlist");
+    };
+    const allBtn=$("#lessonAllBtn"), allBox=$("#lessonAllFigs");
+    if(allBtn && allBox) allBtn.onclick=()=>{
+      const open=allBox.classList.contains("hidden");
+      if(open && !allBox.innerHTML){ allBox.innerHTML=figs(d.pages); wireLessonFigs(allBox); }
+      allBox.classList.toggle("hidden", !open);
+      allBtn.querySelector(".lsSolveSub").textContent = open
+        ? `${d.pages.length}ページを表示中 ・ タップして閉じる`
+        : `解説の根拠になった ${d.pages.length}ページ`;
+    };
   }
 
   // 授業スライドから切り出した補足図。問題の図と混同しないよう見出しを付けて解説内に出す。
@@ -4118,6 +4315,7 @@
 
   /* 問題検索 */
   $("#slideBack").onclick=closeSlideView;
+  $("#lessonBack").onclick=()=>openView("inputView");
   $("#slideLbClose").onclick=closeSlideLightbox;
   $("#slideLbZoom").onclick=toggleSlideZoom;
   $("#slideLbImg").onclick=toggleSlideZoom;
@@ -4305,6 +4503,7 @@
     if(lbOpen) return;
     if(closeSlideLightbox()) return;
     if(!$("#slideView").classList.contains("hidden")){ closeSlideView(); return; }
+    if(!$("#lessonView").classList.contains("hidden")){ openView("inputView"); return; }
     if(!$("#browse").classList.contains("hidden")) browseBackStep();
     else if(!$("#qbrowse").classList.contains("hidden")) qbBackStep();
     else if(VIEWS.some(v=>!$("#"+v).classList.contains("hidden"))) renderHome();

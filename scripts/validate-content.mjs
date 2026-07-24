@@ -55,6 +55,34 @@ for (const subject of subjects) {
     if (question.image && !fs.existsSync(path.join("public", question.image))) errors.push(`[${label}] 問題 ${id}: 画像がありません (${question.image})`);
   }
 
+  // 「学習」画面の要点テキスト。deck は問題の slideRefs と一致していなければ
+  // 章と問題が結びつかず、参照したスライド画像が無ければ図が欠ける。
+  const lessons = subject.lessons
+    ? loadBrowserData(path.join("public", subject.lessons), "LESSONS", { optional: true })
+    : [];
+  if (lessons.length) {
+    const decks = new Set();
+    for (const question of questions) {
+      for (const ref of question?.slideRefs || []) if (ref?.deck) decks.add(String(ref.deck));
+    }
+    const slidePath = (deck, page) =>
+      path.join("public", "images", subject.id, "slides", `${deck}-p${String(page).padStart(3, "0")}.webp`);
+    const seenDecks = new Set();
+    for (const [index, lesson] of lessons.entries()) {
+      const deck = String(lesson?.deck ?? "");
+      if (!deck) { errors.push(`[${label}] 学習 ${index + 1}件目: deck がありません`); continue; }
+      if (seenDecks.has(deck)) errors.push(`[${label}] 学習 deck ${deck} が重複しています`);
+      seenDecks.add(deck);
+      if (!decks.has(deck)) errors.push(`[${label}] 学習 deck ${deck}: この deck を持つ問題（slideRefs）がありません`);
+      const pages = [...(lesson.keySlides || [])];
+      for (const section of lesson.sections || []) pages.push(...(section?.slides || []));
+      for (const page of pages) {
+        const file = slidePath(deck, page);
+        if (!fs.existsSync(file)) errors.push(`[${label}] 学習 deck ${deck}: スライド画像がありません (${file})`);
+      }
+    }
+  }
+
   for (const [index, term] of terms.entries()) {
     const id = String(term?.id ?? `term-${index}`);
     if (ids.has(id)) errors.push(`[${label}] カードIDが重複しています: ${id}`);
