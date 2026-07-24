@@ -36,5 +36,7 @@ window.SUBJECTS = [
     accent: "#7c3aed",
     questions: "subjects/genome/questions.js",
     expectQuestions: 500,
+    hideCards: true,     // この科目では「カード」機能を出さない（メニュー・ハブ・カード一覧）
+    hideExamDay: true,   // この科目では「試験日モード」を出さない
   },
 ];

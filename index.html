@@ -1726,6 +1726,8 @@
   function subjectById(id){ return SUBJECTS.find(s=>s.id===id) || null; }
   function defaultSubjectId(){ return SUBJECTS.length ? SUBJECTS[0].id : null; }
   function currentSubject(){ return subjectById(currentSubjectId); }
+  // 科目ごとの機能フラグ（subjects.js の hideCards / hideExamDay など）。選択中の科目のものを見る。
+  function subjectFlag(key){ const s=currentSubject(); return !!(s && s[key]); }
   function savedSubjectId(){ try{ return localStorage.getItem(SUBJECT_KEY); }catch(e){ return null; } }
   function saveSubjectId(id){ try{ localStorage.setItem(SUBJECT_KEY, id); }catch(e){} }
 
@@ -2245,8 +2247,16 @@
     ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker","#slideView"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
     VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
   }
+  // 科目ごとの機能ON/OFFをメニューに反映する（ハブ・各セクションは各render側で処理）
+  function renderSubjectFeatures(){
+    const hideCards=subjectFlag("hideCards");
+    // メニュー内の「カード」「カード一覧」は、カード非対応の科目では出さない
+    document.querySelectorAll('[data-menu-view="cardsView"],[data-menu-action="browse"]')
+      .forEach(el=>el.classList.toggle("hidden", hideCards));
+  }
   function refreshData(){
     updateSubjectStats();
+    renderSubjectFeatures();
     renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick();
     renderHero(); renderKpis(); renderHeatmap(); renderAch(); renderUpdatesHome();
     renderExamDay(); renderMistakeEntry();
@@ -2280,7 +2290,7 @@
     const items=[
       {icon:"📚",name:"問題演習",sub:"年度別・予想・直前SP・分野別",go:()=>openView("practiceView")},
       {icon:"📖",name:"問題一覧",sub:"年度別に全問題を閲覧",go:openQBrowse},
-      {icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")},
+      ...(subjectFlag("hideCards")?[]:[{icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")}]),
       {icon:"💬",name:"コミュニティ",sub:cmUnread>0?`新しい書き込みが ${cmUnread} 件あります`:"掲示板で質問・情報交換",
         badge:cmUnread>0?(cmUnread>99?"99+":String(cmUnread)):null, go:()=>openView("communityView")},
       {icon:"🔥",name:"復習・苦手",sub:`苦手 ${weakN} ・ 見直し ${bmN}`,go:()=>openView("reviewView")},
@@ -2808,6 +2818,8 @@
     ["qbrowseSection","quickSection","examSection","examDaySection"]
       .forEach(id=>{ const el=$("#"+id); if(el) el.classList.remove("hidden"); });
     ["yearSection","fieldSection"].forEach(id=>{ const el=$("#"+id); if(el) el.classList.remove("hidden"); });
+    // 科目によっては試験日モードを出さない（例：ゲノム）
+    { const ed=$("#examDaySection"); if(ed && subjectFlag("hideExamDay")) ed.classList.add("hidden"); }
     renderGroupList("year", "#yearList");
     renderGroupList("prediction", "#predictionList");
     renderGroupList("special", "#specialList");
