@@ -3931,12 +3931,23 @@
   }
   // 図のかたまりを組み立てる（根拠スライド画面と同じ .svPage を使う）
   // キャプションは章名だと長くなるので「第1回 ・ p30」の形にする
+  // 図の指定は数値（この回のスライド）のほか "08a:15" と書いて別デッキのページも参照できる。
+  // 第8回は講義が前半（08a）・後半（08）の2本立てだが、要点は1章にまとめているため。
+  function lessonSlideRef(deck, entry){
+    const m=/^([0-9A-Za-z]+):(\d+)$/.exec(String(entry));
+    return m ? {deck:m[1], page:Number(m[2])} : {deck:String(deck), page:Number(entry)};
+  }
+  // 枝番のデッキ（08a）は同じ回の前半コマなので、キャプションでそう断る
+  function lessonFigCap(deck, page){
+    const m=/^0*(\d+)[a-z]$/i.exec(String(deck));
+    return `${m?`第${m[1]}回（前半）`:deckLabel(deck)} ・ p${page}`;
+  }
   function lessonFigsHTML(deck, name, pages){
-    const list=(pages||[]).map(Number).filter(n=>n>0);
+    const list=(pages||[]).map(p=>lessonSlideRef(deck,p)).filter(r=>r.page>0);
     if(!list.length) return "";
-    return `<div class="lsFigs">`+list.map(pg=>`<figure class="svPage">
-        <figcaption class="svPageCap">${esc(deckLabel(deck))} ・ p${pg}</figcaption>
-        <img src="${esc(slidePageSrc(deck,pg))}" alt="${esc(name)} ${pg}ページ" loading="lazy">
+    return `<div class="lsFigs">`+list.map(r=>`<figure class="svPage">
+        <figcaption class="svPageCap">${esc(lessonFigCap(r.deck,r.page))}</figcaption>
+        <img src="${esc(slidePageSrc(r.deck,r.page))}" alt="${esc(name)} ${r.page}ページ" loading="lazy">
       </figure>`).join("")+`</div>`;
   }
   // 図をタップで全画面（根拠スライド画面と同じ挙動）

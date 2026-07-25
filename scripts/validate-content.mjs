@@ -77,7 +77,9 @@ for (const subject of subjects) {
       const pages = [...(lesson.keySlides || [])];
       for (const section of lesson.sections || []) pages.push(...(section?.slides || []));
       for (const page of pages) {
-        const file = slidePath(deck, page);
+        // "08a:15" と書くと同じ回の別デッキ（前半コマ）のページを参照できる
+        const ref = /^([0-9A-Za-z]+):(\d+)$/.exec(String(page));
+        const file = ref ? slidePath(ref[1], ref[2]) : slidePath(deck, page);
         if (!fs.existsSync(file)) errors.push(`[${label}] 学習 deck ${deck}: スライド画像がありません (${file})`);
       }
     }
