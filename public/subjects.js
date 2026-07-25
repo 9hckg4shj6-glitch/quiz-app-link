@@ -42,4 +42,46 @@ window.SUBJECTS = [
     hideCards: true,     // この科目では「カード」機能を出さない（メニュー・ハブ・カード一覧）
     hideExamDay: true,   // この科目では「試験日モード」を出さない
   },
+
+  /* --- ここから下は「ボタンだけ」の科目（中身はこれから入れる） ---
+     draft:true のあいだは questions.js が無くてもよく、
+     科目えらび画面には「準備中」のタイルとして並ぶ。
+     中身を入れるときは questions: "subjects/<id>/questions.js" を足して
+     draft を消す。問題IDは "<id>-" で始めること。 */
+  {
+    id: "immunology1",
+    name: "免疫学（1年次）",
+    emoji: "🛡️",
+    accent: "#e11d48",
+    draft: true,
+    hideCards: true,
+    hideExamDay: true,
+  },
+  {
+    id: "immunology2",
+    name: "免疫学（2年次）",
+    emoji: "🦠",
+    accent: "#ea580c",
+    draft: true,
+    hideCards: true,
+    hideExamDay: true,
+  },
+  {
+    id: "animalphysiology",
+    name: "動物生理",
+    emoji: "🐁",
+    accent: "#0ea5e9",
+    draft: true,
+    hideCards: true,
+    hideExamDay: true,
+  },
+  {
+    id: "plantphysiology",
+    name: "植物生理",
+    emoji: "🌱",
+    accent: "#16a34a",
+    draft: true,
+    hideCards: true,
+    hideExamDay: true,
+  },
 ];

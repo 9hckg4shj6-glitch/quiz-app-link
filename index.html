@@ -1900,6 +1900,9 @@
   // タイルをタップして科目に入る（データはこのタイミングで読み込む）
   async function chooseSubject(id, el){
     if(subjectLoading) return;
+    // 中身がまだ無い科目（subjects.js の draft）は、空の画面に入らずお知らせだけ出す
+    const target=subjectById(id);
+    if(target && target.draft){ toast("🚧 この科目はまだ準備中です"); return; }
     const prev=savedSubjectId();
     subjectLoading=true; if(el) el.classList.add("busy");
     try{
