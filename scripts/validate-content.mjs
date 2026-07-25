@@ -55,18 +55,28 @@ for (const subject of subjects) {
     if (question.image && !fs.existsSync(path.join("public", question.image))) errors.push(`[${label}] 問題 ${id}: 画像がありません (${question.image})`);
   }
 
+  const slidePath = (deck, page) =>
+    path.join("public", "images", subject.id, "slides", `${deck}-p${String(page).padStart(3, "0")}.webp`);
+
+  // 根拠スライド（「解説をさらに見る」）。指定したページの画像が無いと図が欠ける。
+  const decks = new Set();
+  for (const question of questions) {
+    for (const ref of question?.slideRefs || []) {
+      if (!ref?.deck) continue;
+      decks.add(String(ref.deck));
+      for (const page of ref.pages || []) {
+        const file = slidePath(ref.deck, page);
+        if (!fs.existsSync(file)) errors.push(`[${label}] 問題 ${question.id}: 根拠スライドの画像がありません (${file})`);
+      }
+    }
+  }
+
   // 「学習」画面の要点テキスト。deck は問題の slideRefs と一致していなければ
   // 章と問題が結びつかず、参照したスライド画像が無ければ図が欠ける。
   const lessons = subject.lessons
     ? loadBrowserData(path.join("public", subject.lessons), "LESSONS", { optional: true })
     : [];
   if (lessons.length) {
-    const decks = new Set();
-    for (const question of questions) {
-      for (const ref of question?.slideRefs || []) if (ref?.deck) decks.add(String(ref.deck));
-    }
-    const slidePath = (deck, page) =>
-      path.join("public", "images", subject.id, "slides", `${deck}-p${String(page).padStart(3, "0")}.webp`);
     const seenDecks = new Set();
     for (const [index, lesson] of lessons.entries()) {
       const deck = String(lesson?.deck ?? "");

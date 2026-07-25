@@ -3877,16 +3877,29 @@
   function lessonEntry(deck){ return lessonEntries().find(l=>l && String(l.deck)===String(deck)) || null; }
   function lessonWritten(ls){ return !!(ls && (ls.intro || (Array.isArray(ls.sections) && ls.sections.length))); }
   function deckLabel(deck){ const n=String(deck).replace(/^0+/,""); return n?`第${n}回`:String(deck); }
+  /* 枝番のデッキ（"08a"＝第8回の前半コマ）は、同じ回の講義なので学習の章としては
+     本体（"08"）にまとめる。問題の slideRefs は前半・後半それぞれの正しいページを
+     指したままにしたいので、章分けのときだけ枝番を落とす。 */
+  function lessonBaseDeck(deck){ const m=/^(\d+)[a-z]$/i.exec(String(deck)); return m?m[1]:String(deck); }
+  // 枝番のページは "08a:15" 形式にして持つ（lessonSlideRef がそのまま解釈できる）
+  function lessonPageKey(deck, base, page){ return deck===base ? page : `${deck}:${page}`; }
+  // 並び順は 前半（枝番 a→z）→ 本体 の順。講義がその順に進むため。
+  function lessonPageOrder(entry){
+    const r=lessonSlideRef("", entry), m=/^\d+([a-z])$/i.exec(r.deck);
+    return [m ? m[1].toLowerCase().charCodeAt(0)-96 : 100, r.page];
+  }
   function lessonDecks(){
     const m=new Map();
     DATA.forEach(q=>{
       (q.slideRefs||[]).forEach(r=>{
-        const deck=String(r.deck||""); if(!deck) return;
+        const raw=String(r.deck||""); if(!raw) return;
+        const deck=lessonBaseDeck(raw);
         let e=m.get(deck);
-        if(!e){ e={deck, name:String(r.name||deck), ids:new Set(), items:[], pages:new Set()}; m.set(deck,e); }
-        if(r.name && e.name===deck) e.name=String(r.name);
+        if(!e){ e={deck, name:deck, ids:new Set(), items:[], pages:new Set()}; m.set(deck,e); }
+        // 章の名前は本体デッキのものを使う（枝番の名前は本体が無いときの控え）
+        if(r.name && (raw===deck || e.name===deck)) e.name=String(r.name);
         if(!e.ids.has(q.id)){ e.ids.add(q.id); e.items.push(q); }
-        (r.pages||[]).forEach(p=>{ const n=Number(p); if(n>0) e.pages.add(n); });
+        (r.pages||[]).forEach(p=>{ const n=Number(p); if(n>0) e.pages.add(lessonPageKey(raw,deck,n)); });
       });
     });
     // スライドが1枚も無く要点も無い回は章として成立しないので出さない（例：参考文献だけの回）。
@@ -3895,8 +3908,12 @@
       .filter(e=>{ const ls=lessonEntry(e.deck); return !(ls&&ls.hidden) && (e.pages.size>0 || ls); })
       .map(e=>{
         const ls=lessonEntry(e.deck);
+        const pages=[...e.pages].sort((a,b)=>{
+          const x=lessonPageOrder(a), y=lessonPageOrder(b);
+          return x[0]-y[0] || x[1]-y[1];
+        });
         return { deck:e.deck, name:(ls&&ls.title)?String(ls.title):e.name, items:e.items,
-                 pages:[...e.pages].sort((a,b)=>a-b), lesson:ls };
+                 pages, lesson:ls };
       })
       .sort((a,b)=>a.deck.localeCompare(b.deck,"en",{numeric:true}));
   }
