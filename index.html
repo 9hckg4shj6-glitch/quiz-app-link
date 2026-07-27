@@ -381,6 +381,68 @@
   /* 「2つ選べ」問題の決定ボタン */
   .multiConfirm{width:100%;margin-top:4px}
   .multiConfirm:disabled{opacity:.55;cursor:not-allowed}
+
+  /* ===== 記述問題（論述・数値・作図） =====
+     仕様：IMMUNOLOGY_WRITTEN_QUESTION_IMPLEMENTATION_PLAN.md §14 */
+  .constructedAnswer{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+  .cwPart{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card2)}
+  .cwLabel{display:block;font-weight:800;font-size:13.5px;margin-bottom:4px}
+  .cwPrompt{color:var(--muted);font-size:12.5px;margin:0 0 8px;line-height:1.6}
+  .cwOptional{color:var(--muted);font-weight:600;font-size:11.5px;margin-left:6px}
+  .cwText{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;background:var(--card);
+    color:var(--text);padding:10px 12px;font:inherit;font-size:14px;line-height:1.7;resize:vertical}
+  .cwText:focus{outline:2px solid var(--brand);outline-offset:1px}
+  .cwText:disabled{opacity:.85;background:var(--card2)}
+  .cwTerms{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+  .cwTerm{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;
+    border:1px solid var(--line);background:var(--card);color:var(--text)}
+  .cwTerm.used{border-color:var(--good);color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card))}
+  .cwTerm.missing{border-color:var(--bad);color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--card))}
+  .cwTermState{font-size:10.5px;font-weight:800;opacity:.9}
+  .cwNumRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .cwNum{flex:1 1 140px;min-width:120px}
+  .cwUnit{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);padding:10px;font:inherit;font-size:14px}
+  .cwHint{color:var(--muted);font-size:11.5px;margin:6px 0 0}
+  /* 作図 */
+  .cwModeRow{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .cwModeBtn{min-height:44px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);
+    color:var(--text);font-weight:700;font-size:13px;cursor:pointer}
+  .cwModeBtn.on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 14%,var(--card));color:var(--brand)}
+  .drawWrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;
+    background-size:contain;background-repeat:no-repeat;background-position:center}
+  .drawCanvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+  .drawTools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .drawTool{min-width:44px;min-height:44px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);
+    background:var(--card);color:var(--text);font-weight:700;font-size:13px;cursor:pointer}
+  .drawTool.on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 14%,var(--card));color:var(--brand)}
+  .drawTool:disabled{opacity:.45;cursor:not-allowed}
+  .drawFull{color:var(--bad);font-size:11.5px;margin:6px 0 0;font-weight:700}
+  .cwActions{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .cwActions .btn{width:100%}
+  .cwActions .btn:disabled{opacity:.55;cursor:not-allowed}
+  /* 採点画面 */
+  .cwReview{display:grid;gap:12px;margin-top:4px}
+  @media(min-width:760px){ .cwReview.two{grid-template-columns:1fr 1fr} }
+  .cwPanel{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card2)}
+  .cwPanel h5{margin:0 0 8px;font-size:13px;letter-spacing:.02em;color:var(--muted)}
+  .cwAnswerText{white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.75;margin:0}
+  .cwAnswerText.empty{color:var(--muted)}
+  .cwModelImg{width:100%;border-radius:10px;border:1px solid var(--line);background:#fff;margin-top:8px}
+  .cwRubric{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card)}
+  .cwRubricHead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .cwRubricTitle{font-weight:800;font-size:14px}
+  .cwScore{font-weight:900;font-size:18px;color:var(--brand);font-variant-numeric:tabular-nums}
+  .cwSource{color:var(--muted);font-size:11.5px;margin:0 0 10px;line-height:1.6}
+  .cwCrit{display:flex;gap:10px;align-items:flex-start;padding:9px 4px;border-top:1px dashed var(--line);cursor:pointer}
+  .cwCrit input{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--brand)}
+  .cwCritBody{flex:1}
+  .cwCritText{font-size:13.5px;line-height:1.6}
+  .cwCritMeta{color:var(--muted);font-size:11.5px;margin-top:2px}
+  .cwAuto{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;
+    background:color-mix(in srgb,var(--brand) 15%,var(--card2));color:var(--brand)}
+  .cwRateRow{margin-top:12px}
+  .cwHistory{margin-top:10px;color:var(--muted);font-size:12px}
+  @media(prefers-reduced-motion:reduce){ .explain{animation:none} }
   .fieldBreak{text-align:left;margin:6px 0 4px}
   .fbRow{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:12.5px}
   .fbName{flex:0 0 40%;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1370,6 +1432,18 @@
       </button>
     </div>
 
+    <!-- 記述の自己採点が途中の試験があるときだけ出す（仕様書 §9.2） -->
+    <div class="homeSection hidden" id="pendingExamSection">
+      <button type="button" class="dueCard" id="pendingExamCard">
+        <span class="dueIcon">📝</span>
+        <span class="dueBody">
+          <span class="dueTitle">採点待ちの試験</span>
+          <span class="dueSub" id="pendingExamSub">本番モードの記述答案が自己採点の途中です</span>
+        </span>
+        <span class="dueRight"><b class="dueCount" id="pendingExamCount">0</b><span class="dueUnit">問</span></span>
+      </button>
+    </div>
+
     <div class="homeSection" id="quickSection">
       <div class="sectlabel">クイック演習</div>
       <div class="quick" id="quick"></div>
@@ -1602,6 +1676,12 @@
       </figure>
       <div class="choices" id="choices"></div>
       <button type="button" class="btn primary multiConfirm hidden" id="multiConfirm"></button>
+      <!-- 記述問題（type:"constructed"）の回答欄。選択問題では空のまま隠す -->
+      <div id="constructedAnswer" class="constructedAnswer hidden"></div>
+      <div class="cwActions hidden" id="constructedActions">
+        <button type="button" class="btn primary" id="constructedSubmit">答案を確定</button>
+        <button type="button" class="btn ghost small" id="constructedGiveUp">分からないので解答を見る</button>
+      </div>
       <div id="explainBox"></div>
     </div>
     <button class="btn hidden" id="nextBtn">次の問題 →</button>
@@ -2409,7 +2489,32 @@
     syncCmUnread();
     refreshData(); renderHub();
     refreshCmUnread(false);
+    refreshPendingExam();
     window.scrollTo(0,0);
+  }
+  /* 採点途中で閉じた試験を、ホームから再開できるようにする（§9.2） */
+  function refreshPendingExam(){
+    const wa=WA(), sec=$("#pendingExamSection"); if(!sec) return;
+    if(!wa){ sec.classList.add("hidden"); return; }
+    Promise.resolve(wa.listPendingExamAttempts()).then(rows=>{
+      const mine=(rows||[]).filter(x=>DATA.some(q=>q.id===x.questionId));
+      sec.classList.toggle("hidden", mine.length===0);
+      if(!mine.length) return;
+      $("#pendingExamCount").textContent=mine.length;
+      $("#pendingExamSub").textContent=`本番モードの記述答案 ${mine.length}問が自己採点の途中です。タップして続きから採点できます`;
+      $("#pendingExamCard").onclick=()=>resumePendingExamGrading(mine);
+    }).catch(()=>{ sec.classList.add("hidden"); });
+  }
+  function resumePendingExamGrading(rows){
+    const items=rows.map(a=>({a, q:DATA.find(q=>q.id===a.questionId)})).filter(x=>x.q);
+    if(!items.length){ toast("採点できる答案が見つかりませんでした"); return; }
+    session={label:"採点待ちの試験", queue:items.map(x=>({q:x.q,type:"constructed",parts:x.q.responseParts||[]})),
+      i:0, correct:0, streak:0, maxStreak:0, wrongList:[], xpStart:meta.xp, leveledUp:0, exam:true,
+      answers:items.map(x=>({kind:"constructed", answers:x.a.answers||{}})), startedAt:Date.now(),
+      examSessionId:items[0].a.examSessionId||null, written:{}, resumed:true,
+      examAttempts:Object.fromEntries(items.map((x,i)=>[i,x.a.id])),
+      gradeQueue:items.map((_,i)=>i), gradeAt:0, elapsedSec:0};
+    renderExamGrading();
   }
   function openView(id){
     if(VIEWS.indexOf(id)===-1){ renderHome(); return; }
@@ -2872,6 +2977,7 @@
   }
   // よく選んでしまう誤答（記録があれば）
   function topMiss(q){
+    if(questionType(q)==="constructed") return null;   // 記述問題に「よく選ぶ誤答」は無い（§8.4）
     const r=progress[q.id]; if(!r||!r.miss) return null;
     const okSet=new Set(ansIdxs(q));
     let bi=-1, bc=0; Object.keys(r.miss).forEach(k=>{ const i=+k; if(!okSet.has(i) && r.miss[k]>bc){ bc=r.miss[k]; bi=i; } });
@@ -2912,18 +3018,21 @@
     const chip=(k,label,n)=>`<button type="button" class="maChip${mistakeFilter===k?' on':''}" data-f="${k}">${label}${n!=null?` <b>${n}</b>`:""}</button>`;
     const CAP=120, capped=shown.slice(0,CAP);
     const rows=capped.map(q=>{
-      const r=progress[q.id], correct=ansText(q), miss=topMiss(q);
+      const r=progress[q.id], cw=questionType(q)==="constructed", correct=cw?answerSummary(q):ansText(q), miss=topMiss(q);
       return `<div class="maItem">
         <div class="maQ">${esc(q.question)}</div>
         <div class="maFacts">
           <span class="maField">${esc(q.field||"")}</span>
           <span class="maWrong">✗ ${r.wrong||0}回</span>
           ${(r.correct||0)===0?`<span class="maUnsolved">未正解</span>`:""}
+          ${cw?`<span class="maField">記述 ${writtenPoints(q)}点</span>`:""}
         </div>
-        <div class="maAns"><b>正解：</b>${esc(correct)}</div>
+        <div class="maAns"><b>${cw?"模範解答：":"正解："}</b>${esc(correct)}</div>
+        ${cw?`<div class="maWritten" data-written="${esc(q.id)}"></div>`:""}
         ${miss?`<div class="maMiss">よく選ぶ誤答：${esc(miss.text)}（${miss.count}回）</div>`:""}
         <textarea class="maNote" data-id="${esc(q.id)}" rows="2" placeholder="📓 なぜ間違えた？ メモを書く">${esc(r.note||"")}</textarea>
-        <div class="maActions"><button type="button" class="btn small maSolve" data-id="${esc(q.id)}">▶ この問題を解く</button></div>
+        <div class="maActions"><button type="button" class="btn small maSolve" data-id="${esc(q.id)}">▶ この問題を解く</button>
+          ${cw?`<button type="button" class="btn small ghost maHistory" data-id="${esc(q.id)}">📚 答案履歴を見る</button>`:""}</div>
       </div>`;
     }).join("");
     box.innerHTML=`
@@ -2949,6 +3058,39 @@
     box.querySelectorAll(".maSolve").forEach(b=>{ b.onclick=()=>{ const q=DATA.find(x=>x.id===b.dataset.id); if(q) startQuiz([q],"誤答の復習"); }; });
     const pa=$("#maPracticeAll"); if(pa) pa.onclick=()=>{ if(capped.length){ startQuiz(capped.slice(),"誤答ノートの復習"); } };
     box.querySelectorAll(".maNote").forEach(t=>{ t.oninput=()=>{ clearTimeout(t._t); t._t=setTimeout(()=>saveNote(t.dataset.id, t.value), 500); }; });
+    box.querySelectorAll(".maHistory").forEach(b=>{ b.onclick=()=>openWrittenHistory(b.dataset.id); });
+    // 記述問題は「最新答案・獲得点・落とした採点項目」を非同期で足す（§8.4）
+    box.querySelectorAll("[data-written]").forEach(el=>fillMistakeWritten(el, el.dataset.written));
+  }
+  function fillMistakeWritten(el, questionId){
+    const wa=WA(); if(!wa||!el) return;
+    const q=DATA.find(x=>x.id===questionId); if(!q) return;
+    Promise.resolve(wa.listByQuestion(questionId)).then(rows=>{
+      const last=(rows||[]).filter(x=>x.status==="graded")[0];
+      if(!last) return;
+      const got=new Set(last.selectedRubricIds||[]);
+      const lost=(q.rubric||[]).filter(c=>!got.has(c.id));
+      const text=Object.keys(last.answers||{}).map(pid=>{
+        const part=(q.responseParts||[]).find(p=>p.id===pid);
+        return part ? partAnswerText(part,last.answers[pid]) : "";
+      }).filter(Boolean).join("\n");
+      const head=document.createElement("div"); head.className="maMiss";
+      head.textContent=`最新の答案：${last.earnedPoints} / ${last.maxPoints}点（${String(last.submittedAt).slice(0,10)}）`;
+      el.appendChild(head);
+      if(text){ const p=document.createElement("p"); p.className="cwAnswerText"; p.style.margin="4px 0"; p.textContent=text.length>300?text.slice(0,300)+"…":text; el.appendChild(p); }
+      if(lost.length){ const l=document.createElement("div"); l.className="maMiss";
+        l.textContent="落とした採点項目：" + lost.map(c=>`${c.text}（${c.points}点）`).join(" ／ "); el.appendChild(l); }
+    }).catch(()=>{});
+  }
+  function openWrittenHistory(questionId){
+    const wa=WA(); if(!wa) return;
+    const q=DATA.find(x=>x.id===questionId); if(!q) return;
+    Promise.resolve(wa.listByQuestion(questionId)).then(rows=>{
+      const graded=(rows||[]).filter(x=>x.status==="graded");
+      if(!graded.length){ toast("この問題の答案履歴はまだありません"); return; }
+      const lines=graded.map(x=>`${String(x.submittedAt).slice(0,16).replace("T"," ")}　${x.earnedPoints} / ${x.maxPoints}点`);
+      alert(`「${q.question.slice(0,40)}」の答案履歴（${graded.length}回）\n\n`+lines.join("\n"));
+    }).catch(()=>{});
   }
 
   function renderScopeLists(){
@@ -3060,12 +3202,36 @@
     if(el){ el.textContent=`⏱ ${Math.floor(remain/60)}:${String(remain%60).padStart(2,"0")}`; el.classList.toggle("danger",remain<=60); }
     if(remain<=0){ stopExamTimer(); toast("⏰ 時間切れ。採点します"); submitExam(); }
   }
+  // 問題ごとの配点。記述は points、選択は points があればそれ、無ければ従来の EXAM_POINT（§9.1）
+  function examPoints(q){
+    if(questionType(q)==="constructed") return writtenPoints(q);
+    const n=Number(q.points);
+    return Number.isFinite(n)&&n>0 ? n : EXAM_POINT;
+  }
   function submitExam(){
     stopExamTimer();
     const s=session; if(!s||!s.exam) return;
+    captureExamWritten();
     const t=todayStr();
     let correct=0, run=0, maxRun=0;
+    const pending=[];
     s.queue.forEach((cur,i)=>{
+      if(cur.type==="constructed"){
+        // 試験中は採点しない。答案を submitted として残し、あとで自己採点する（§9.2）
+        const raw=s.answers[i];
+        const answers=(raw&&raw.kind==="constructed")?raw.answers:{};
+        pending.push(i);
+        const wa=WA();
+        if(wa){
+          try{
+            Promise.resolve(wa.saveAttempt({subjectId:currentSubjectId||"", questionId:cur.q.id, examSessionId:s.examSessionId,
+              mode:"exam", status:"submitted", answers, selectedRubricIds:[], earnedPoints:null,
+              maxPoints:writtenPoints(cur.q), rating:null, durationMs:null}))
+              .then(a=>{ s.examAttempts=s.examAttempts||{}; s.examAttempts[i]=a?a.id:null; }).catch(()=>{});
+          }catch(e){}
+        }
+        return;
+      }
       const raw=(s.answers[i]===undefined?null:s.answers[i]);
       const picks=raw===null?[]:(Array.isArray(raw)?raw:[raw]);
       const correctPos=cur.choices.map((c,k)=>c.correct?k:-1).filter(k=>k>=0);
@@ -3078,33 +3244,128 @@
     });
     s.correct=correct; s.maxStreak=maxRun;
     s.elapsedSec=Math.min(EXAM_MIN*60, Math.round((Date.now()-s.startedAt)/1000));
-    const gained=correct*XP_CORRECT + (s.queue.length-correct)*XP_WRONG;
+    const choiceN=s.queue.filter(c=>c.type!=="constructed").length;
+    const gained=correct*XP_CORRECT + (choiceN-correct)*XP_WRONG;
     s.leveledUp=addXP(gained); s.xpStart=meta.xp-gained;
     meta.bestRunStreak=Math.max(meta.bestRunStreak,maxRun);
     markStudied(); saveProgress(); saveMeta(); checkAch(); maybePublishRank(true); maybeAutoSync();
-    renderExamResult();
+    s.gradeQueue=pending; s.gradeAt=0;
+    if(pending.length){ toast("記述の答案を1問ずつ自己採点します"); renderExamGrading(); }
+    else renderExamResult();
+  }
+  /* ---------- 本番モードの記述採点キュー（§9.2） ---------- */
+  function renderExamGrading(){
+    const s=session;
+    if(!s || s.gradeAt>=s.gradeQueue.length){ renderExamResult(); return; }
+    const idx=s.gradeQueue[s.gradeAt], cur=s.queue[idx], q=cur.q;
+    hideAllScreens(); $("#quiz").classList.remove("hidden");
+    $("#examTimer").classList.add("hidden"); $("#streakPill").classList.add("hidden");
+    $("#progBar").style.width=(s.gradeAt/s.gradeQueue.length*100)+"%";
+    $("#counter").textContent=`自己採点 ${s.gradeAt+1} / ${s.gradeQueue.length}`;
+    $("#qtag").textContent="記述問題の自己採点";
+    $("#qtext").textContent=q.question;
+    updateBookmarkBtn(q.id);
+    const fig=$("#qfigure"), figImg=$("#qfigureImg");
+    if(q.image){ figImg.src=q.image; figImg.alt=q.imageAlt||"問題の図"; fig.classList.remove("hidden"); }
+    else { figImg.removeAttribute("src"); fig.classList.add("hidden"); }
+    $("#choices").innerHTML=""; $("#multiConfirm").classList.add("hidden");
+    $("#constructedAnswer").classList.add("hidden"); $("#constructedAnswer").innerHTML="";
+    $("#constructedActions").classList.add("hidden");
+    $("#nextBtn").classList.add("hidden");
+    const raw=s.answers[idx];
+    const answers=(raw&&raw.kind==="constructed")?raw.answers:{};
+    s.cw={q, readers:{}, submitted:true, exam:true, finalized:false, answers,
+      selected:new Set((q.rubric||[]).filter(c=>autoCheckPasses(q,c,answers)).map(c=>c.id))};
+    renderConstructedReview(q,answers,{});
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  function renderExamGradeButton(q){
+    const row=$("#cwRateRow"); if(!row) return;
+    const s=session, last=s.gradeAt+1>=s.gradeQueue.length;
+    row.innerHTML=`<button type="button" class="btn primary" id="cwExamNext" style="width:100%">${last?"この採点で確定して結果へ →":"この採点で確定して次の記述へ →"}</button>`;
+    $("#cwExamNext").onclick=()=>finalizeExamWrittenGrade();
+  }
+  function finalizeExamWrittenGrade(){
+    const s=session; if(!s||!s.cw||s.cw.finalized) return;
+    const idx=s.gradeQueue[s.gradeAt], q=s.cw.q;
+    const max=writtenPoints(q), ids=[...s.cw.selected], earned=rubricPoints(q,ids);
+    s.cw.finalized=true;
+    const full=earned>=max;
+    const r=rec(q.id); r.seen++;
+    if(full){ r.correct++; r.streak++; }
+    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); s.wrongList.push({q, chosen:`${earned} / ${max}点`}); }
+    syncWeak(r);
+    // 既存の本番モード（選択問題）と同じ扱いにそろえる。個別の手ごたえボタンは出さない（§9.3）
+    scheduleSRS(r, full?3:(earned>0?2:1), q.id);
+    const ratio=max>0?earned/max:0;
+    addXP(Math.round(XP_WRONG + ratio*(XP_CORRECT-XP_WRONG)));
+    s.written[idx]={earned,max,rubricIds:ids};
+    saveProgress(); saveMeta();
+    const wa=WA(), attemptId=(s.examAttempts||{})[idx];
+    if(wa){
+      try{
+        if(attemptId) wa.updateAttempt(attemptId,{selectedRubricIds:ids, earnedPoints:earned, status:"graded"});
+        else wa.saveAttempt({subjectId:currentSubjectId||"", questionId:q.id, examSessionId:s.examSessionId, mode:"exam",
+          status:"graded", answers:s.cw.answers||{}, selectedRubricIds:ids, earnedPoints:earned, maxPoints:max, rating:null, durationMs:null});
+      }catch(e){}
+    }
+    s.gradeAt++;
+    if(s.gradeAt>=s.gradeQueue.length){
+      if(wa && s.examSessionId){ try{ wa.deleteDraftsForSession(s.examSessionId); }catch(e){} }
+      maybeAutoSync(); renderExamResult();
+    } else renderExamGrading();
   }
   function renderExamResult(){
-    const s=session, total=s.queue.length, correct=s.correct, score=correct*EXAM_POINT, pct=Math.round(correct/total*100);
+    const s=session, total=s.queue.length, correct=s.correct;
+    // 得点は「選択問題の自動採点＋記述問題の自己採点」の合計（§9.3）
+    let score=0, maxScore=0, choiceScore=0, choiceMax=0, writtenScore=0, writtenMax=0;
+    s.queue.forEach((cur,i)=>{
+      const pt=examPoints(cur.q); maxScore+=pt;
+      if(cur.type==="constructed"){
+        writtenMax+=pt;
+        const g=(s.written||{})[i];
+        if(g){ score+=g.earned; writtenScore+=g.earned; }
+      } else {
+        choiceMax+=pt;
+        const raw=s.answers[i];
+        const picks=raw==null?[]:(Array.isArray(raw)?raw:[raw]);
+        const ok=picks.length>0&&sameSet(picks,cur.choices.map((c,k)=>c.correct?k:-1).filter(k=>k>=0));
+        if(ok){ score+=pt; choiceScore+=pt; }
+      }
+    });
+    const pct=maxScore?Math.round(score/maxScore*100):0;
+    const writtenRows=s.queue.map((cur,i)=>{
+      if(cur.type!=="constructed") return "";
+      const g=(s.written||{})[i]; if(!g) return "";
+      const lost=(cur.q.rubric||[]).filter(c=>(g.rubricIds||[]).indexOf(c.id)<0);
+      return `<div class="rvitem"><div class="q">${esc(cur.q.question)}</div>
+        <div class="a ans">得点：${g.earned} / ${g.max}点</div>
+        ${lost.length?`<div class="a you">落とした項目：${esc(lost.map(c=>`${c.text}（${c.points}点）`).join(" ／ "))}</div>`:`<div class="a ans">満点</div>`}</div>`;
+    }).join("");
     const gained=meta.xp-s.xpStart, el=s.elapsedSec||0, mm=Math.floor(el/60), ss=el%60;
-    // 分野別内訳
+    // 分野別内訳（記述は満点だけを正解として数える）
     const byF={};
-    s.queue.forEach((cur,i)=>{ const f=cur.q.field||"その他"; const raw=s.answers[i];
-      const picks=raw==null?[]:(Array.isArray(raw)?raw:[raw]);
-      const ok=picks.length>0&&sameSet(picks,cur.choices.map((c,k)=>c.correct?k:-1).filter(k=>k>=0));
+    s.queue.forEach((cur,i)=>{ const f=cur.q.field||"その他";
+      let ok=false;
+      if(cur.type==="constructed"){ const g=(s.written||{})[i]; ok=!!g && g.earned>=g.max; }
+      else { const raw=s.answers[i];
+        const picks=raw==null?[]:(Array.isArray(raw)?raw:[raw]);
+        ok=picks.length>0&&sameSet(picks,cur.choices.map((c,k)=>c.correct?k:-1).filter(k=>k>=0)); }
       (byF[f]=byF[f]||{c:0,n:0}); byF[f].n++; if(ok)byF[f].c++; });
     const fieldRows=Object.keys(byF).sort((a,b)=>(byF[a].c/byF[a].n)-(byF[b].c/byF[b].n)).map(f=>{
       const o=byF[f], p=Math.round(o.c/o.n*100);
       return `<div class="fbRow"><span class="fbName">${esc(f)}</span><span class="fbBar"><i style="width:${p}%"></i></span><span class="fbNum">${o.c}/${o.n}</span></div>`;
     }).join("");
-    const wrong=s.wrongList.map(w=>{ const ans=ansText(w.q);
-      return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">あなた: ${esc(w.chosen)}</div><div class="a ans">正解: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${esc(w.q.explanation)}</div>`:""}</div>`; }).join("");
-    const msg=score>=90?"🏆 素晴らしい！":score>=70?"🎉 合格ライン！":score>=50?"💪 あと一歩！":"📚 復習しよう！";
+    const wrong=s.wrongList.map(w=>{ const ans=answerSummary(w.q), cw=questionType(w.q)==="constructed";
+      return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${esc(w.q.explanation)}</div>`:""}</div>`; }).join("");
+    const msg=pct>=90?"🏆 素晴らしい！":pct>=70?"🎉 合格ライン！":pct>=50?"💪 あと一歩！":"📚 復習しよう！";
+    const written=writtenMax>0;
     $("#quiz").classList.add("hidden");
     $("#result").innerHTML=`
       <div class="result">
-        <div class="score">${score} <span style="font-size:24px;color:var(--muted)">/ 100点</span></div>
-        <div class="sub">本番モード ・ ${correct}/${total}問正解 ・ 正答率 ${pct}% ${msg}</div>
+        <div class="score">${score} <span style="font-size:24px;color:var(--muted)">/ ${maxScore}点</span></div>
+        <div class="sub">本番モード ・ ${correct}/${total-(written?s.gradeQueue.length:0)}問正解 ・ 得点率 ${pct}% ${msg}</div>
+        ${written?`<div class="sub">選択問題 ${choiceScore} / ${choiceMax}点 ・ 記述問題 ${writtenScore} / ${writtenMax}点</div>`:""}
         <div><span class="xpgain">⭐ +${gained} XP ${s.leveledUp?` ・ 🎉 Lv.${s.leveledUp}`:''} ・ ⏱ 所要 ${mm}:${String(ss).padStart(2,"0")}</span></div>
         <div class="stats">
           <div class="stat"><b style="color:var(--good)">${correct}</b><span>正解</span></div>
@@ -3115,9 +3376,10 @@
         <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度（新しい50問）</button></div>
         ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:''}
       </div>
+      ${writtenRows?`<div class="review"><h4>記述問題の部分点</h4>${writtenRows}</div>`:''}
       ${wrong?`<div class="review"><h4>間違えた問題（${s.wrongList.length}問）</h4>${wrong}</div>`:''}`;
     $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
-    if(score>=90||s.leveledUp) confetti();
+    if(pct>=90||s.leveledUp) confetti();
     $("#rHome").onclick=renderHome;
     $("#rRetry").onclick=startExam;
     const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),"本番モードの復習");
@@ -3129,7 +3391,7 @@
   function searchMatches(query){
     const terms=searchTerms(query); if(!terms.length) return [];
     return DATA.filter(q=>{
-      const hay=normQ((q.question||"")+" "+((q.choices||[]).join(" "))+" "+(q.explanation||"")+" "+(q.field||"")+" "+(q.year||"")+" "+(q.mockTitle||"")+" "+(q.imageAlt||""));
+      const hay=normQ((q.question||"")+" "+((q.choices||[]).join(" "))+" "+(q.explanation||"")+" "+(q.modelAnswer||"")+" "+(q.field||"")+" "+(q.year||"")+" "+(q.mockTitle||"")+" "+(q.imageAlt||""));
       return terms.every(t=>hay.includes(t));
     });
   }
@@ -3168,8 +3430,19 @@
   }
 
   /* ---------- 学習記録の引き継ぎ・バックアップ ---------- */
-  function buildExportString(){ return JSON.stringify({ app:"metabolism-quiz", v:1, exportedAt:new Date().toISOString(), progress:progress, meta:meta }); }
-  function openBackupModal(){ $("#bkExport").value=buildExportString(); $("#bkImport").value=""; $("#backupModal").classList.remove("hidden"); }
+  // v2 は記述問題の答案履歴（writtenAttempts）を含む。v1 も従来どおり読める（§12.1）
+  async function buildExportString(){
+    const wa=WA();
+    let attempts=[];
+    if(wa){ try{ attempts=await wa.exportAll(); }catch(e){ attempts=[]; } }
+    return JSON.stringify({ app:"metabolism-quiz", v:2, exportedAt:new Date().toISOString(), progress:progress, meta:meta, writtenAttempts:attempts });
+  }
+  function openBackupModal(){
+    const ta=$("#bkExport");
+    ta.value="バックアップを作成中です…";
+    $("#bkImport").value=""; $("#backupModal").classList.remove("hidden");
+    buildExportString().then(s=>{ ta.value=s; }).catch(()=>{ ta.value=JSON.stringify({app:"metabolism-quiz",v:1,exportedAt:new Date().toISOString(),progress:progress,meta:meta}); });
+  }
   function closeBackupModal(){ $("#backupModal").classList.add("hidden"); }
   function copyText(str){
     const ok=()=>toast("📋 コピーしました");
@@ -3229,6 +3502,13 @@
     Object.keys(progress).forEach(id=>{ if(progress[id]&&typeof progress[id]==="object") syncWeak(progress[id]); });
     saveProgress();
     localStorage.setItem(META_KEY, JSON.stringify(meta)); loadMeta(); saveMeta();
+    // v2 の答案履歴。置き換え読込では既存答案を消してから取り込む
+    const wa=WA(), rows=Array.isArray(obj.writtenAttempts)?obj.writtenAttempts:null;
+    if(wa && (rows || replace)){
+      Promise.resolve(wa.importMany(rows||[], {replace:!!replace}))
+        .then(res=>{ if(res && res.skipped) console.warn(`答案履歴：${res.skipped}件は形式が不正なため取り込みませんでした`); })
+        .catch(()=>{});
+    }
     closeBackupModal(); renderHome();
     toast(replace?"✅ 記録を置き換えました":"✅ 記録を統合しました");
   }
@@ -3271,6 +3551,8 @@
       const got=await ds.pull(code);
       if(!got.ok){ if(!silent) toast(syncErrText(got.error)); return false; }
       mergeRemote(got.payload);
+      // 記述問題の答案履歴は1MBスナップショットに混ぜず、別テーブルで差分同期する（§11）
+      if(ds.syncWritten){ try{ await ds.syncWritten(code); }catch(e){} }
       const put=await ds.push(code, syncSnapshot());
       if(!put.ok){ if(!silent) toast(syncErrText(put.error)); return false; }
       if(!silent){ toast("✅ 同期しました"); refreshCurrentScreen(); }
@@ -3358,7 +3640,15 @@
 
   /* ---------- フラッシュカード ---------- */
   let flashSession=null, flashTouch=null, lastFlashTouch=0, flashAnimating=false;
-  function questionToCard(q){ return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:ansText(q),expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""}; }
+  // 記述問題は「表＝問題文／裏＝模範解答」。模範図があれば裏に出す（§13.5）
+  function questionToCard(q){
+    if(questionType(q)==="constructed"){
+      const draw=(q.responseParts||[]).find(p=>p.kind==="drawing"&&p.modelImage);
+      return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:q.modelAnswer||"（模範解答なし）",
+        expl:q.explanation||"",image:draw?draw.modelImage:(q.image||null),imageAlt:draw?(draw.modelImageAlt||"模範図"):(q.imageAlt||"")};
+    }
+    return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:ansText(q),expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""};
+  }
   function termToCard(t,i){ return {id:t.id||("tc"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:t.image||null,imageAlt:t.imageAlt||"",backImageOnly:!!t.backImageOnly}; }
   function fcImgHTML(c){ return c.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:""; }
   function escML(s){ return esc(s).replace(/\n/g,"<br>"); }
@@ -3686,7 +3976,17 @@
       return `<li class="qbChoice${ok?' ok':''}"><span class="qbCL">${qLetter(i)}</span><span class="qbCBody"><span class="qbCText">${esc(c)}${ok?' <span class="qbOk">✓ 正解</span>':''}</span>${note}</span></li>`;
     }).join("");
     const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${esc(q.explanation)}${explainFigureHTML(q)}${moreExplHTML(q)}</div>`:"";
+    if(questionType(q)==="constructed"){
+      const parts=(q.responseParts||[]).map(p=>`<li class="qbChoice"><span class="qbCL">✎</span><span class="qbCBody"><span class="qbCText">${esc(p.label||"解答")}<span class="qbOk">${esc(writtenKindLabel(p))}</span></span></span></li>`).join("");
+      const model=`<div class="qbExpl"><b>模範解答（${writtenPoints(q)}点）</b>${esc(q.modelAnswer||"")}</div>`;
+      const figs=(q.responseParts||[]).filter(p=>p.kind==="drawing"&&p.modelImage)
+        .map(p=>`<div class="fcImgWrap"><img class="fcImg" src="${esc(p.modelImage)}" alt="${esc(p.modelImageAlt||"模範図")}" loading="lazy"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`).join("");
+      return `${img}<ol class="qbChoices">${parts}</ol>${model}${figs}${expl}`;
+    }
     return `${img}<ol class="qbChoices">${choices}</ol>${expl}`;
+  }
+  function writtenKindLabel(part){
+    return part.kind==="drawing" ? "作図" : part.kind==="numeric" ? "数値" : part.kind==="short-text" ? "短答" : "論述";
   }
   function qbPagerHTML(page,pages){
     if(pages<=1) return "";
@@ -3756,10 +4056,14 @@
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const ordered = opts.keepOrder ? items.slice() : shuffle(items);  // 復習・試験日モードは並びに意味があるので崩さない
-    const queue=ordered.map(q=>{ const ok=new Set(ansIdxs(q));
+    // queue の要素は「選択問題」「記述問題」の判別共用体（仕様書 §13.2）
+    const queue=ordered.map(q=>{
+      if(questionType(q)==="constructed") return {q,type:"constructed",parts:q.responseParts||[]};
+      const ok=new Set(ansIdxs(q));
       let ch=q.choices.map((c,i)=>({text:c,correct:ok.has(i),idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch);
-      return {q,choices:ch,need:ok.size}; });
-    session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now()};
+      return {q,type:"choice",choices:ch,need:ok.size}; });
+    session={label,queue,i:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now(),
+      examSessionId: opts.exam ? ("exam-"+Date.now()+"-"+Math.random().toString(36).slice(2,8)) : null, written:{}};
     hideAllScreens(); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
     const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam);
@@ -4112,7 +4416,7 @@
       return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>${explainFigureHTML(q)}
         <p class="explainSummary" style="color:var(--muted);font-size:12.5px;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>${moreExplHTML(q)}`;
     }
-    const parsed=parseChoiceExplanations(q.explanation);
+    const parsed=cur ? parseChoiceExplanations(q.explanation) : null;   // 記述問題は選択肢別解説を持たない
     if(!parsed){
       return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>${explainFigureHTML(q)}${moreExplHTML(q)}`;
     }
@@ -4132,6 +4436,512 @@
     if(!s.graded){ s.graded=true; r.lastGrade=grade; scheduleSRS(r, grade, cur.q.id); saveProgress(); }
     return Math.max(1, r.interval||1);
   }
+  /* ================================================================
+     記述問題（type:"constructed"）
+     仕様：IMMUNOLOGY_WRITTEN_QUESTION_IMPLEMENTATION_PLAN.md §6〜§8
+     ・外部AIによる採点はしない。機械的にできる「仮判定」＋学習者の自己採点。
+     ・答案本文・描画は localStorage(progress) ではなく IndexedDB へ保存する。
+     ================================================================ */
+  const DRAW_MAX_POINTS=20000;                 // 1作図あたりの点の上限（§6.4）
+  function WA(){ return (window.STUDY_CORE && window.STUDY_CORE.writtenAttempts) || null; }
+
+  // 短答の正規化：NFKC → 前後空白 → 連続空白1個 → ラテン文字を小文字（§6.1）
+  function normWritten(s){
+    let v=String(s==null?"":s);
+    try{ v=v.normalize("NFKC"); }catch(e){}
+    return v.trim().replace(/\s+/g," ").toLowerCase();
+  }
+  // 部分一致・編集距離・意味推定は使わない。別解は acceptedAnswers に明示する。
+  function shortTextHit(part,text){
+    const v=normWritten(text); if(!v) return false;
+    return (part.acceptedAnswers||[]).some(a=>normWritten(a)===v);
+  }
+  // 5.1e7 / 5.1×10^7 / 51000000 を同じ値として読む（§6.3）
+  function parseNumericInput(raw){
+    let v=String(raw==null?"":raw);
+    try{ v=v.normalize("NFKC"); }catch(e){}
+    v=v.replace(/[,\s]/g,"").trim();
+    if(!v) return null;
+    const sci=/^([+-]?(?:\d+\.?\d*|\.\d+))?[×✕xX*]10\^?([+-]?\d+)$/.exec(v)
+           || /^([+-]?(?:\d+\.?\d*|\.\d+))?10\^([+-]?\d+)$/.exec(v);
+    if(sci){ const n=Number((sci[1]||"1")+"e"+sci[2]); return Number.isFinite(n)?n:null; }
+    const n=Number(v);
+    return Number.isFinite(n)?n:null;
+  }
+  function numericHit(part,value){
+    if(value==null) return false;
+    const exp=Number(part.expectedValue); if(!Number.isFinite(exp)) return false;
+    const d=Math.abs(value-exp);
+    const abs=part.absoluteTolerance, rel=part.relativeTolerance;
+    if(abs==null && rel==null) return d===0;
+    if(abs!=null && d<=abs) return true;                       // どちらか満たせば仮正解
+    if(rel!=null && d<=Math.abs(exp)*rel) return true;
+    return false;
+  }
+  // 指定語句の出現。意味的な正しさは保証しないので、あくまで色分けと初期チェックだけに使う
+  function termHits(text,terms){
+    const hay=normWritten(text);
+    return (terms||[]).map(t=>({term:t, used:!!normWritten(t) && hay.indexOf(normWritten(t))>=0}));
+  }
+  function autoCheckPasses(q,crit,answers){
+    const ac=crit.autoCheck; if(!ac) return false;
+    const part=(q.responseParts||[]).find(p=>p.id===ac.partId); if(!part) return false;
+    const a=answers[ac.partId]; if(!a) return false;
+    if(ac.kind==="short-match") return a.kind==="short-text" && shortTextHit(part,a.text);
+    if(ac.kind==="numeric-match") return a.kind==="numeric" && numericHit(part,a.normalizedValue);
+    if(ac.kind==="terms-present"){
+      if(a.kind!=="long-text" && a.kind!=="short-text") return false;
+      const used=termHits(a.text,ac.terms).filter(h=>h.used).length;
+      return ac.mode==="any" ? used>0 : used===(ac.terms||[]).length;
+    }
+    return false;
+  }
+  function writtenPoints(q){ const n=Number(q.points); return Number.isFinite(n)&&n>0 ? n : 1; }
+  function rubricPoints(q,ids){
+    const set=new Set(ids||[]);
+    return (q.rubric||[]).filter(c=>set.has(c.id)).reduce((sum,c)=>sum+(Number(c.points)||0),0);
+  }
+  // 満点=Good、部分点=Hard、0点=Again を初期候補にする（§8.2）
+  function suggestWrittenRating(earned,max){ return earned>=max ? 3 : (earned>0 ? 2 : 1); }
+  function allowedWrittenRatings(earned,max){ return earned>=max ? [2,3,4] : [1,2]; }
+
+  /* ---------- 作図キャンバス（§6.4） ---------- */
+  function createDrawingPad(host,part,opts){
+    opts=opts||{};
+    const ratio=Number(part.aspectRatio)>0 ? Number(part.aspectRatio) : (4/3);
+    const wrap=document.createElement("div"); wrap.className="drawWrap";
+    if(part.backgroundImage) wrap.style.backgroundImage=`url("${part.backgroundImage}")`;
+    const canvas=document.createElement("canvas"); canvas.className="drawCanvas";
+    canvas.setAttribute("role","img");
+    canvas.setAttribute("aria-label",(part.label||"作図")+(opts.readOnly?"の答案（表示のみ）":"の答案キャンバス"));
+    wrap.appendChild(canvas); host.appendChild(wrap);
+    const state={strokes:(opts.strokes||[]).slice(), undone:[], tool:"pen", live:null, full:false};
+    const dpr=()=>Math.min(3, window.devicePixelRatio||1);
+    function count(){ let n=0; state.strokes.forEach(st=>n+=st.points.length); return n; }
+    function drawStroke(ctx,st,w,h){
+      if(!st.points.length) return;
+      ctx.save();
+      ctx.globalCompositeOperation = st.tool==="eraser" ? "destination-out" : "source-over";
+      ctx.strokeStyle=st.color||"#111"; ctx.lineWidth=st.width||3; ctx.lineCap="round"; ctx.lineJoin="round";
+      ctx.beginPath();
+      st.points.forEach((p,i)=>{ const x=p.x*w, y=p.y*h; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+      if(st.points.length===1) ctx.lineTo(st.points[0].x*w+0.1, st.points[0].y*h);
+      ctx.stroke(); ctx.restore();
+    }
+    function repaint(){
+      const ctx=canvas.getContext("2d"); if(!ctx) return;
+      const d=dpr(), w=canvas.width/d, h=canvas.height/d;
+      ctx.clearRect(0,0,w,h);
+      state.strokes.forEach(st=>drawStroke(ctx,st,w,h));
+      if(state.live) drawStroke(ctx,state.live,w,h);
+    }
+    // 画面幅や向きが変わっても、0〜1に正規化した座標から描き直す
+    function resize(){
+      const w=Math.max(120, wrap.clientWidth||300), h=Math.round(w/ratio);
+      wrap.style.height=h+"px";
+      const d=dpr();
+      canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+      const ctx=canvas.getContext("2d"); if(ctx) ctx.setTransform(d,0,0,d,0,0);
+      repaint();
+    }
+    const onResize=()=>resize();
+    window.addEventListener("resize",onResize);
+    setTimeout(resize,0);
+
+    const pad={
+      el:wrap,
+      getStrokes:()=>state.strokes.map(st=>({tool:st.tool,color:st.color,width:st.width,points:st.points.slice()})),
+      setStrokes:(list)=>{ state.strokes=(list||[]).slice(); state.undone=[]; repaint(); },
+      repaint, resize,
+      destroy:()=>window.removeEventListener("resize",onResize)
+    };
+    if(opts.readOnly) return pad;
+
+    const note=document.createElement("p"); note.className="drawFull hidden";
+    note.textContent="これ以上は描けません（1つの図に描ける線の上限に達しました）。取り消しか全消去をしてください。";
+    const tools=document.createElement("div"); tools.className="drawTools";
+    const mk=(label,cls)=>{ const b=document.createElement("button"); b.type="button"; b.className="drawTool"+(cls||""); b.textContent=label; tools.appendChild(b); return b; };
+    const penBtn=mk("✏️ ペン"," on"), eraBtn=mk("🩹 消しゴム"), undoBtn=mk("↩︎ 取り消し"), redoBtn=mk("↪︎ やり直し"), clearBtn=mk("🗑 全消去");
+    host.appendChild(note); host.appendChild(tools);
+    function syncTools(){
+      penBtn.classList.toggle("on",state.tool==="pen");
+      eraBtn.classList.toggle("on",state.tool==="eraser");
+      undoBtn.disabled=!state.strokes.length; redoBtn.disabled=!state.undone.length;
+      clearBtn.disabled=!state.strokes.length;
+      note.classList.toggle("hidden",!state.full);
+    }
+    penBtn.onclick=()=>{ state.tool="pen"; syncTools(); };
+    eraBtn.onclick=()=>{ state.tool="eraser"; syncTools(); };
+    undoBtn.onclick=()=>{ const st=state.strokes.pop(); if(st){ state.undone.push(st); state.full=false; repaint(); syncTools(); changed(); } };
+    redoBtn.onclick=()=>{ const st=state.undone.pop(); if(st){ state.strokes.push(st); repaint(); syncTools(); changed(); } };
+    clearBtn.onclick=()=>{ if(!state.strokes.length) return; state.undone=state.strokes.slice().reverse(); state.strokes=[]; state.full=false; repaint(); syncTools(); changed(); };
+    function changed(){ if(opts.onChange) opts.onChange(); }
+
+    function at(e){
+      const r=canvas.getBoundingClientRect();
+      const p={ x:Math.min(1,Math.max(0,(e.clientX-r.left)/Math.max(1,r.width))),
+                y:Math.min(1,Math.max(0,(e.clientY-r.top)/Math.max(1,r.height))) };
+      if(typeof e.pressure==="number" && e.pressure>0 && e.pressure<1) p.pressure=Math.round(e.pressure*100)/100;
+      return p;
+    }
+    let drawing=false;
+    canvas.addEventListener("pointerdown",(e)=>{
+      if(count()>=DRAW_MAX_POINTS){ state.full=true; syncTools(); return; }
+      drawing=true; canvas.setPointerCapture(e.pointerId);
+      state.live={tool:state.tool, color:"#111827", width:state.tool==="eraser"?16:3, points:[at(e)]};
+      repaint();
+    });
+    canvas.addEventListener("pointermove",(e)=>{
+      if(!drawing||!state.live) return;
+      e.preventDefault();
+      const p=at(e), last=state.live.points[state.live.points.length-1];
+      // ストローク中に近すぎる点を捨てる（保存サイズを抑える）
+      if(last && Math.abs(p.x-last.x)<0.004 && Math.abs(p.y-last.y)<0.004) return;
+      state.live.points.push(p); repaint();
+    },{passive:false});
+    const finish=()=>{
+      if(!drawing) return; drawing=false;
+      const st=state.live; state.live=null;
+      if(st && st.points.length){
+        if(count()+st.points.length>DRAW_MAX_POINTS){ state.full=true; }
+        else { state.strokes.push(st); state.undone=[]; changed(); }
+      }
+      repaint(); syncTools();
+    };
+    canvas.addEventListener("pointerup",finish);
+    canvas.addEventListener("pointercancel",finish);
+    canvas.addEventListener("pointerleave",finish);
+    syncTools();
+    return pad;
+  }
+
+  /* ---------- 回答欄の描画（§13.3） ---------- */
+  function renderConstructedQuestion(cur){
+    const s=session, q=cur.q, box=$("#constructedAnswer");
+    $("#choices").innerHTML=""; $("#multiConfirm").classList.add("hidden");
+    box.innerHTML=""; box.classList.remove("hidden");
+    // 本番モードでは確定も解答表示も出さない（試験中は正誤・模範解答を一切見せない §9.1）
+    $("#constructedActions").classList.toggle("hidden", !!s.exam);
+    $("#constructedGiveUp").classList.toggle("hidden", !!s.exam);
+    const readers={};
+    s.cw={ q, readers, submitted:false, pads:{}, startedAt:Date.now() };
+    const safe=String(q.id).replace(/[^A-Za-z0-9_-]/g,"_");
+
+    (q.responseParts||[]).forEach(part=>{
+      const wrap=document.createElement("div"); wrap.className="cwPart";
+      const domId="cw_"+safe+"_"+String(part.id).replace(/[^A-Za-z0-9_-]/g,"_");
+      const lab=document.createElement("label"); lab.className="cwLabel"; lab.htmlFor=domId;
+      lab.textContent=part.label||"解答";
+      if(part.required===false){ const o=document.createElement("span"); o.className="cwOptional"; o.textContent="（任意）"; lab.appendChild(o); }
+      wrap.appendChild(lab);
+      if(part.prompt){ const p=document.createElement("p"); p.className="cwPrompt"; p.textContent=part.prompt; wrap.appendChild(p); }
+
+      if(part.kind==="short-text" || part.kind==="long-text"){
+        // 指定語句は問題文直下にチップで出す。回答中は採点結果を予告しない（§6.2）
+        if(part.kind==="long-text" && (part.requiredTerms||[]).length){
+          const chips=document.createElement("div"); chips.className="cwTerms";
+          const head=document.createElement("span"); head.className="cwPrompt"; head.style.margin="0";
+          head.textContent="指定語句：";
+          chips.appendChild(head);
+          part.requiredTerms.forEach(t=>{ const c=document.createElement("span"); c.className="cwTerm"; c.textContent=t; chips.appendChild(c); });
+          wrap.appendChild(chips);
+        }
+        const ta=document.createElement("textarea");
+        ta.className="cwText"; ta.id=domId; ta.rows=part.kind==="short-text"?2:(part.rows||6);
+        ta.placeholder=part.placeholder||(part.kind==="short-text"?"語句を入力":"文章で説明してください");
+        wrap.appendChild(ta);
+        ta.oninput=()=>{ updateConstructedSubmit(); scheduleWrittenDraft(); };
+        readers[part.id]={ part, read:()=>({kind:part.kind, text:ta.value}),
+          restore:(a)=>{ if(a&&typeof a.text==="string") ta.value=a.text; },
+          lock:()=>{ ta.disabled=true; },
+          filled:()=>!!ta.value.trim() };
+      } else if(part.kind==="numeric"){
+        const row=document.createElement("div"); row.className="cwNumRow";
+        const inp=document.createElement("input");
+        inp.type="text"; inp.inputMode="decimal"; inp.className="cwText cwNum"; inp.id=domId;
+        inp.placeholder=part.placeholder||"例：5.1e7 ／ 5.1×10^7 ／ 51000000";
+        const sel=document.createElement("select"); sel.className="cwUnit";
+        sel.setAttribute("aria-label",(part.label||"解答")+"の単位");
+        (part.acceptedUnits||[]).forEach((u,i)=>{ const o=document.createElement("option"); o.value=u; o.textContent=u; if(i===0) o.selected=true; sel.appendChild(o); });
+        row.appendChild(inp); row.appendChild(sel); wrap.appendChild(row);
+        if(!part.prompt){   // 問題側に案内があるときは重ねて出さない
+          const hint=document.createElement("p"); hint.className="cwHint";
+          hint.textContent="指数表記（5.1e7・5.1×10^7）でも、そのままの数（51000000）でも構いません。";
+          wrap.appendChild(hint);
+        }
+        inp.oninput=()=>{ updateConstructedSubmit(); scheduleWrittenDraft(); };
+        sel.onchange=()=>scheduleWrittenDraft();
+        readers[part.id]={ part, read:()=>({kind:"numeric", rawValue:inp.value, normalizedValue:parseNumericInput(inp.value), unit:sel.value}),
+          restore:(a)=>{ if(!a) return; if(typeof a.rawValue==="string") inp.value=a.rawValue; if(a.unit) sel.value=a.unit; },
+          lock:()=>{ inp.disabled=true; sel.disabled=true; },
+          filled:()=>parseNumericInput(inp.value)!=null };
+      } else {
+        // 作図。スマホの人に強制しないよう「紙に描く」を必ず残す（§6.4）
+        const st={mode:"canvas", pad:null};
+        let padHost=null;
+        const modeRow=document.createElement("div"); modeRow.className="cwModeRow";
+        const appBtn=document.createElement("button"); appBtn.type="button"; appBtn.className="cwModeBtn on"; appBtn.textContent="🖊 アプリに描く";
+        const paperBtn=document.createElement("button"); paperBtn.type="button"; paperBtn.className="cwModeBtn"; paperBtn.textContent="📄 紙に描く";
+        if(part.paperAllowed!==false){ modeRow.appendChild(appBtn); modeRow.appendChild(paperBtn); wrap.appendChild(modeRow); }
+        padHost=document.createElement("div"); padHost.id=domId; wrap.appendChild(padHost);
+        const paperNote=document.createElement("p"); paperNote.className="cwHint hidden";
+        paperNote.textContent="紙に描いた図はアプリに保存されません。確定後に模範図と見比べて、下の採点基準で自己採点してください。";
+        wrap.appendChild(paperNote);
+        st.pad=createDrawingPad(padHost,part,{onChange:scheduleWrittenDraft});
+        const setMode=(m)=>{
+          st.mode=m;
+          appBtn.classList.toggle("on",m==="canvas"); paperBtn.classList.toggle("on",m==="paper");
+          padHost.classList.toggle("hidden",m==="paper");
+          [...wrap.querySelectorAll(".drawTools,.drawFull")].forEach(el=>el.classList.toggle("hidden",m==="paper"));
+          paperNote.classList.toggle("hidden",m!=="paper");
+          updateConstructedSubmit(); scheduleWrittenDraft();
+        };
+        appBtn.onclick=()=>setMode("canvas"); paperBtn.onclick=()=>setMode("paper");
+        readers[part.id]={ part, pad:st.pad,
+          read:()=>({kind:"drawing", mode:st.mode, strokes: st.mode==="paper" ? [] : st.pad.getStrokes()}),
+          restore:(a)=>{ if(!a) return; if(a.mode==="paper") setMode("paper"); else if(Array.isArray(a.strokes)) st.pad.setStrokes(a.strokes); },
+          lock:()=>{ [...wrap.querySelectorAll(".drawTool,.cwModeBtn")].forEach(b=>b.disabled=true); if(st.pad) st.pad.el.style.pointerEvents="none"; },
+          filled:()=>st.mode==="paper" || st.pad.getStrokes().length>0 };
+        s.cw.pads[part.id]=st.pad;
+      }
+      box.appendChild(wrap);
+    });
+
+    restoreWrittenDraft(q);
+    updateConstructedSubmit();
+  }
+  function readConstructedAnswers(q){
+    const s=session, out={};
+    if(!s||!s.cw) return out;
+    (q.responseParts||[]).forEach(part=>{ const rd=s.cw.readers[part.id]; if(rd) out[part.id]=rd.read(); });
+    return out;
+  }
+  // 必須パーツが空なら「答案を確定」を押せない（§7-3）
+  function validateConstructedAnswers(q){
+    const s=session; if(!s||!s.cw) return false;
+    return (q.responseParts||[]).every(part=>{
+      if(part.required===false) return true;
+      const rd=s.cw.readers[part.id];
+      return rd ? rd.filled() : true;
+    });
+  }
+  function updateConstructedSubmit(){
+    const s=session; if(!s||!s.cw) return;
+    const btn=$("#constructedSubmit"); if(!btn) return;
+    if(s.exam){ btn.classList.add("hidden"); return; }
+    btn.classList.remove("hidden");   // 本番モードのあとに通常演習へ戻っても押せるようにする
+    const ok=validateConstructedAnswers(s.cw.q);
+    btn.disabled=!ok;
+    btn.textContent = ok ? "答案を確定" : "すべての欄に答えると確定できます";
+  }
+  /* 入力途中の下書き。500msデバウンスでIndexedDBへ（§10.3） */
+  let writtenDraftTimer=null;
+  function scheduleWrittenDraft(){
+    const s=session; if(!s||!s.cw||s.cw.submitted) return;
+    clearTimeout(writtenDraftTimer);
+    writtenDraftTimer=setTimeout(()=>{
+      const wa=WA(); if(!wa) return;
+      const q=s.cw.q;
+      try{ wa.saveDraft({subjectId:currentSubjectId||"", questionId:q.id, examSessionId:s.examSessionId,
+        mode:s.exam?"exam":"practice", answers:readConstructedAnswers(q)}); }catch(e){}
+    },500);
+  }
+  function restoreWrittenDraft(q){
+    const s=session, wa=WA(); if(!wa||!s||!s.cw) return;
+    const token=s.cw;
+    Promise.resolve(wa.getDraft(q.id, s.examSessionId)).then(d=>{
+      if(!d || session!==s || s.cw!==token || s.cw.submitted) return;
+      Object.keys(d.answers||{}).forEach(pid=>{ const rd=s.cw.readers[pid]; if(rd) rd.restore(d.answers[pid]); });
+      updateConstructedSubmit();
+    }).catch(()=>{});
+  }
+
+  /* ---------- 採点画面（§7-5〜§7-9） ---------- */
+  function partAnswerText(part,a){
+    if(!a) return "";
+    if(a.kind==="numeric") return a.rawValue ? `${a.rawValue} ${a.unit||""}`.trim() : "";
+    if(a.kind==="drawing") return a.mode==="paper" ? "（紙に描きました）" : (a.strokes&&a.strokes.length ? "（アプリに描いた図）" : "");
+    return a.text||"";
+  }
+  function answerSummary(q){
+    if(questionType(q)!=="constructed") return ansText(q);
+    const first=String(q.modelAnswer||"").split("\n").filter(l=>l.trim())[0]||"";
+    return first ? (first.length>90 ? first.slice(0,90)+"…" : first) : "（模範解答を参照）";
+  }
+  function submitConstructedAnswer(giveUp){
+    const s=session; if(!s||!s.cw||s.cw.submitted) return;
+    const q=s.cw.q;
+    if(!giveUp && !validateConstructedAnswers(q)) return;
+    const answers=readConstructedAnswers(q);
+    s.cw.submitted=true; s.cw.answers=answers;
+    s.cw.durationMs=Date.now()-(s.cw.startedAt||Date.now());
+    s.cw.giveUp=!!giveUp;
+    clearTimeout(writtenDraftTimer);
+    Object.keys(s.cw.readers).forEach(pid=>s.cw.readers[pid].lock());
+    $("#constructedActions").classList.add("hidden");
+    // 「分からないので解答を見る」は0点・Againとして記録する（§7）
+    s.cw.selected = giveUp ? new Set()
+      : new Set((q.rubric||[]).filter(c=>autoCheckPasses(q,c,answers)).map(c=>c.id));
+    renderConstructedReview(q,answers,{giveUp:!!giveUp});
+    if(giveUp) finalizeConstructedGrade(1);
+  }
+  /* 本番モードでは前後移動しても入力済み答案を復元する（§9.1） */
+  function restoreExamWritten(){
+    const s=session; if(!s||!s.exam||!s.cw) return;
+    const saved=s.answers[s.i];
+    if(saved && saved.kind==="constructed"){
+      Object.keys(saved.answers||{}).forEach(pid=>{ const rd=s.cw.readers[pid]; if(rd) rd.restore(saved.answers[pid]); });
+    }
+    const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"採点する →"; nb.classList.remove("hidden");
+  }
+  function captureExamWritten(){
+    const s=session; if(!s||!s.exam||!s.cw||s.cw.submitted) return;
+    const q=s.cw.q;
+    s.answers[s.i]={kind:"constructed", answers:readConstructedAnswers(q)};
+  }
+  function writtenTermsHTML(part,a){
+    const terms=(part.requiredTerms||[]); if(!terms.length) return "";
+    const chips=termHits(a?a.text:"",terms).map(h=>
+      `<span class="cwTerm ${h.used?"used":"missing"}">${esc(h.term)}<span class="cwTermState">${h.used?"使用済み":"不足"}</span></span>`).join("");
+    return `<div class="cwTerms" style="margin-top:8px">${chips}</div>`;
+  }
+  function renderConstructedReview(q,answers,opts){
+    opts=opts||{};
+    const s=session, max=writtenPoints(q);
+    const box=$("#explainBox");
+    const mine=(q.responseParts||[]).map(part=>{
+      const a=answers[part.id];
+      const body=partAnswerText(part,a);
+      const drawSlot=part.kind==="drawing" ? `<div data-mypad="${esc(part.id)}"></div>` : "";
+      const terms=part.kind==="long-text" ? writtenTermsHTML(part,a) : "";
+      const auto=part.kind==="short-text" ? (shortTextHit(part,a?a.text:"") ? '<div class="cwCritMeta">✅ 仮判定：登録された解答と一致しました</div>' : '<div class="cwCritMeta">⚠️ 仮判定：登録された解答と一致しませんでした（表記ゆれの可能性もあるので下で自分で判断してください）</div>')
+                 : (part.kind==="numeric" ? (numericHit(part,a?a.normalizedValue:null) ? '<div class="cwCritMeta">✅ 仮判定：許容範囲内の数値です</div>' : '<div class="cwCritMeta">⚠️ 仮判定：期待した値と離れています</div>') : "");
+      return `<div style="margin-bottom:10px">
+        <div class="cwCritMeta" style="font-weight:800;color:var(--text)">${esc(part.label||"解答")}</div>
+        <p class="cwAnswerText${body?"":" empty"}" data-myans="${esc(part.id)}">${body?"":"（未記入）"}</p>
+        ${drawSlot}${terms}${auto}</div>`;
+    }).join("");
+    const model=(q.responseParts||[]).filter(p=>p.kind==="drawing"&&p.modelImage).map(p=>
+      `<img class="cwModelImg" src="${esc(p.modelImage)}" alt="${esc(p.modelImageAlt||"模範図")}" loading="lazy" data-slidefig="1">`).join("");
+    const sourceNote = q.rubricSource==="official"
+      ? "この採点基準は公式解答に示された採点細目です。"
+      : "この採点基準は<b>学習用</b>に、模範解答を意味のまとまりへ分解したものです（公式の採点細目ではありません）。";
+    const crits=(q.rubric||[]).map(c=>{
+      const on=s.cw.selected.has(c.id);
+      return `<label class="cwCrit"><input type="checkbox" data-crit="${esc(c.id)}"${on?" checked":""}>
+        <span class="cwCritBody"><span class="cwCritText">${esc(c.text)}</span>
+        <span class="cwCritMeta">${c.points}点${c.autoCheck?'<span class="cwAuto">仮チェック済み</span>':""}</span></span></label>`;
+    }).join("");
+    box.innerHTML=`<div class="explain">
+      <div class="head" id="cwHead"></div>
+      ${opts.giveUp?`<div class="lead">解答を見たため 0点・「もう一度」として記録します。</div>`:""}
+      <div class="cwReview two">
+        <div class="cwPanel"><h5>あなたの答案</h5>${mine}</div>
+        <div class="cwPanel"><h5>模範解答</h5><p class="cwAnswerText" id="cwModelAnswer"></p>${model}</div>
+      </div>
+      <div class="cwRubric">
+        <div class="cwRubricHead"><span class="cwRubricTitle">採点基準（自分でチェック）</span><span class="cwScore" id="cwScore">0 / ${max}点</span></div>
+        <p class="cwSource">${sourceNote}${q.rubricSource==="derived"?"":""} 自動でチェックが付いた項目も、必ず自分で正しいか確かめて直してください。</p>
+        ${crits}
+      </div>
+      <div class="cwRateRow" id="cwRateRow"></div>
+      <div class="body" style="margin-top:12px">${renderExplainBody(q,null,null)}</div>
+      <div class="cwHistory hidden" id="cwHistory"></div>
+    </div>`;
+    const ma=$("#cwModelAnswer"); if(ma) ma.textContent=q.modelAnswer||"（模範解答なし）";
+    // 答案本文はHTMLとして挿入せず textContent で入れる（§14）
+    (q.responseParts||[]).forEach(part=>{
+      const el=box.querySelector(`[data-myans="${CSS.escape(part.id)}"]`);
+      const a=answers[part.id], body=partAnswerText(part,a);
+      if(el && body) el.textContent=body;
+      if(part.kind==="drawing"){
+        const host=box.querySelector(`[data-mypad="${CSS.escape(part.id)}"]`);
+        if(host && a && a.mode!=="paper" && (a.strokes||[]).length) createDrawingPad(host,part,{readOnly:true,strokes:a.strokes});
+      }
+    });
+    box.querySelectorAll("[data-crit]").forEach(cb=>{
+      cb.onchange=()=>{ if(cb.checked) s.cw.selected.add(cb.dataset.crit); else s.cw.selected.delete(cb.dataset.crit); refreshWrittenScore(q); };
+    });
+    wireMoreExpl(box);
+    refreshWrittenScore(q);
+  }
+  function refreshWrittenScore(q){
+    const s=session, max=writtenPoints(q), earned=rubricPoints(q,[...s.cw.selected]);
+    const el=$("#cwScore"); if(el) el.textContent=`${earned} / ${max}点`;
+    const head=$("#cwHead");
+    if(head) head.textContent = earned>=max ? `⭕ 満点（${earned} / ${max}点）` : (earned>0 ? `🟡 部分点（${earned} / ${max}点）` : `❌ 0点（0 / ${max}点）`);
+    if(s.cw.finalized) return;
+    if(s.cw.exam) renderExamGradeButton(q); else renderWrittenRating(q,earned,max);
+  }
+  function renderWrittenRating(q,earned,max){
+    const row=$("#cwRateRow"); if(!row) return;
+    const allow=allowedWrittenRatings(earned,max), sug=suggestWrittenRating(earned,max);
+    const labels={1:"もう一度",2:"むずかしい",3:"できた",4:"かんたん"};
+    row.innerHTML=`<div class="confRow"><span class="confLabel">この採点で確定する<small>手ごたえを選ぶと、次の復習時期に反映されます</small></span>
+      <div class="confBtns">${allow.map(g=>`<button type="button" class="confBtn${g===sug?" sel":""}" data-g="${g}">${labels[g]}</button>`).join("")}</div>
+      <div class="confResult hidden" id="cwRateResult"></div></div>`;
+    row.querySelectorAll(".confBtn").forEach(b=>{ b.onclick=()=>finalizeConstructedGrade(parseInt(b.dataset.g,10)); });
+  }
+  function finalizeConstructedGrade(rating){
+    const s=session; if(!s||!s.cw||s.cw.finalized) return;
+    const q=s.cw.q, max=writtenPoints(q), ids=[...s.cw.selected], earned=rubricPoints(q,ids);
+    s.cw.finalized=true;
+    const full = earned>=max;
+    const r=rec(q.id); r.seen++;
+    let gainXP, mult=1;
+    if(full){
+      r.correct++; r.streak++; s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak);
+      mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult);
+    } else {
+      // 部分点でもコンボは終了し、誤答ノートへ入れる（§8.1・§8.3）
+      r.wrong++; r.streak=0; r.lastWrong=todayStr(); s.streak=0;
+      s.wrongList.push({q, chosen:`${earned} / ${max}点`});
+      const ratio=max>0?earned/max:0;
+      gainXP=Math.round(XP_WRONG + ratio*(XP_CORRECT-XP_WRONG));
+    }
+    syncWeak(r);
+    const lvup=addXP(gainXP);
+    scheduleSRS(r, rating, q.id); r.lastGrade=rating; s.graded=true;
+    meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
+    markStudied(); saveProgress(); saveMeta(); maybePublishRank(); maybeAutoSync();
+    if(lvup){ s.leveledUp=lvup; toast(`🎉 レベルアップ！ Lv.${lvup} に到達`); }
+    const ach=checkAch(); if(ach) setTimeout(()=>toast(`🏅 実績解除：${ach.n}`),lvup?1400:0);
+    s.written[s.i]={earned,max,rubricIds:ids,rating};
+
+    const wa=WA();
+    if(wa){
+      try{
+        wa.saveAttempt({subjectId:currentSubjectId||"", questionId:q.id, examSessionId:null, mode:"practice", status:"graded",
+          answers:s.cw.answers||{}, selectedRubricIds:ids, earnedPoints:earned, maxPoints:max, rating,
+          durationMs:s.cw.durationMs||null});
+        wa.deleteDraft(q.id,null);
+      }catch(e){}
+    }
+    const head=$("#cwHead");
+    if(head) head.textContent = `${full?"⭕ 満点":(earned>0?"🟡 部分点":"❌ 0点")}（${earned} / ${max}点） ・ +${gainXP}XP${mult>1?` 🔥コンボ×${mult}`:""}`;
+    const row=$("#cwRateRow");
+    if(row){
+      const iv=Math.max(1, r.interval||1);
+      row.innerHTML=`<div class="confRow done"><span class="confLabel">採点を確定しました</span>
+        <div class="confResult">📅 次の復習の目安：約${iv}日後</div></div>`;
+    }
+    $("#explainBox").querySelectorAll("[data-crit]").forEach(cb=>{ cb.disabled=true; });
+    showWrittenHistory(q.id);
+    const sp=$("#streakPill"); sp.textContent=mult>1?`🔥 ${s.streak} ×${mult}`:`🔥 ${s.streak}`; sp.classList.toggle("combo",mult>1);
+    const nb=$("#nextBtn"); nb.textContent=(s.i+1<s.queue.length)?"次の問題 →":"結果を見る →"; nb.classList.remove("hidden");
+    nb.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+  function showWrittenHistory(questionId){
+    const wa=WA(), box=$("#cwHistory"); if(!wa||!box) return;
+    Promise.resolve(wa.listByQuestion(questionId)).then(rows=>{
+      const graded=(rows||[]).filter(x=>x.status==="graded");
+      if(graded.length<2) return;
+      const past=graded.slice(1,6).map(x=>`${String(x.submittedAt).slice(0,10)}：${x.earnedPoints}/${x.maxPoints}点`).join(" ・ ");
+      box.textContent=`📚 これまでの答案（${graded.length}回）：${past}`;
+      box.classList.remove("hidden");
+    }).catch(()=>{});
+  }
+
   function renderQuestion(){
     const s=session,cur=s.queue[s.i],q=cur.q;
     s.graded=false;
@@ -4146,6 +4956,11 @@
     if(q.image){ figImg.src=q.image; figImg.alt=q.imageAlt||"問題の図"; fig.classList.remove("hidden");
       figImg.onclick=()=>fig.classList.toggle("zoomed"); }
     else { figImg.removeAttribute("src"); fig.classList.add("hidden"); }
+    // 記述問題と選択問題で回答欄を出し分ける（§13.4）
+    if(cur.type==="constructed"){ renderConstructedQuestion(cur); if(s.exam) restoreExamWritten(); return; }
+    $("#constructedAnswer").classList.add("hidden"); $("#constructedAnswer").innerHTML="";
+    $("#constructedActions").classList.add("hidden");
+    s.cw=null;
     const keys=["A","B","C","D","E","F"], box=$("#choices"); box.innerHTML="";
     const need=cur.need||1, multi=need>1;
     s.picks=[];
@@ -4306,8 +5121,14 @@
     updateBookmarkBtn(q.id);
     toast(on ? "🔖 見直したい問題に保存しました" : "保存を解除しました");
   };
-  $("#nextBtn").onclick=()=>{ if(session&&!session.exam&&!session.graded) gradeCard(3); if(session.i+1<session.queue.length){ session.i++; renderQuestion(); } else { if(session.exam) submitExam(); else renderResult(); } };
-  $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ if(session&&!session.exam&&!session.graded) gradeCard(3); stopExamTimer(); renderHome(); } };
+  $("#constructedSubmit").onclick=()=>submitConstructedAnswer(false);
+  $("#constructedGiveUp").onclick=()=>{ if(confirm("解答を見ますか？ この問題は 0点・「もう一度」として記録されます。")) submitConstructedAnswer(true); };
+  $("#nextBtn").onclick=()=>{
+    captureExamWritten();
+    if(session&&!session.exam&&!session.graded && session.queue[session.i].type!=="constructed") gradeCard(3);
+    if(session.i+1<session.queue.length){ session.i++; renderQuestion(); }
+    else { if(session.exam) submitExam(); else renderResult(); } };
+  $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ if(session&&!session.exam&&!session.graded && session.queue[session.i].type!=="constructed") gradeCard(3); stopExamTimer(); renderHome(); } };
   /* ---------- 忘却曲線の可視化（C） ---------- */
   function renderForgetCurve(){
     const box=$("#forgetPanel"); if(!box) return;
@@ -4405,7 +5226,12 @@
   }
   $("#examDayCard").onclick=startExamDaySession;
 
-  $("#examCard").onclick=()=>{ if(confirm(`本番モードを開始します。\n・分野バランスの${EXAM_N}問\n・制限 ${EXAM_MIN}分\n・1問${EXAM_POINT}点、${EXAM_N*EXAM_POINT}点満点\n・途中で正誤や解説は出ません\nよろしいですか？`)) startExam(); };
+  $("#examCard").onclick=()=>{
+    const hasWritten=DATA.some(q=>questionType(q)==="constructed");
+    const scoring=hasWritten
+      ? `・選択問題は1問${EXAM_POINT}点、記述問題は問題ごとの配点\n・記述は提出後に模範解答と採点基準を見ながら自己採点します`
+      : `・1問${EXAM_POINT}点、${EXAM_N*EXAM_POINT}点満点`;
+    if(confirm(`本番モードを開始します。\n・分野バランスの${EXAM_N}問\n・制限 ${EXAM_MIN}分\n${scoring}\n・途中で正誤や解説は出ません\nよろしいですか？`)) startExam(); };
 
   /* ビュー（各画面）の戻るボタン */
   document.querySelectorAll(".viewBack").forEach(b=>{ b.onclick=renderHome; });
@@ -4541,8 +5367,8 @@
     const s=session,total=s.queue.length,pct=Math.round(s.correct/total*100),gained=meta.xp-s.xpStart;
     $("#quiz").classList.add("hidden");
     const msg=pct===100?"🏆 全問正解！完璧です！":pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
-    const wrong=s.wrongList.map(w=>{ const ans=ansText(w.q);
-      return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">あなた: ${esc(w.chosen)}</div><div class="a ans">正解: ${esc(ans)}</div></div>`; }).join("");
+    const wrong=s.wrongList.map(w=>{ const ans=answerSummary(w.q), cw=questionType(w.q)==="constructed";
+      return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div></div>`; }).join("");
     $("#result").innerHTML=`
       <div class="result">
         <div class="score">${s.correct} / ${total}</div>
@@ -4685,8 +5511,15 @@
       }catch(err){ alert("読み込みに失敗しました:\n"+err.message); } };
     rd.readAsText(f,"utf-8"); e.target.value="";
   };
-  $("#resetBtn").onclick=()=>{ if(confirm("学習記録（正誤・苦手・見直したい問題・レベル・実績）をすべて削除しますか？")){
-    progress={}; meta={}; loadMeta(); saveProgress(); saveMeta(); renderHome(); toast("🗑 記録をリセットしました"); } };
+  $("#resetBtn").onclick=()=>{
+    const ds=DS(), linked=!!(ds&&ds.isLinked&&ds.isLinked());
+    const warn=linked
+      ? "\n\n※ 同期コードでつながっているため、この端末だけ消しても次の同期でサーバーの記録から復元されます。完全に消すには先に「同期を解除」してください。"
+      : "";
+    if(!confirm("学習記録（正誤・苦手・見直したい問題・レベル・実績・記述問題の答案履歴・採点待ちの試験）をすべて削除しますか？"+warn)) return;
+    progress={}; meta={}; loadMeta(); saveProgress(); saveMeta();
+    const wa=WA(); if(wa){ try{ wa.deleteAll(); }catch(e){} }
+    renderHome(); toast("🗑 記録をリセットしました"); };
 
   function parseCSV(text){
     const rows=csvRows(text).filter(r=>r.some(c=>c.trim()!=="")); if(!rows.length) return [];

@@ -1,5 +1,6 @@
-import type { StudyCard, SyncStatus } from "./types";
+import type { StudyCard, SyncStatus, WrittenAttempt, WrittenDraft } from "./types";
 import type { StoredSchedule } from "./types";
+import type { SaveAttemptInput } from "./written";
 import type { LeaderboardView } from "./leaderboard";
 import type { BoardRow, PostRow } from "./community";
 import type { SyncPayload } from "./datasync";
@@ -55,6 +56,29 @@ declare global {
         markAllSeen: () => void;
         seenCountFor: (boardId: string) => number;
       };
+      writtenAttempts: {
+        saveAttempt: (input: SaveAttemptInput) => Promise<WrittenAttempt>;
+        updateAttempt: (
+          id: string,
+          patch: { selectedRubricIds?: string[]; earnedPoints?: number | null; rating?: 1 | 2 | 3 | 4 | null; status?: "submitted" | "graded" },
+        ) => Promise<WrittenAttempt | null>;
+        getAttempt: (id: string) => Promise<WrittenAttempt | null>;
+        listByQuestion: (questionId: string) => Promise<WrittenAttempt[]>;
+        listPendingExamAttempts: () => Promise<WrittenAttempt[]>;
+        saveDraft: (input: {
+          subjectId: string;
+          questionId: string;
+          examSessionId?: string | null;
+          mode?: "practice" | "exam";
+          answers: Record<string, unknown>;
+        }) => Promise<void>;
+        getDraft: (questionId: string, examSessionId?: string | null) => Promise<WrittenDraft | null>;
+        deleteDraft: (questionId: string, examSessionId?: string | null) => Promise<void>;
+        deleteDraftsForSession: (examSessionId: string) => Promise<void>;
+        exportAll: () => Promise<WrittenAttempt[]>;
+        importMany: (rows: unknown[], options?: { replace?: boolean }) => Promise<{ imported: number; skipped: number }>;
+        deleteAll: () => Promise<void>;
+      };
       datasync: {
         enabled: () => boolean;
         getCode: () => string;
@@ -68,6 +92,8 @@ declare global {
         push: (code: string, payload: SyncPayload) => Promise<{ ok: boolean; error?: string }>;
         unlink: () => void;
         deleteRemote: (code: string) => Promise<void>;
+        /** 記述問題の答案履歴だけを差分同期する（1MBスナップショットとは独立） */
+        syncWritten: (code: string) => Promise<{ ok: boolean; pulled: number; pushed: number; error?: string }>;
       };
     };
     __STUDY_CARDS?: StudyCard[];

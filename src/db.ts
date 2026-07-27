@@ -7,6 +7,8 @@ import type {
   StoredSchedule,
   StudyCard,
   SyncTable,
+  WrittenAttempt,
+  WrittenDraft,
 } from "./types";
 
 export class StudyDatabase extends Dexie {
@@ -16,6 +18,10 @@ export class StudyDatabase extends Dexie {
   schedules!: EntityTable<StoredSchedule, "cardId">;
   outbox!: EntityTable<OutboxRecord, "seq">;
   settings!: EntityTable<SettingRecord, "key">;
+  /** 記述問題の採点済み・提出済み答案（仕様書 §10.2） */
+  writtenAttempts!: EntityTable<WrittenAttempt, "id">;
+  /** 入力途中の下書き。ローカル専用で同期・バックアップの対象外 */
+  writtenDrafts!: EntityTable<WrittenDraft, "id">;
 
   constructor() {
     super("metabolism-study-v2");
@@ -26,6 +32,17 @@ export class StudyDatabase extends Dexie {
       schedules: "&cardId, due, state, updatedAt",
       outbox: "++seq, &operationId, table, recordId, status, createdAt",
       settings: "&key, ownerId, updatedAt",
+    });
+    // version 1 の定義は消さずに追加する（既存データの移行処理は不要）
+    this.version(2).stores({
+      cards: "&id, ownerId, deckId, kind, updatedAt, deletedAt, *tags",
+      decks: "&id, ownerId, order, updatedAt, deletedAt",
+      reviewEvents: "&id, ownerId, cardId, reviewedAt, [cardId+reviewedAt], syncedAt",
+      schedules: "&cardId, due, state, updatedAt",
+      outbox: "++seq, &operationId, table, recordId, status, createdAt",
+      settings: "&key, ownerId, updatedAt",
+      writtenAttempts: "&id, subjectId, questionId, gradedAt, updatedAt, syncedAt, [questionId+gradedAt]",
+      writtenDrafts: "&id, subjectId, questionId, examSessionId, updatedAt",
     });
   }
 }

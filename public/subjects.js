@@ -63,7 +63,8 @@ window.SUBJECTS = [
     emoji: "🦠",
     accent: "#ea580c",
     questions: "subjects/immunology2/questions.js",
-    expectQuestions: 85,   // 2025年度（令和7年度）後半のマーク問題85問
+    // 2025年度（令和7年度）後半のマーク85問 ＋ 2024年度（令和6年度）後半のマーク80問・記述6問
+    expectQuestions: 171,
     hideCards: true,
     hideExamDay: true,
   },

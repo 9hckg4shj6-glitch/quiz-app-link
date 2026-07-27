@@ -44,14 +44,35 @@ import {
   formatCode,
   getLastSyncedAt,
   getSyncCode,
+  getWrittenCursor,
   isLinked,
   link,
   normalizeCode,
   pull,
+  pullWrittenAttempts,
   push,
+  pushWrittenAttempts,
+  setWrittenCursor,
   syncEnabled,
   unlink,
 } from "./datasync";
+import {
+  deleteAll as deleteAllWritten,
+  deleteDraft,
+  deleteDraftsForSession,
+  exportAll as exportWrittenAttempts,
+  getAttempt,
+  getDraft,
+  importMany as importWrittenAttempts,
+  listByQuestion,
+  listPendingExamAttempts,
+  listUnsynced as listUnsyncedWritten,
+  markSynced as markWrittenSynced,
+  saveAttempt,
+  saveDraft,
+  updateAttempt,
+  upsertFromRemote as upsertWrittenFromRemote,
+} from "./written";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -64,6 +85,34 @@ async function bootstrap(): Promise<void> {
 
 // 同期完了ごとに、取り込んだ復習予定・学習状態を旧UI(localStorage)へ反映する
 window.addEventListener("study:sync-changed", () => void reconcileLegacyAfterSync());
+
+/**
+ * 記述問題の答案履歴だけを差分同期する（仕様書 §11.4）。
+ * pull（カーソルから0件になるまで）→ ローカルへupsert → 未送信分をpush、の順。
+ * 既存の progress/meta スナップショットとは独立に動く。
+ */
+async function syncWrittenAttempts(code: string): Promise<{ ok: boolean; pulled: number; pushed: number; error?: string }> {
+  let pulled = 0;
+  let cursor = getWrittenCursor(code);
+  for (let page = 0; page < 50; page += 1) {
+    const result = await pullWrittenAttempts(code, cursor);
+    if (!result.ok) return { ok: false, pulled, pushed: 0, error: result.error };
+    const rows = result.rows ?? [];
+    if (result.cursor) cursor = result.cursor;
+    if (!rows.length) break;
+    pulled += await upsertWrittenFromRemote(rows);
+    setWrittenCursor(code, cursor);
+    if (rows.length < 100) break;
+  }
+  setWrittenCursor(code, cursor);
+
+  const unsynced = await listUnsyncedWritten();
+  if (!unsynced.length) return { ok: true, pulled, pushed: 0 };
+  const pushResult = await pushWrittenAttempts(code, unsynced as unknown as Array<Record<string, unknown>>);
+  await markWrittenSynced(pushResult.sentIds);
+  if (!pushResult.ok) return { ok: false, pulled, pushed: pushResult.sentIds.length, error: pushResult.error };
+  return { ok: true, pulled, pushed: pushResult.sentIds.length };
+}
 
 window.STUDY_CORE = {
   scheduleReview: (progress, rating, cardId) => scheduleReview(cardId, progress as LegacyProgress, rating as ReviewRating) as Record<string, unknown>,
@@ -111,6 +160,21 @@ window.STUDY_CORE = {
     markAllSeen,
     seenCountFor,
   },
+  // 記述問題の答案履歴。index.html は Dexie を直接触らず、ここだけを使う（仕様書 §10.4）
+  writtenAttempts: {
+    saveAttempt,
+    updateAttempt,
+    getAttempt,
+    listByQuestion,
+    listPendingExamAttempts,
+    saveDraft,
+    getDraft,
+    deleteDraft,
+    deleteDraftsForSession,
+    exportAll: exportWrittenAttempts,
+    importMany: importWrittenAttempts,
+    deleteAll: deleteAllWritten,
+  },
   datasync: {
     enabled: syncEnabled,
     getCode: getSyncCode,
@@ -124,6 +188,7 @@ window.STUDY_CORE = {
     push,
     unlink,
     deleteRemote,
+    syncWritten: syncWrittenAttempts,
   },
 };
 

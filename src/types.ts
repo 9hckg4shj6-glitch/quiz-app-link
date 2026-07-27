@@ -104,6 +104,81 @@ export interface ConstructedQuestion {
   slideRefs?: SlideReference[] | null;
 }
 
+/* ============================================================
+   記述問題の答案履歴
+   ------------------------------------------------------------
+   答案本文・描画ストロークは localStorage の progress には入れず、
+   独立した IndexedDB テーブル（writtenAttempts / writtenDrafts）へ保存する。
+   仕様: IMMUNOLOGY_WRITTEN_QUESTION_IMPLEMENTATION_PLAN.md §10
+   ============================================================ */
+
+export type WrittenAttemptStatus = "draft" | "submitted" | "graded";
+export type WrittenAttemptMode = "practice" | "exam";
+
+export interface TextPartAnswer {
+  kind: "short-text" | "long-text";
+  text: string;
+}
+
+export interface NumericPartAnswer {
+  kind: "numeric";
+  rawValue: string;
+  normalizedValue: number | null;
+  unit: string;
+}
+
+export interface DrawingPoint {
+  x: number;
+  y: number;
+  pressure?: number;
+}
+
+export interface DrawingStroke {
+  tool: "pen" | "eraser";
+  color: string;
+  width: number;
+  points: DrawingPoint[];
+}
+
+export interface DrawingPartAnswer {
+  kind: "drawing";
+  /** 「紙に描く」を選んだ場合は paper（描画データは保存しない） */
+  mode: "canvas" | "paper";
+  strokes: DrawingStroke[];
+}
+
+export type WrittenPartAnswer = TextPartAnswer | NumericPartAnswer | DrawingPartAnswer;
+
+export interface WrittenAttempt {
+  id: string;
+  subjectId: string;
+  questionId: string;
+  examSessionId: string | null;
+  mode: WrittenAttemptMode;
+  /** draft は writtenDrafts 側に置くので、履歴は submitted / graded だけ */
+  status: Exclude<WrittenAttemptStatus, "draft">;
+  answers: Record<string, WrittenPartAnswer>;
+  selectedRubricIds: string[];
+  earnedPoints: number | null;
+  maxPoints: number;
+  rating: ReviewRating | null;
+  durationMs: number | null;
+  submittedAt: string;
+  gradedAt: string | null;
+  updatedAt: string;
+  syncedAt: string | null;
+}
+
+export interface WrittenDraft {
+  id: string;
+  subjectId: string;
+  questionId: string;
+  examSessionId: string | null;
+  mode: WrittenAttemptMode;
+  answers: Record<string, WrittenPartAnswer>;
+  updatedAt: string;
+}
+
 export interface StudyCard {
   id: string;
   ownerId: string | null;
