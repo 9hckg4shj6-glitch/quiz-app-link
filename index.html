@@ -1112,6 +1112,26 @@
   .cat .mastered{color:var(--good);font-size:11px}
   .cat .chev{font-size:12px;font-weight:900;color:var(--brand);border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:var(--card2)}
   .cat-year{min-height:132px}
+
+  /* 年度別の小分け（五択問題／記述問題） */
+  .catWrap{display:flex;flex-direction:column;gap:0}
+  .catWrap.open>.cat{border-bottom-left-radius:0;border-bottom-right-radius:0}
+  .catSubs{display:flex;flex-direction:column;gap:1px;padding:10px 10px 12px;
+    background:color-mix(in srgb,var(--card2) 70%,var(--card));
+    border:1px solid var(--line);border-top:0;border-radius:0 0 18px 18px}
+  .catSub{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    font-family:inherit;color:var(--text);cursor:pointer;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:12px 14px;margin-top:8px;transition:border-color .15s,transform .08s}
+  .catSub:hover{border-color:var(--accent,var(--brand))}
+  .catSub:active{transform:scale(.99)}
+  .csIcon{flex:none;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+    font-size:16px;background:color-mix(in srgb,var(--accent,var(--brand)) 14%,var(--card2))}
+  .csBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .csTitle{font-size:14.5px;font-weight:800}
+  .csSub{font-size:11.5px;color:var(--muted)}
+  .csChev{flex:none;font-size:12px;font-weight:900;color:var(--brand);
+    border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:var(--card2)}
   .weakcat{background:linear-gradient(180deg,color-mix(in srgb,var(--bad) 8%,transparent),transparent),var(--card)}
   .bookmarkcat{background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 8%,transparent),transparent),var(--card)}
   .empty{background:var(--card);border:1px dashed var(--line);border-radius:18px}
@@ -1426,7 +1446,7 @@
         <span class="dueIcon">📖</span>
         <span class="dueBody">
           <span class="dueTitle">問題一覧（年度別）</span>
-          <span class="dueSub">年度・予想問題・直前スペシャルごとに全問を1ページ10問で閲覧</span>
+          <span class="dueSub">年度（五択）・記述問題・予想問題ごとに全問を1ページ10問で閲覧</span>
         </span>
         <span class="dueRight"><span class="dueUnit" style="font-size:15px">一覧 →</span></span>
       </button>
@@ -2443,6 +2463,28 @@
     let keys=[...map.keys()]; if(mode==="year") keys.sort().reverse();
     return keys.map((k,i)=>({key:k,label:k,idx:i,items:map.get(k)}));
   }
+  /* --- 年度別の小分け（五択問題／記述問題） ---
+     記述問題を含む年度だけが2つに分かれる。片方しか無い年度は従来どおり1枚のカードのまま。 */
+  const SUBSEP="||";
+  function splitByType(items){
+    return { choice:items.filter(q=>questionType(q)!=="constructed"),
+             written:items.filter(q=>questionType(q)==="constructed") };
+  }
+  function subGroups(g){
+    const t=splitByType(g.items||[]);
+    if(!t.choice.length || !t.written.length) return [];   // 混在しているときだけ小分けする
+    return [
+      {key:g.key+SUBSEP+"choice",      label:g.label+" ・ 五択問題", short:"五択問題", icon:"🔘", idx:g.idx, items:t.choice},
+      {key:g.key+SUBSEP+"constructed", label:g.label+" ・ 記述問題", short:"記述問題", icon:"✎", idx:g.idx, items:t.written}
+    ];
+  }
+  // 「続きから」やカード再取得で、年度キーだけでなく小分けキーも引けるようにする
+  function resolveGroup(mode,key){
+    const gs=groups(mode), k=String(key);
+    const hit=gs.find(x=>String(x.key)===k); if(hit) return hit;
+    for(const g of gs){ const s=subGroups(g).find(x=>x.key===k); if(s) return s; }
+    return null;
+  }
   function catStats(items){
     let corr=0,ans=0,seen=0,mastered=0,weak=0;
     items.forEach(q=>{ const r=progress[q.id]; if(r){ const isWeak=syncWeak(r); corr+=r.correct; ans+=r.correct+r.wrong; if(r.seen)seen++; if(r.correct>0&&r.streak>=1&&!isWeak)mastered++; if(isWeak)weak++; } });
@@ -2940,7 +2982,7 @@
     $("#qBookmark").onclick=()=>{ if(!bookmarkItems.length){ toast("🔖 見直したい問題としてマークしたものはまだありません"); return;} startQuiz(bookmarkItems,"見直したい問題"); };
     $("#qResume").onclick=()=>{
       if(!DATA.length){ toast("問題データがありません"); return; }
-      if(lc && lc.mode!=="review"){ const g=groups(lc.mode).find(x=>String(x.key)===String(lc.key)); if(g){ startQuiz(g.items,g.label); return; } }
+      if(lc && lc.mode!=="review"){ const g=resolveGroup(lc.mode, lc.key); if(g){ startQuiz(g.items,g.label); return; } }
       startQuiz(shuffle(DATA).slice(0,Math.min(RANDOM_N,DATA.length)),"全範囲");
     };
   }
@@ -3133,17 +3175,44 @@
       const accText=s.seen?`正答率 ${s.acc}%`:"未学習";
       const mastered=s.mastered?`<span class="mastered">${s.mastered}問定着</span>`:`<span class="mastered" style="color:var(--muted)">開始前</span>`;
       const right=(isWeak||isBookmark)?`<span class="badge">${g.items.length}問</span>`:`<span class="badge">${s.total}問</span>${mastered}`;
-      return `<button type="button" class="cat ${isWeak?'weakcat':''} ${isBookmark?'bookmarkcat':''} ${mode==="year"||mode==="prediction"||mode==="special"?'cat-year':'cat-field'}" data-key="${esc(g.key)}" style="--accent:${accent};--pct:${pct}%">
+      const subs = mode==="year" ? subGroups(g) : [];
+      const meta2 = subs.length
+        ? `<div class="meta"><span>${s.seen}/${s.total}問 学習</span><span>五択 ${subs[0].items.length}問</span><span>記述 ${subs[1].items.length}問</span></div>`
+        : `<div class="meta"><span>${s.seen}/${s.total}問 学習</span><span>${accText}</span>${s.weak?`<span>苦手 ${s.weak}問</span>`:''}</div>`;
+      const card = `<button type="button" class="cat ${isWeak?'weakcat':''} ${isBookmark?'bookmarkcat':''} ${mode==="year"||mode==="prediction"||mode==="special"?'cat-year':'cat-field'}" data-key="${esc(g.key)}" style="--accent:${accent};--pct:${pct}%">
         <div class="info">
           <div class="cat-kicker">${kicker}</div>
           <h3>${esc(g.label)}</h3>
-          <div class="meta"><span>${s.seen}/${s.total}問 学習</span><span>${accText}</span>${s.weak?`<span>苦手 ${s.weak}問</span>`:''}</div>
+          ${meta2}
           <div class="pbar"><i></i></div>
         </div>
-        <div class="rt">${right}<span class="chev">開始</span></div>
+        <div class="rt">${right}<span class="chev">${subs.length?"選ぶ":"開始"}</span></div>
       </button>`;
+      if(!subs.length) return card;
+      const subHTML=subs.map(sg=>{
+        const ss=catStats(sg.items);
+        const line=`${sg.items.length}問${ss.seen?` ・ 学習 ${ss.seen}/${ss.total}問 ・ 正答 ${ss.acc}%`:" ・ 未学習"}`;
+        return `<button type="button" class="catSub" data-subkey="${esc(sg.key)}" style="--accent:${accent}">
+          <span class="csIcon">${sg.icon}</span>
+          <span class="csBody"><span class="csTitle">${esc(sg.short)}</span><span class="csSub">${line}</span></span>
+          <span class="csChev">開始 ›</span>
+        </button>`;
+      }).join("");
+      return `<div class="catWrap">${card}<div class="catSubs hidden">${subHTML}</div></div>`;
     }).join("");
-    list.querySelectorAll(".cat").forEach(el=>{ el.onclick=()=>{ const g=groups(mode).find(x=>String(x.key)===el.dataset.key); if(!g) return; if((mode==="year"||mode==="prediction"||mode==="special"||mode==="field") && g.items.length>1){ openCountModal(g,mode); } else { startQuiz(g.items,g.label,{mode,key:g.key}); } }; });
+    list.querySelectorAll(".cat").forEach(el=>{ el.onclick=()=>{
+      const wrap=el.parentElement && el.parentElement.classList.contains("catWrap") ? el.parentElement : null;
+      if(wrap){ // 小分けのある年度は、まず「五択問題／記述問題」を開く
+        const box=wrap.querySelector(".catSubs"), open=box.classList.contains("hidden");
+        box.classList.toggle("hidden",!open); wrap.classList.toggle("open",open);
+        el.querySelector(".chev").textContent=open?"閉じる":"選ぶ";
+        return;
+      }
+      const g=groups(mode).find(x=>String(x.key)===el.dataset.key); if(!g) return;
+      if((mode==="year"||mode==="prediction"||mode==="special"||mode==="field") && g.items.length>1){ openCountModal(g,mode); } else { startQuiz(g.items,g.label,{mode,key:g.key}); } }; });
+    list.querySelectorAll(".catSub").forEach(el=>{ el.onclick=()=>{
+      const sg=resolveGroup(mode, el.dataset.subkey); if(!sg) return;
+      if(sg.items.length>1){ openCountModal(sg,mode); } else { startQuiz(sg.items,sg.label,{mode,key:sg.key}); } }; });
   }
 
   const ACH=[
@@ -3898,6 +3967,8 @@
   const QB_EXAM_ICONS=["📄","📝","🗓"];
   const QB_PRED_ICONS=["🔮","📗","📘","📙"];
   const QB_SPEC_ICONS=["🔥","⚡"];
+  const QB_WRITTEN_ICONS=["✎","🖊"];
+  const QB_W_PREFIX="__w__";
   function qbNum(id){ const m=String(id).match(/\d+/g); return m?parseInt(m[m.length-1],10):0; }
   function qbKanjiOrder(label){
     // 「代謝第十三回予想問題」→ 13。模試などは末尾に回す。
@@ -3910,8 +3981,10 @@
     return n;
   }
   function qbGroups(){
-    const exam=new Map(), pred=new Map(), spec=new Map();
+    const exam=new Map(), pred=new Map(), spec=new Map(), wr=new Map();
     DATA.forEach(q=>{
+      // 記述問題は年度・予想問題などに混ぜず、独立した「記述問題」の欄にまとめる
+      if(questionType(q)==="constructed"){ const k=q.year||q.mockTitle||"記述問題"; if(!wr.has(k))wr.set(k,[]); wr.get(k).push(q); return; }
       if(q.category==="予想問題"){ const k=q.mockTitle||q.year||"予想問題"; if(!pred.has(k))pred.set(k,[]); pred.get(k).push(q); }
       else if(q.category==="直前スペシャル"){ const k=q.specialTitle||q.year||"直前スペシャル問題"; if(!spec.has(k))spec.set(k,[]); spec.get(k).push(q); }
       else { const k=q.year; if(!k)return; if(!exam.has(k))exam.set(k,[]); exam.get(k).push(q); }
@@ -3919,12 +3992,16 @@
     const ek=[...exam.keys()].sort().reverse();
     const pk=[...pred.keys()].sort((a,b)=>qbKanjiOrder(a)-qbKanjiOrder(b)||a.localeCompare(b,"ja",{numeric:true}));
     const sk=[...spec.keys()].sort().reverse();
+    const wk=[...wr.keys()].sort().reverse();
     return { exam:ek.map(k=>({key:k,label:k,items:exam.get(k)})),
              pred:pk.map(k=>({key:k,label:k,items:pred.get(k)})),
-             spec:sk.map(k=>({key:k,label:k,items:spec.get(k)})) };
+             spec:sk.map(k=>({key:k,label:k,items:spec.get(k)})),
+             // 年度キーが本試験と重なるので、記述側は接頭辞で区別する
+             written:wk.map(k=>({key:QB_W_PREFIX+k,label:k+" ・ 記述問題",items:wr.get(k)})) };
   }
   function qbFindGroup(key){
-    const g=qbGroups(); return g.exam.find(x=>x.key===key)||g.pred.find(x=>x.key===key)||g.spec.find(x=>x.key===key)||null;
+    const g=qbGroups();
+    return g.exam.find(x=>x.key===key)||g.pred.find(x=>x.key===key)||g.spec.find(x=>x.key===key)||g.written.find(x=>x.key===key)||null;
   }
   function renderQBrowse(){
     const g=qbrowseState.group;
@@ -3950,8 +4027,12 @@
     const g=qbGroups();
     let html="";
     if(g.exam.length){
-      html+=`<div class="qbSectLabel">📅 年度別（本試験）</div><div class="qbGroupList">`+
+      html+=`<div class="qbSectLabel">📅 年度別（本試験・五択問題）</div><div class="qbGroupList">`+
         g.exam.map((x,i)=>qbGroupBtn(x,QB_EXAM_ICONS[i%QB_EXAM_ICONS.length])).join("")+`</div>`;
+    }
+    if(g.written.length){
+      html+=`<div class="qbSectLabel">✎ 記述問題</div><div class="qbGroupList">`+
+        g.written.map((x,i)=>qbGroupBtn(x,QB_WRITTEN_ICONS[i%QB_WRITTEN_ICONS.length])).join("")+`</div>`;
     }
     if(g.pred.length){
       html+=`<div class="qbSectLabel">🔮 予想問題・模試</div><div class="qbGroupList">`+
