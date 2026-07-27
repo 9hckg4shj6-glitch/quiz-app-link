@@ -1916,6 +1916,68 @@
     }finally{ subjectLoading=false; if(el) el.classList.remove("busy"); }
   }
 
+  /* 問題の種別。歴史的に選択問題は type を持たないので、
+     type:"constructed" が付いたものだけ記述問題として扱う。
+     （仕様：IMMUNOLOGY_WRITTEN_QUESTION_IMPLEMENTATION_PLAN.md §5.1） */
+  function questionType(q){ return (q && q.type==="constructed") ? "constructed" : "choice"; }
+
+  /* 記述問題の回答パーツ。壊れた定義でアプリ全体が落ちないよう、ここで正規化しておく */
+  function normalizeResponseParts(list){
+    if(!Array.isArray(list)) return [];
+    return list.map((p,i)=>{
+      if(!p || typeof p!=="object") return null;
+      const kind=String(p.kind||"");
+      if(!["short-text","long-text","numeric","drawing"].includes(kind)) return null;
+      const base={
+        id: p.id!=null ? String(p.id) : ("part"+i),
+        kind, label: String(p.label||""), prompt: String(p.prompt||""),
+        required: p.required===false ? false : true
+      };
+      if(kind==="short-text") return Object.assign(base,{
+        acceptedAnswers: Array.isArray(p.acceptedAnswers) ? p.acceptedAnswers.map(String) : [],
+        placeholder: String(p.placeholder||"")
+      });
+      if(kind==="long-text") return Object.assign(base,{
+        requiredTerms: Array.isArray(p.requiredTerms) ? p.requiredTerms.map(String) : [],
+        placeholder: String(p.placeholder||""),
+        rows: Number.isFinite(Number(p.rows)) ? Number(p.rows) : 6
+      });
+      if(kind==="numeric") return Object.assign(base,{
+        expectedValue: Number(p.expectedValue),
+        absoluteTolerance: Number.isFinite(Number(p.absoluteTolerance)) ? Number(p.absoluteTolerance) : null,
+        relativeTolerance: Number.isFinite(Number(p.relativeTolerance)) ? Number(p.relativeTolerance) : null,
+        acceptedUnits: Array.isArray(p.acceptedUnits) ? p.acceptedUnits.map(String) : [],
+        placeholder: String(p.placeholder||"")
+      });
+      return Object.assign(base,{                       // drawing
+        backgroundImage: p.backgroundImage || null,
+        backgroundImageAlt: String(p.backgroundImageAlt||""),
+        modelImage: p.modelImage || null,
+        modelImageAlt: String(p.modelImageAlt||""),
+        aspectRatio: Number.isFinite(Number(p.aspectRatio)) && Number(p.aspectRatio)>0 ? Number(p.aspectRatio) : (4/3),
+        paperAllowed: p.paperAllowed!==false
+      });
+    }).filter(Boolean);
+  }
+  function normalizeRubric(list){
+    if(!Array.isArray(list)) return [];
+    return list.map((c,i)=>{
+      if(!c || typeof c!=="object") return null;
+      return {
+        id: c.id!=null ? String(c.id) : ("crit"+i),
+        partIds: Array.isArray(c.partIds) ? c.partIds.map(String) : [],
+        text: String(c.text||""),
+        points: Number(c.points)||0,
+        autoCheck: (c.autoCheck && typeof c.autoCheck==="object") ? {
+          kind: String(c.autoCheck.kind||""),
+          partId: String(c.autoCheck.partId||""),
+          terms: Array.isArray(c.autoCheck.terms) ? c.autoCheck.terms.map(String) : [],
+          mode: c.autoCheck.mode==="any" ? "any" : "all"
+        } : null
+      };
+    }).filter(Boolean);
+  }
+
   function loadData(){
     let custom = null;
     try{ const raw = localStorage.getItem(DATA_KEY); if(raw) custom = JSON.parse(raw); }catch(e){}
@@ -1948,8 +2010,19 @@
       explainImage: q.explainImage || null,          // 解説の補足図（問題の図とは別枠で出す）
       explainImageAlt: q.explainImageAlt || "",
       slideRefs: Array.isArray(q.slideRefs) ? q.slideRefs.map(r=>({deck:String(r.deck||""),name:String(r.name||""),pages:Array.isArray(r.pages)?r.pages.slice():[]})) : null,
-      choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null
-    })).filter(q=>q.question && q.choices.length>=2);
+      choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null,
+      // --- 記述問題（type:"constructed"）だけが使う欄。選択問題では null / 空 ---
+      type: questionType(q),
+      points: Number.isFinite(Number(q.points)) ? Number(q.points) : null,
+      responseParts: questionType(q)==="constructed" ? normalizeResponseParts(q.responseParts) : [],
+      rubric: questionType(q)==="constructed" ? normalizeRubric(q.rubric) : [],
+      rubricSource: q.rubricSource==="official" ? "official" : (q.rubricSource==="derived" ? "derived" : null),
+      modelAnswer: q.modelAnswer || ""
+    })).filter(q=>{
+      if(!q.question) return false;
+      if(q.type==="choice") return q.choices.length>=2;
+      return q.responseParts.length>0;      // 記述問題は選択肢を持たない
+    });
   }
   function termSources(){
     const terms=(Array.isArray(window.TERM_CARDS)?window.TERM_CARDS:[]).concat(Array.isArray(window.__CUSTOM_TERM_CARDS)?window.__CUSTOM_TERM_CARDS:[]);

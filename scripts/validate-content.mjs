@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
+import { pathToFileURL } from "node:url";
 
 function loadBrowserData(filename, globalName, { optional = false } = {}) {
   if (optional && !fs.existsSync(filename)) return [];
@@ -11,6 +12,118 @@ function loadBrowserData(filename, globalName, { optional = false } = {}) {
   if (!Array.isArray(value)) throw new Error(`${filename}: window.${globalName} が配列ではありません`);
   return value;
 }
+
+/* 問題の種別。選択問題は歴史的に type を持たないので、
+   type:"constructed" が付いたものだけ記述問題として検査する。
+   仕様: IMMUNOLOGY_WRITTEN_QUESTION_IMPLEMENTATION_PLAN.md §5.1・§15 */
+export function questionType(q) {
+  return q?.type === "constructed" ? "constructed" : "choice";
+}
+
+export function validateChoice(label, id, question, errors) {
+  if (!Array.isArray(question.choices) || question.choices.length < 2) {
+    errors.push(`[${label}] 問題 ${id}: 選択肢が不足しています`);
+    return;
+  }
+  if (!Number.isInteger(question.answer) || question.answer < 0 || question.answer >= question.choices.length) errors.push(`[${label}] 問題 ${id}: 正解番号が範囲外です`);
+  if (question.answers != null) {
+    if (!Array.isArray(question.answers) || question.answers.length < 2) errors.push(`[${label}] 問題 ${id}: answers は2つ以上の配列にしてください`);
+    else {
+      if (question.answers[0] !== question.answer) errors.push(`[${label}] 問題 ${id}: answers[0] と answer が一致していません`);
+      for (const a of question.answers) {
+        if (!Number.isInteger(a) || a < 0 || a >= question.choices.length) errors.push(`[${label}] 問題 ${id}: answers に範囲外の番号があります`);
+      }
+      if (new Set(question.answers).size !== question.answers.length) errors.push(`[${label}] 問題 ${id}: answers に重複があります`);
+    }
+  }
+}
+
+const PART_KINDS = new Set(["short-text", "long-text", "numeric", "drawing"]);
+
+export function validateConstructed(label, id, question, errors) {
+  const e = (msg) => errors.push(`[${label}] 記述問題 ${id}: ${msg}`);
+
+  if (!Number.isInteger(question.points) || question.points <= 0) e(`points は正の整数にしてください (${question.points})`);
+  if (question.rubricSource !== "official" && question.rubricSource !== "derived") {
+    e(`rubricSource は "official"（公式の採点細目）か "derived"（学習用に分解）のどちらかにしてください`);
+  }
+  if (!question.modelAnswer) e("modelAnswer（模範解答）がありません");
+
+  const parts = Array.isArray(question.responseParts) ? question.responseParts : [];
+  if (!parts.length) { e("responseParts が1件もありません"); return; }
+
+  const partIds = new Set();
+  for (const [i, part] of parts.entries()) {
+    const pid = String(part?.id ?? `part-${i}`);
+    const pe = (msg) => e(`回答パーツ ${pid}: ${msg}`);
+    if (partIds.has(pid)) pe("パーツIDが重複しています");
+    partIds.add(pid);
+    if (!part?.label) pe("label がありません");
+    if (!PART_KINDS.has(part?.kind)) { pe(`kind が不正です (${part?.kind}）。${[...PART_KINDS].join(" / ")} のいずれか`); continue; }
+
+    if (part.kind === "short-text") {
+      const list = Array.isArray(part.acceptedAnswers) ? part.acceptedAnswers.filter((s) => String(s).trim()) : [];
+      if (!list.length) pe("acceptedAnswers を1件以上（別解・同義語も明示的に）書いてください");
+    }
+    if (part.kind === "numeric") {
+      if (!Number.isFinite(part.expectedValue)) pe(`expectedValue が有限の数値ではありません (${part.expectedValue})`);
+      const units = Array.isArray(part.acceptedUnits) ? part.acceptedUnits.filter((s) => String(s).trim()) : [];
+      if (!units.length) pe("acceptedUnits を1件以上書いてください（単位は選択式にする）");
+      const abs = part.absoluteTolerance, rel = part.relativeTolerance;
+      if (abs == null && rel == null) pe("absoluteTolerance か relativeTolerance のどちらかを指定してください");
+      if (abs != null && !(Number.isFinite(abs) && abs >= 0)) pe(`absoluteTolerance が不正です (${abs})`);
+      if (rel != null && !(Number.isFinite(rel) && rel >= 0)) pe(`relativeTolerance が不正です (${rel})`);
+    }
+    if (part.kind === "drawing") {
+      if (!part.modelImage) pe("modelImage（模範図）がありません");
+      else if (!fs.existsSync(path.join("public", part.modelImage))) pe(`模範図の画像がありません (${part.modelImage})`);
+      if (part.backgroundImage && !fs.existsSync(path.join("public", part.backgroundImage))) pe(`背景図の画像がありません (${part.backgroundImage})`);
+      if (part.aspectRatio != null && !(Number.isFinite(part.aspectRatio) && part.aspectRatio > 0)) pe(`aspectRatio が不正です (${part.aspectRatio})`);
+    }
+  }
+
+  const rubric = Array.isArray(question.rubric) ? question.rubric : [];
+  if (!rubric.length) { e("rubric（採点基準）が1件もありません"); return; }
+
+  const critIds = new Set();
+  let sum = 0;
+  for (const [i, crit] of rubric.entries()) {
+    const cid = String(crit?.id ?? `criterion-${i}`);
+    const ce = (msg) => e(`採点基準 ${cid}: ${msg}`);
+    if (critIds.has(cid)) ce("採点基準IDが重複しています");
+    critIds.add(cid);
+    if (!crit?.text) ce("text（採点項目の文言）がありません");
+    if (!Number.isFinite(crit?.points) || crit.points <= 0) ce(`points は正の数にしてください (${crit?.points}）`);
+    else sum += crit.points;
+
+    const refs = Array.isArray(crit?.partIds) ? crit.partIds : [];
+    if (!refs.length) ce("partIds が空です（どの回答パーツを見る項目か指定する）");
+    for (const ref of refs) if (!partIds.has(String(ref))) ce(`partIds が存在しない回答パーツを指しています (${ref})`);
+
+    if (crit?.autoCheck) {
+      const ac = crit.autoCheck;
+      if (!["short-match", "numeric-match", "terms-present"].includes(ac.kind)) ce(`autoCheck.kind が不正です (${ac.kind})`);
+      if (!partIds.has(String(ac.partId))) ce(`autoCheck.partId が存在しない回答パーツを指しています (${ac.partId})`);
+      const target = parts.find((p) => String(p?.id) === String(ac.partId));
+      if (target?.kind === "drawing") ce("作図パーツは自動判定しません（autoCheck を外す）");
+      if (ac.kind === "terms-present") {
+        const terms = Array.isArray(ac.terms) ? ac.terms.filter((s) => String(s).trim()) : [];
+        if (!terms.length) ce("autoCheck.terms が空です");
+        if (ac.mode !== "all" && ac.mode !== "any") ce(`autoCheck.mode は "all" か "any" にしてください (${ac.mode})`);
+      }
+    }
+  }
+  // 部分点の合計が満点と合っていないと、結果画面の「獲得点 / 満点」が破綻する
+  if (Number.isInteger(question.points) && Math.abs(sum - question.points) > 1e-9) {
+    e(`rubric の配点合計が満点と一致しません (${sum} / ${question.points})`);
+  }
+}
+
+// テストから validateChoice / validateConstructed を import できるよう、
+// 教材全体の検査は「直接実行されたときだけ」動かす。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+
+function main() {
 
 const subjects = loadBrowserData("public/subjects.js", "SUBJECTS");
 if (!subjects.length) throw new Error("public/subjects.js に科目が1つも登録されていません");
@@ -40,19 +153,11 @@ for (const subject of subjects) {
     if (ids.has(id)) errors.push(`[${label}] 問題IDが重複しています: ${id}`);
     ids.add(id);
     if (prefix && !id.startsWith(prefix)) errors.push(`[${label}] 問題ID ${id} は "${prefix}" で始めてください（科目をまたぐID衝突を防ぐため）`);
-    if (!question?.question || !Array.isArray(question.choices) || question.choices.length < 2) errors.push(`[${label}] 問題 ${id}: 問題文または選択肢が不足しています`);
-    if (!Number.isInteger(question.answer) || question.answer < 0 || question.answer >= question.choices.length) errors.push(`[${label}] 問題 ${id}: 正解番号が範囲外です`);
-    if (question.answers != null) {
-      if (!Array.isArray(question.answers) || question.answers.length < 2) errors.push(`[${label}] 問題 ${id}: answers は2つ以上の配列にしてください`);
-      else {
-        if (question.answers[0] !== question.answer) errors.push(`[${label}] 問題 ${id}: answers[0] と answer が一致していません`);
-        for (const a of question.answers) {
-          if (!Number.isInteger(a) || a < 0 || a >= question.choices.length) errors.push(`[${label}] 問題 ${id}: answers に範囲外の番号があります`);
-        }
-        if (new Set(question.answers).size !== question.answers.length) errors.push(`[${label}] 問題 ${id}: answers に重複があります`);
-      }
-    }
+    if (!question?.question) errors.push(`[${label}] 問題 ${id}: 問題文がありません`);
     if (question.image && !fs.existsSync(path.join("public", question.image))) errors.push(`[${label}] 問題 ${id}: 画像がありません (${question.image})`);
+
+    if (questionType(question) === "constructed") validateConstructed(label, id, question, errors);
+    else validateChoice(label, id, question, errors);
   }
 
   const slidePath = (deck, page) =>
@@ -118,3 +223,5 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(`Content OK: ${subjects.length} subject(s), ${totalQuestions} questions, ${totalTerms} term cards, ${ids.size} unique IDs.`);
+
+}
