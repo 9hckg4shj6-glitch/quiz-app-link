@@ -4687,7 +4687,8 @@
         const paperNote=document.createElement("p"); paperNote.className="cwHint hidden";
         paperNote.textContent="紙に描いた図はアプリに保存されません。確定後に模範図と見比べて、下の採点基準で自己採点してください。";
         wrap.appendChild(paperNote);
-        st.pad=createDrawingPad(padHost,part,{onChange:scheduleWrittenDraft});
+        // 線を引いた／消した時点で「答案を確定」の可否を見直す（作図だけの問題で押せなくなるため）
+        st.pad=createDrawingPad(padHost,part,{onChange:()=>{ updateConstructedSubmit(); scheduleWrittenDraft(); }});
         const setMode=(m)=>{
           st.mode=m;
           appBtn.classList.toggle("on",m==="canvas"); paperBtn.classList.toggle("on",m==="paper");
