@@ -62,7 +62,8 @@ window.SUBJECTS = [
     name: "免疫学（2年次）",
     emoji: "🦠",
     accent: "#ea580c",
-    draft: true,
+    questions: "subjects/immunology2/questions.js",
+    expectQuestions: 85,   // 2025年度（令和7年度）後半のマーク問題85問
     hideCards: true,
     hideExamDay: true,
   },
