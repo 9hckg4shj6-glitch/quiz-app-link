@@ -29,8 +29,36 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{html,js,css,json,svg,png,webp,woff2}"],
-        globIgnores: ["images/**"],
+        // subjects.js（科目マニフェスト）と updates.js（更新履歴）はプリキャッシュしない。
+        // この2つは「何が存在するか」を決めるファイルなので、古いものが使われると
+        // Service Worker が入れ替わるまで、追加した科目が「準備中」のまま出たり
+        // 更新履歴が古いまま出たりする。どちらも数十KBなので、オンラインなら
+        // 必ずネットワークから取り直し、オフラインのときだけキャッシュへ落とす。
+        globIgnores: ["images/**", "subjects.js", "updates.js"],
         runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              url.pathname.endsWith("/subjects.js") || url.pathname.endsWith("/updates.js"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "study-manifest-v1",
+              networkTimeoutSeconds: 5,   // 回線が悪いときはキャッシュへ即座に切り替える
+              expiration: { maxEntries: 10 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+          {
+            // 新しく追加した科目の問題データは、まだ古いプリキャッシュに載っていない。
+            // プリキャッシュ側で拾えなかったぶんを実行時にも保存し、次からオフラインで開けるようにする。
+            // （既存科目のファイルはプリキャッシュのルートが先に処理するのでここへは来ない）
+            urlPattern: ({ url }) => url.pathname.includes("/subjects/"),
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "study-subjects-v1",
+              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
           {
             urlPattern: ({ url }) => url.pathname.includes("/images/"),
             handler: "CacheFirst",
