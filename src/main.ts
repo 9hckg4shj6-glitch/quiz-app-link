@@ -131,10 +131,25 @@ registerSW({
   immediate: true,
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
+    // 短時間に何度も叩かないよう最低30秒はあける（タブ切り替えのたびに走るため）。
+    const MIN_GAP = 30 * 1000;
+    let lastCheck = Date.now();
+    const check = () => {
+      if (!navigator.onLine) return;
+      const now = Date.now();
+      if (now - lastCheck < MIN_GAP) return;
+      lastCheck = now;
+      void registration.update();
+    };
     // 開きっぱなしのPWAも更新を取りこぼさないよう、オンライン時に定期確認する。
-    window.setInterval(() => {
-      if (navigator.onLine) void registration.update();
-    }, 60 * 60 * 1000);
+    window.setInterval(check, 60 * 60 * 1000);
+    // スマホでは「ホームに戻す→また開く」がほとんどで、その場合ページは再読み込み
+    // されない。定期確認だけだと最大1時間、古い内容（更新履歴など）が出たままになるので、
+    // 画面がふたたび見えたときと、回線が戻ったときにも確認する。
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") check();
+    });
+    window.addEventListener("online", check);
   },
   onRegisterError(error) {
     console.error("アプリの自動更新を登録できませんでした", error);
