@@ -127,9 +127,23 @@ export interface ConstructedQuestion {
   stem?: string;
   stemTitle?: string;
   stemImages?: StemFigure[];
+  /** 原本で下線が引かれている部分（question 内の部分文字列）。
+      「下線部の現象を何というか」のような設問は、下線がないとどこを指すのか分からない */
+  underlines?: string[];
+  /** 配布された解答用紙の解答。アプリが書いた modelAnswer とは別に、そのまま出す */
+  officialAnswer?: string;
+  /** 解答用紙に本文ではなく参照先だけが書かれている場合の注記 */
+  officialAnswerNote?: string;
   /** 穴埋め（クローズ）問題の本文。{1}{2}… が responseParts の n 番目に対応する。
       原本の空欄記号（① など）は ShortTextPart.blankLabel に持つ */
   passage?: string;
+  /** 大問（原本で1つの設問にまとまっている小問群）。同じ groupId は1画面へまとめて出す */
+  groupId?: string;
+  groupTitle?: string;
+  groupOrder?: number;
+  groupSize?: number;
+  groupPoints?: number;
+  groupFigures?: StemFigure[];
 }
 
 /* ============================================================
