@@ -3129,7 +3129,7 @@
     const rows=capped.map(q=>{
       const r=progress[q.id], cw=questionType(q)==="constructed", correct=cw?answerSummary(q):ansText(q), miss=topMiss(q);
       return `<div class="maItem">
-        <div class="maQ">${esc(q.question)}</div>
+        <div class="maQ">${qUnderlineHTML(q)}</div>
         <div class="maFacts">
           <span class="maField">${esc(q.field||"")}</span>
           <span class="maWrong">✗ ${r.wrong||0}回</span>
@@ -3474,7 +3474,7 @@
       if(cur.type!=="constructed") return "";
       const g=(s.written||{})[i]; if(!g) return "";
       const lost=(cur.q.rubric||[]).filter(c=>(g.rubricIds||[]).indexOf(c.id)<0);
-      return `<div class="rvitem"><div class="q">${esc(cur.q.question)}</div>
+      return `<div class="rvitem"><div class="q">${qUnderlineHTML(cur.q)}</div>
         <div class="a ans">得点：${g.earned} / ${g.max}点</div>
         ${lost.length?`<div class="a you">落とした項目：${esc(lost.map(c=>`${c.text}（${c.points}点）`).join(" ／ "))}</div>`:`<div class="a ans">満点</div>`}</div>`;
     }).join("");
@@ -3493,7 +3493,7 @@
       return `<div class="fbRow"><span class="fbName">${esc(f)}</span><span class="fbBar"><i style="width:${p}%"></i></span><span class="fbNum">${o.c}/${o.n}</span></div>`;
     }).join("");
     const wrong=s.wrongList.map(w=>{ const ans=answerSummary(w.q), cw=questionType(w.q)==="constructed";
-      return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${esc(w.q.explanation)}</div>`:""}</div>`; }).join("");
+      return `<div class="rvitem"><div class="q">${qUnderlineHTML(w.q)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${esc(w.q.explanation)}</div>`:""}</div>`; }).join("");
     const msg=pct>=90?"🏆 素晴らしい！":pct>=70?"🎉 合格ライン！":pct>=50?"💪 あと一歩！":"📚 復習しよう！";
     const written=writtenMax>0;
     $("#quiz").classList.add("hidden");
@@ -3531,8 +3531,26 @@
       return terms.every(t=>hay.includes(t));
     });
   }
-  function highlight(text, query){
-    let h=esc(text);
+  /* 原本で下線が引かれている部分（q.underlines）を <u> で包んだHTMLを返す。
+     「下線部の現象を何というか」のような設問はどこを指すのか分からなくなるので、
+     問題文を出す画面はすべて esc() ではなくこれを通す。 */
+  function underlineHTML(text, spans){
+    const t=String(text==null?"":text);
+    const list=(spans||[]).filter(u=>u && t.indexOf(u)>=0);
+    if(!list.length) return esc(t);
+    let rest=t, out="";
+    while(rest){
+      let hit=null, at=-1;
+      list.forEach(u=>{ const i=rest.indexOf(u); if(i>=0 && (at<0 || i<at)){ at=i; hit=u; } });
+      if(!hit){ out+=esc(rest); break; }
+      out+=esc(rest.slice(0,at))+'<u class="qUnderline">'+esc(hit)+'</u>';
+      rest=rest.slice(at+hit.length);
+    }
+    return out;
+  }
+  function qUnderlineHTML(q){ return underlineHTML(q&&q.question, q&&q.underlines); }
+  function highlight(text, query, spans){
+    let h=underlineHTML(text, spans);
     [...new Set(searchTerms(query))].forEach(t=>{ if(!t)return; const re=new RegExp("("+t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig"); h=h.replace(re,"<mark>$1</mark>"); });
     return h;
   }
@@ -3560,7 +3578,7 @@
     box.innerHTML=cap.map(q=>{
       const r=progress[q.id], tag=[q.year||q.mockTitle,q.field].filter(Boolean).join(" ・ ");
       const status=(r&&r.seen)?(r.correct>=r.wrong?'<span class="srOk">学習済</span>':'<span class="srNg">要復習</span>'):"";
-      return `<button type="button" class="srItem" data-id="${esc(q.id)}"><div class="srQ">${highlight(q.question,qs)}</div><div class="srMeta"><span>${esc(tag)}</span>${status}</div></button>`;
+      return `<button type="button" class="srItem" data-id="${esc(q.id)}"><div class="srQ">${highlight(q.question,qs,q.underlines)}</div><div class="srMeta"><span>${esc(tag)}</span>${status}</div></button>`;
     }).join("") + (matches.length>cap.length?`<div class="srMore">ほか ${matches.length-cap.length} 問（キーワードを絞ると探しやすくなります）</div>`:"");
     box.querySelectorAll(".srItem").forEach(el=>{ el.onclick=()=>{ const q=DATA.find(x=>x.id===el.dataset.id); if(q) startQuiz([q], `検索：${qs}`); }; });
   }
@@ -3780,10 +3798,10 @@
   function questionToCard(q){
     if(questionType(q)==="constructed"){
       const draw=(q.responseParts||[]).find(p=>p.kind==="drawing"&&p.modelImage);
-      return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:q.modelAnswer||"（模範解答なし）",
+      return {id:q.id,kind:"q",field:q.field||"",front:q.question,underlines:q.underlines||[],answer:q.modelAnswer||"（模範解答なし）",
         expl:q.explanation||"",image:draw?draw.modelImage:(q.image||null),imageAlt:draw?(draw.modelImageAlt||"模範図"):(q.imageAlt||"")};
     }
-    return {id:q.id,kind:"q",field:q.field||"",front:q.question,answer:ansText(q),expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""};
+    return {id:q.id,kind:"q",field:q.field||"",front:q.question,underlines:q.underlines||[],answer:ansText(q),expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""};
   }
   function termToCard(t,i){ return {id:t.id||("tc"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:t.image||null,imageAlt:t.imageAlt||"",backImageOnly:!!t.backImageOnly}; }
   function fcImgHTML(c){ return c.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:""; }
@@ -3798,10 +3816,10 @@
       card.classList.remove("isBack");
       const frontImg=c.backImageOnly?"":fcImgHTML(c);
       const figHint=(c.backImageOnly&&c.image)?`<div class="fcFigHint">🖼 答えに図あり</div>`:"";
-      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${esc(c.front)}</div>${frontImg}${figHint}<div class="fcTapHint">タップで答えを見る</div>`;
+      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${underlineHTML(c.front,c.underlines)}</div>${frontImg}${figHint}<div class="fcTapHint">タップで答えを見る</div>`;
     } else {
       card.classList.add("isBack");
-      card.innerHTML=`<div class="fcText small">${esc(c.front)}</div>${fcBackHTML(c)}`;
+      card.innerHTML=`<div class="fcText small">${underlineHTML(c.front,c.underlines)}</div>${fcBackHTML(c)}`;
     }
   }
   function openFcLightbox(src,alt){ const lb=$("#fcLightbox"); if(!lb) return; $("#fcLightboxImg").src=src; $("#fcLightboxImg").alt=alt||""; lb.classList.remove("hidden"); }
@@ -4000,7 +4018,7 @@
       const field=c.field?`<span class="brField">${esc(c.field)}</span>`:"";
       return `<div class="brItem" data-i="${i}">
         <button type="button" class="brHead">
-          <span class="brFront">${esc(c.front)}</span>
+          <span class="brFront">${underlineHTML(c.front,c.underlines)}</span>
           <span class="brMeta"><span class="brSrc">${esc(c.src||"")}</span>${field}${figHint}</span>
           <span class="brChev">›</span>
         </button>
@@ -4162,7 +4180,7 @@
       return `<div class="brItem qbItem" data-i="${i}">
         <button type="button" class="brHead">
           <span class="qbNum">${qbNum(q.id)}</span>
-          <span class="brFront">${esc(q.question||"")}</span>
+          <span class="brFront">${qUnderlineHTML(q)}</span>
           <span class="brMeta">${field}${fig}${status}</span>
           <span class="brChev">›</span>
         </button>
@@ -4413,7 +4431,7 @@
   function renderSlideView(q){
     const ansIdx=ansIdxs(q), ansText_=ansIdx.map(i=>q.choices[i]).join(" ／ ");
     $("#slideViewQ").innerHTML=`<div class="svQLabel">${esc([q.year,q.field].filter(Boolean).join(" ・ "))}</div>
-      <div class="svQText">${esc(q.question)}</div>
+      <div class="svQText">${qUnderlineHTML(q)}</div>
       <div class="svExpl"><b>正解：</b>${esc(ansText_)}<br>${esc(q.explanation.replace(/▶該当スライド：.*$/,"").trim())}</div>`;
     const body=$("#slideViewBody");
     const blocks=q.slideRefs.filter(r=>r.pages&&r.pages.length).map(r=>{
@@ -5248,21 +5266,7 @@
   }
   /* 設問文。原本で下線が引かれている部分（q.underlines）はそのまま下線で出す。
      「下線部の現象を何というか」のような設問は、下線が無いとどこを指すのか分からない。 */
-  function renderQuestionText(el,q){
-    el.innerHTML="";
-    const spans=(q.underlines||[]).filter(u=>u && q.question.indexOf(u)>=0);
-    if(!spans.length){ el.textContent=q.question; return; }
-    let rest=q.question;
-    while(rest){
-      let hit=null, at=-1;
-      spans.forEach(u=>{ const i=rest.indexOf(u); if(i>=0 && (at<0 || i<at)){ at=i; hit=u; } });
-      if(!hit){ el.appendChild(document.createTextNode(rest)); break; }
-      if(at>0) el.appendChild(document.createTextNode(rest.slice(0,at)));
-      const u=document.createElement("u"); u.className="qUnderline"; u.textContent=hit;
-      el.appendChild(u);
-      rest=rest.slice(at+hit.length);
-    }
-  }
+  function renderQuestionText(el,q){ el.innerHTML=qUnderlineHTML(q); }
   /* 小問1つぶんのDOM。1問だけのページでも大問のページでも同じものを使う。
      els に要素をぶら下げておき、採点・解説はこの中だけを書き換える。 */
   function buildQBlock(cur,opts){
@@ -5798,7 +5802,7 @@
     $("#quiz").classList.add("hidden");
     const msg=pct===100?"🏆 全問正解！完璧です！":pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
     const wrong=s.wrongList.map(w=>{ const ans=answerSummary(w.q), cw=questionType(w.q)==="constructed";
-      return `<div class="rvitem"><div class="q">${esc(w.q.question)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div></div>`; }).join("");
+      return `<div class="rvitem"><div class="q">${qUnderlineHTML(w.q)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div></div>`; }).join("");
     $("#result").innerHTML=`
       <div class="result">
         <div class="score">${s.correct} / ${total}</div>
