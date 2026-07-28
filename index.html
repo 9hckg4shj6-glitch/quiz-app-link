@@ -105,6 +105,9 @@
     background:color-mix(in srgb,var(--brand) 14%,var(--card2));color:var(--brand);border:1px solid var(--line)}
   .svPage{margin-bottom:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
   .svPageCap{font-size:11.5px;font-weight:900;color:var(--muted);padding:9px 12px;background:var(--card2);border-bottom:1px solid var(--line)}
+  /* ページ内のどのスライド（象限）が根拠かを示す。pageNotes を持つ科目だけに出る */
+  .svPanels{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:var(--card2);border-bottom:1px solid var(--line)}
+  .svPanel{font-size:11px;font-weight:700;color:var(--brand);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
   .svPage img{display:block;width:100%;height:auto;background:#fff;cursor:zoom-in}
   .svHint{font-size:12px;font-weight:800;color:var(--muted);margin:-6px 0 12px 2px}
   /* スライドの全画面ビューア。縦横どちらにもスクロールできるので、拡大しても画像が辿れなくならない */
@@ -724,6 +727,30 @@
   .bookmarkToggle.on{background:color-mix(in srgb,var(--gold) 18%,var(--card2));border-color:var(--gold);color:var(--gold)}
   .qtag{display:inline-block;font-size:11px;font-weight:800;color:var(--brand);background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px;margin-bottom:10px}
   .qtext{font-size:17px;font-weight:700;margin:0 0 4px}
+  /* 大問の共通設問文。長い実験文・症例文が小問ごとに繰り返されるので、折りたたんで置く */
+  .qStem{margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--card2);overflow:hidden}
+  .qStem.hidden{display:none}
+  .qStem>summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:12px;font-weight:800;color:var(--brand);display:flex;align-items:center;gap:6px}
+  .qStem>summary::-webkit-details-marker{display:none}
+  .qStem>summary::after{content:"▾";margin-left:auto;font-size:11px;opacity:.7}
+  .qStem[open]>summary::after{content:"▴"}
+  .qStemBody{padding:0 12px 12px}
+  .qStemText{font-size:14px;line-height:1.85;white-space:pre-wrap;margin:0}
+  .qStemFig{margin:10px 0 0;padding:8px;background:#fff;border:1px solid var(--line);border-radius:10px;text-align:center}
+  .qStemFig img{max-width:100%;height:auto;display:block;margin:0 auto;cursor:zoom-in}
+  .qStemFig.zoomed{overflow-x:auto}
+  .qStemFig.zoomed img{cursor:zoom-out;max-width:none;width:auto}
+  .qStemFigCap{font-size:11px;color:var(--muted);margin-top:6px}
+  /* 穴埋め（クローズ）問題。本文中に入力欄を埋め込む */
+  .cwCloze{font-size:15px;line-height:2.2;white-space:pre-wrap}
+  /* 入力欄は本文の行に収まる幅にする（広いと「）」だけが次行に落ちて読めなくなる） */
+  .cwClozeIn{display:inline-block;width:7em;max-width:100%;font:inherit;font-size:14px;padding:2px 6px;
+    vertical-align:baseline;border:none;border-bottom:2px solid var(--brand);border-radius:4px 4px 0 0;
+    background:var(--card2);color:var(--fg)}
+  @media (min-width:520px){ .cwClozeIn{width:9em} }
+  .cwClozeIn:focus{outline:none;background:color-mix(in srgb,var(--brand) 10%,var(--card2))}
+  .cwClozeIn:disabled{opacity:.75}
+  .cwClozeNo{display:inline-block;font-size:10px;font-weight:800;color:var(--brand);vertical-align:super;margin-right:1px}
   .qfigure{margin:14px 0 0;padding:10px;background:#fff;border:1px solid var(--line);border-radius:12px;text-align:center}
   .qfigure.hidden{display:none}
   .qfigure img{max-width:100%;height:auto;display:block;margin:0 auto;cursor:zoom-in}
@@ -1690,6 +1717,8 @@
         <span class="qtag" id="qtag"></span>
         <button type="button" class="bookmarkToggle" id="bookmarkBtn">☆ 見直す</button>
       </div>
+      <!-- 大問の共通設問文（実験文・症例文など）。属する小問すべての上に出す -->
+      <details class="qStem hidden" id="qStem" open></details>
       <p class="qtext" id="qtext"></p>
       <figure class="qfigure hidden" id="qfigure">
         <img id="qfigureImg" alt="">
@@ -2109,15 +2138,24 @@
       imageAlt: q.imageAlt || "",
       explainImage: q.explainImage || null,          // 解説の補足図（問題の図とは別枠で出す）
       explainImageAlt: q.explainImageAlt || "",
-      slideRefs: Array.isArray(q.slideRefs) ? q.slideRefs.map(r=>({deck:String(r.deck||""),name:String(r.name||""),pages:Array.isArray(r.pages)?r.pages.slice():[]})) : null,
+      slideRefs: Array.isArray(q.slideRefs) ? q.slideRefs.map(r=>({deck:String(r.deck||""),name:String(r.name||""),pages:Array.isArray(r.pages)?r.pages.slice():[],
+        // pageNotes は植物生理編で足した任意欄。持たない科目は null のままで表示も従来どおり
+        pageNotes:Array.isArray(r.pageNotes)?r.pageNotes.map(n=>({page:Number(n.page),panel:String(n.panel||""),label:String(n.label||"")})).filter(n=>Number.isFinite(n.page)):null})) : null,
       choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null,
+      // --- 大問の共通設問文（案A：属する小問へ複製して持たせる）---
+      stem: q.stem || "",
+      stemTitle: q.stemTitle || "",
+      stemImages: Array.isArray(q.stemImages)
+        ? q.stemImages.map(f=>({src:String(f&&f.src||""),alt:String(f&&f.alt||""),label:String(f&&f.label||"")})).filter(f=>f.src) : [],
       // --- 記述問題（type:"constructed"）だけが使う欄。選択問題では null / 空 ---
       type: questionType(q),
       points: Number.isFinite(Number(q.points)) ? Number(q.points) : null,
       responseParts: questionType(q)==="constructed" ? normalizeResponseParts(q.responseParts) : [],
       rubric: questionType(q)==="constructed" ? normalizeRubric(q.rubric) : [],
       rubricSource: q.rubricSource==="official" ? "official" : (q.rubricSource==="derived" ? "derived" : null),
-      modelAnswer: q.modelAnswer || ""
+      modelAnswer: q.modelAnswer || "",
+      // 穴埋め（クローズ）。本文中の {1}{2}… が responseParts の n 番目に対応する
+      passage: q.passage || ""
     })).filter(q=>{
       if(!q.question) return false;
       if(q.type==="choice") return q.choices.length>=2;
@@ -3332,6 +3370,7 @@
     $("#progBar").style.width=(s.gradeAt/s.gradeQueue.length*100)+"%";
     $("#counter").textContent=`自己採点 ${s.gradeAt+1} / ${s.gradeQueue.length}`;
     $("#qtag").textContent="記述問題の自己採点";
+    renderStem(q);
     $("#qtext").textContent=q.question;
     updateBookmarkBtn(q.id);
     const fig=$("#qfigure"), figImg=$("#qfigureImg");
@@ -3460,7 +3499,7 @@
   function searchMatches(query){
     const terms=searchTerms(query); if(!terms.length) return [];
     return DATA.filter(q=>{
-      const hay=normQ((q.question||"")+" "+((q.choices||[]).join(" "))+" "+(q.explanation||"")+" "+(q.modelAnswer||"")+" "+(q.field||"")+" "+(q.year||"")+" "+(q.mockTitle||"")+" "+(q.imageAlt||""));
+      const hay=normQ((q.question||"")+" "+(q.stem||"")+" "+(q.passage||"")+" "+((q.choices||[]).join(" "))+" "+(q.explanation||"")+" "+(q.modelAnswer||"")+" "+(q.field||"")+" "+(q.year||"")+" "+(q.mockTitle||"")+" "+(q.imageAlt||""));
       return terms.every(t=>hay.includes(t));
     });
   }
@@ -4201,7 +4240,7 @@
       keys:["アミノ基転移","トランスアミナーゼ","アミノ酸代謝","酸化的脱アミノ","分枝鎖アミノ酸","アラニン","フェニルケトン"]}
   ];
   function pathText(q){
-    const parts=[q.question||"", q.field||"", (q.choices||[]).join(" "), q.explanation||""];
+    const parts=[q.question||"", q.stem||"", q.passage||"", q.field||"", (q.choices||[]).join(" "), q.explanation||""];
     if(Array.isArray(q.choiceNotes)) parts.push(q.choiceNotes.join(" "));
     return parts.join(" ");
   }
@@ -4309,10 +4348,16 @@
       <div class="svExpl"><b>正解：</b>${esc(ansText_)}<br>${esc(q.explanation.replace(/▶該当スライド：.*$/,"").trim())}</div>`;
     const body=$("#slideViewBody");
     const blocks=q.slideRefs.filter(r=>r.pages&&r.pages.length).map(r=>{
-      const pages=r.pages.map(pg=>`<figure class="svPage">
+      const pages=r.pages.map(pg=>{
+        // pageNotes を持つ科目（植物生理編）は、そのページのどこを見ればよいかを添える
+        const notes=(r.pageNotes||[]).filter(n=>n.page===pg)
+          .map(n=>`<span class="svPanel">${esc([n.panel,n.label].filter(Boolean).join("　"))}</span>`).join("");
+        return `<figure class="svPage">
           <figcaption class="svPageCap">${esc(r.name)} ・ p${pg}</figcaption>
+          ${notes?`<div class="svPanels">${notes}</div>`:""}
           <img src="${esc(slidePageSrc(r.deck,pg))}" alt="${esc(r.name)} ${pg}ページ" loading="lazy">
-        </figure>`).join("");
+        </figure>`;
+      }).join("");
       return `<div class="svDeck"><span class="svDeckName">📘 ${esc(r.name)}</span>
         <span class="svDeckTag">${r.pages.length}ページ</span></div>${pages}`;
     }).join("");
@@ -4334,7 +4379,14 @@
   function lessonEntries(){ return Array.isArray(window.LESSONS) ? window.LESSONS : []; }
   function lessonEntry(deck){ return lessonEntries().find(l=>l && String(l.deck)===String(deck)) || null; }
   function lessonWritten(ls){ return !!(ls && (ls.intro || (Array.isArray(ls.sections) && ls.sections.length))); }
-  function deckLabel(deck){ const n=String(deck).replace(/^0+/,""); return n?`第${n}回`:String(deck); }
+  /* 授業回の見出し。deck が数字のうちは「第3回」、
+     植物生理編のような文字列ID（"YY03"）は回番号ではないのでそのまま出す。 */
+  function deckLabel(deck){
+    const s=String(deck);
+    if(!/^\d+$/.test(s)) return s;
+    const n=s.replace(/^0+/,"");
+    return n?`第${n}回`:s;
+  }
   /* 枝番のデッキ（"08a"＝第8回の前半コマ）は、同じ回の講義なので学習の章としては
      本体（"08"）にまとめる。問題の slideRefs は前半・後半それぞれの正しいページを
      指したままにしたいので、章分けのときだけ枝番を落とす。 */
@@ -4697,6 +4749,62 @@
   }
 
   /* ---------- 回答欄の描画（§13.3） ---------- */
+  /* 穴埋め（クローズ）問題。passage の {1}{2}… が responseParts の n 番目に対応する
+     （原本の空欄記号は part.blankLabel。①②… でも本文側は必ず 1 始まりの通し番号）。 */
+  function isClozeQuestion(q){
+    return !!(q && q.passage && (q.responseParts||[]).length
+      && (q.responseParts||[]).every(p=>p.kind==="short-text"));
+  }
+  function renderClozePassage(q,box,readers,safe){
+    const parts=q.responseParts||[], inputs={};
+    const wrap=document.createElement("div"); wrap.className="cwPart";
+    const lab=document.createElement("div"); lab.className="cwLabel";
+    lab.textContent="本文中の空欄に語句を入れてください";
+    wrap.appendChild(lab);
+    const body=document.createElement("p"); body.className="cwCloze";
+    const re=/\{(\d+)\}/g; let last=0, m;
+    while((m=re.exec(q.passage))!==null){
+      if(m.index>last) body.appendChild(document.createTextNode(q.passage.slice(last,m.index)));
+      last=re.lastIndex;
+      const part=parts[Number(m[1])-1];
+      if(!part){ body.appendChild(document.createTextNode(m[0])); continue; }   // 番号ずれは本文のまま出す
+      const no=document.createElement("span"); no.className="cwClozeNo";
+      no.textContent=part.blankLabel||m[1];
+      body.appendChild(no);
+      const inp=document.createElement("input");
+      inp.type="text"; inp.className="cwClozeIn";
+      inp.setAttribute("aria-label","空欄"+(part.blankLabel||m[1]));
+      inp.placeholder=part.placeholder||"";
+      (inputs[part.id]=inputs[part.id]||[]).push(inp);
+      // 同じ空欄が本文に2回以上出る問題があるので（問6・問11）、入力を互いに同期させる
+      inp.oninput=()=>{
+        (inputs[part.id]||[]).forEach(o=>{ if(o!==inp) o.value=inp.value; });
+        updateConstructedSubmit(); scheduleWrittenDraft();
+      };
+      body.appendChild(inp);
+    }
+    if(last<q.passage.length) body.appendChild(document.createTextNode(q.passage.slice(last)));
+    wrap.appendChild(body); box.appendChild(wrap);
+
+    parts.forEach((part,i)=>{
+      const list=inputs[part.id]||[];
+      if(!list.length){   // 本文から参照されていない空欄は取りこぼさないよう単独の欄を出す
+        const solo=document.createElement("div"); solo.className="cwPart";
+        const l=document.createElement("label"); l.className="cwLabel";
+        l.textContent=part.label||("空欄"+(i+1)); solo.appendChild(l);
+        const inp=document.createElement("input"); inp.type="text"; inp.className="cwText";
+        inp.id="cw_"+safe+"_"+String(part.id).replace(/[^A-Za-z0-9_-]/g,"_");
+        inp.oninput=()=>{ updateConstructedSubmit(); scheduleWrittenDraft(); };
+        solo.appendChild(inp); box.appendChild(solo); list.push(inp);
+      }
+      list[0].id=list[0].id||("cw_"+safe+"_"+String(part.id).replace(/[^A-Za-z0-9_-]/g,"_"));
+      readers[part.id]={ part,
+        read:()=>({kind:"short-text", text:list[0].value}),
+        restore:(a)=>{ if(a&&typeof a.text==="string") list.forEach(o=>{ o.value=a.text; }); },
+        lock:()=>list.forEach(o=>{ o.disabled=true; }),
+        filled:()=>!!list[0].value.trim() };
+    });
+  }
   function renderConstructedQuestion(cur){
     const s=session, q=cur.q, box=$("#constructedAnswer");
     $("#choices").innerHTML=""; $("#multiConfirm").classList.add("hidden");
@@ -4707,6 +4815,15 @@
     const readers={};
     s.cw={ q, readers, submitted:false, pads:{}, startedAt:Date.now() };
     const safe=String(q.id).replace(/[^A-Za-z0-9_-]/g,"_");
+
+    // 穴埋め（クローズ）は本文ごと出して {1}{2}… を入力欄に差し替える。
+    // パーツを縦に並べるより本文の文脈が読めるほうが解きやすいため（§6-2）。
+    if(isClozeQuestion(q)){
+      renderClozePassage(q,box,readers,safe);
+      restoreWrittenDraft(q);
+      updateConstructedSubmit();
+      return;
+    }
 
     (q.responseParts||[]).forEach(part=>{
       const wrap=document.createElement("div"); wrap.className="cwPart";
@@ -5024,6 +5141,23 @@
     }).catch(()=>{});
   }
 
+  /* 大問の共通設問文（実験文・症例文と共通の図）。
+     案A：同じ大問に属する小問すべてが同じ stem / stemImages を持つ（変換時に複製）。
+     小問を1問ずつ解くので、毎回そのまま出すと長い。折りたたみにして既定は開いておく。 */
+  function renderStem(q){
+    const box=$("#qStem"); if(!box) return;
+    if(!q || (!q.stem && !(q.stemImages||[]).length)){ box.classList.add("hidden"); box.innerHTML=""; return; }
+    // キャプション（「図1 …」）は切り出し範囲に含める運用なので画像側にある。ここでは重ねない
+    const figs=(q.stemImages||[]).map(f=>`<figure class="qStemFig">
+        <img src="${esc(f.src)}" alt="${esc(f.alt||f.label||"共通の図")}" loading="lazy">
+      </figure>`).join("");
+    box.innerHTML=`<summary>📄 ${esc(q.stemTitle||"この大問に共通の問題文")}</summary>
+      <div class="qStemBody">${q.stem?`<p class="qStemText">${esc(q.stem)}</p>`:""}${figs}</div>`;
+    box.classList.remove("hidden");
+    box.querySelectorAll(".qStemFig").forEach(f=>{
+      const img=f.querySelector("img"); if(img) img.onclick=()=>f.classList.toggle("zoomed");
+    });
+  }
   function renderQuestion(){
     const s=session,cur=s.queue[s.i],q=cur.q;
     s.graded=false;
@@ -5032,6 +5166,7 @@
     $("#streakPill").textContent=`🔥 ${s.streak}`;
     $("#qtag").textContent=s.exam ? s.label : ([q.year,q.field].filter(Boolean).join(" ・ ")||s.label);
     updateBookmarkBtn(q.id);
+    renderStem(q);
     $("#qtext").textContent=q.question; $("#explainBox").innerHTML=""; $("#nextBtn").classList.add("hidden");
     const fig=$("#qfigure"), figImg=$("#qfigureImg");
     fig.classList.remove("zoomed");

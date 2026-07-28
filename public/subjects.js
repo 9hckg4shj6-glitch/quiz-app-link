@@ -84,7 +84,10 @@ window.SUBJECTS = [
     name: "植物生理",
     emoji: "🌱",
     accent: "#16a34a",
-    draft: true,
+    questions: "subjects/plantphysiology/questions.js",
+    // 2025年度（令和7年度）前期の43問・100点。
+    // 選択27問（うち「2つ選べ」3問）＋記述16問（短答9・記述式3・穴埋め3・記述＋記号1）
+    expectQuestions: 43,
     hideCards: true,
     hideExamDay: true,
   },

@@ -18,6 +18,25 @@ export interface SlideReference {
   deck: string;
   name: string;
   pages: number[];
+  /** そのページのどのスライド（4-up配布資料の象限）が根拠か。
+      植物生理編で追加した任意欄。持たない科目は従来どおり pages だけで動く。
+      pages の型は変えない（validate-content.mjs と index.html が数値前提で組んである）。 */
+  pageNotes?: SlidePageNote[] | null;
+}
+
+export interface SlidePageNote {
+  page: number;
+  /** 左上 / 右上 / 左下 / 右下 / 上段 / 下段 / 全体 */
+  panel: string;
+  label: string;
+}
+
+/** 大問の共通設問文。同じ大問に属する小問すべてが同じ内容を複製して持つ（案A）。
+    選択問題・記述問題のどちらにも付く。 */
+export interface StemFigure {
+  src: string;
+  alt?: string;
+  label?: string;
 }
 
 export interface BaseResponsePart {
@@ -34,6 +53,8 @@ export interface ShortTextPart extends BaseResponsePart {
   /** 正規化後の完全一致でのみ仮正解。同義語はここに明示的に列挙する */
   acceptedAnswers: string[];
   placeholder?: string;
+  /** 穴埋め問題で本文の空欄に添える原本どおりの記号（"1" / "①" など） */
+  blankLabel?: string;
 }
 
 export interface LongTextPart extends BaseResponsePart {
@@ -102,6 +123,13 @@ export interface ConstructedQuestion {
   explainImage?: string | null;
   explainImageAlt?: string;
   slideRefs?: SlideReference[] | null;
+  /** 大問の共通設問文と、その大問に付く図 */
+  stem?: string;
+  stemTitle?: string;
+  stemImages?: StemFigure[];
+  /** 穴埋め（クローズ）問題の本文。{1}{2}… が responseParts の n 番目に対応する。
+      原本の空欄記号（① など）は ShortTextPart.blankLabel に持つ */
+  passage?: string;
 }
 
 /* ============================================================
