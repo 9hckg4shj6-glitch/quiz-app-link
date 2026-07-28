@@ -65,8 +65,8 @@ window.SUBJECTS = [
     questions: "subjects/immunology2/questions.js",
     // 2025年度（令和7年度）後半のマーク85問 ＋ 2024年度（令和6年度）後半のマーク80問・記述6問
     // ＋ 2023年度（令和5年度）後半のマーク80問・記述6問
-    // ＋ 2022年度（令和4年度）後半のマーク第1〜50問（残り第51〜83問・記述6問は収録作業中）
-    expectQuestions: 307,
+    // ＋ 2022年度（令和4年度）後半のマーク83問・記述6問
+    expectQuestions: 346,
     hideCards: true,
     hideExamDay: true,
   },
