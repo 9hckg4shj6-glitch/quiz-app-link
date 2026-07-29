@@ -86,8 +86,10 @@ window.SUBJECTS = [
     accent: "#16a34a",
     questions: "subjects/plantphysiology/questions.js",
     // 2025年度（令和7年度）前期の43問・100点。
-    // 選択27問（うち「2つ選べ」3問）＋記述16問（短答9・記述式3・穴埋め3・記述＋記号1）
-    expectQuestions: 43,
+    //   選択27問（うち「2つ選べ」3問）＋記述16問（短答9・記述式3・穴埋め3・記述＋記号1）
+    // 2024年度（令和6年度）前期の40問・100点。
+    //   選択19問（うち「2つ選べ」1問）＋記述21問（短答11・記述式8・穴埋め2）
+    expectQuestions: 83,
     hideCards: true,
     hideExamDay: true,
   },
