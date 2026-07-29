@@ -43,7 +43,8 @@ const PART_KINDS = new Set(["short-text", "long-text", "numeric", "drawing"]);
 export function validateConstructed(label, id, question, errors) {
   const e = (msg) => errors.push(`[${label}] 記述問題 ${id}: ${msg}`);
 
-  if (!Number.isInteger(question.points) || question.points <= 0) e(`points は正の整数にしてください (${question.points})`);
+  // 原本の配点が 2.5 点・3.5 点のように小数のことがあるので、整数までは求めない
+  if (!Number.isFinite(question.points) || question.points <= 0) e(`points は正の数にしてください (${question.points})`);
   if (question.rubricSource !== "official" && question.rubricSource !== "derived") {
     e(`rubricSource は "official"（公式の採点細目）か "derived"（学習用に分解）のどちらかにしてください`);
   }
@@ -114,7 +115,7 @@ export function validateConstructed(label, id, question, errors) {
     }
   }
   // 部分点の合計が満点と合っていないと、結果画面の「獲得点 / 満点」が破綻する
-  if (Number.isInteger(question.points) && Math.abs(sum - question.points) > 1e-9) {
+  if (Number.isFinite(question.points) && Math.abs(sum - question.points) > 1e-9) {
     e(`rubric の配点合計が満点と一致しません (${sum} / ${question.points})`);
   }
 }

@@ -92,9 +92,17 @@ describe("validateConstructed", () => {
     expectSingleError((q) => { q.rubric[0].points = 3; }, "配点合計が満点と一致しません (6 / 5)");
   });
 
-  it("points が正の整数でなければ落とす", () => {
-    expectError((q) => { q.points = 0; }, "points は正の整数");
-    expectError((q) => { q.points = 2.5; }, "points は正の整数");
+  it("points が正の数でなければ落とす", () => {
+    expectError((q) => { q.points = 0; }, "points は正の数");
+    expectError((q) => { q.points = -1; }, "points は正の数");
+  });
+
+  // 原本の配点が 2.5 点・3.5 点のことがある（R4 植物生理の問11など）ので、小数は通す
+  it("points が小数でも rubric の合計が合っていれば通る", () => {
+    const q = validFixture();
+    q.points = 2.5;
+    q.rubric = [{ ...q.rubric[0], points: 2.5 }];
+    expect(check(q)).toEqual([]);
   });
 
   it("rubricSource は official / derived だけ許す", () => {

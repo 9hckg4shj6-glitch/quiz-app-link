@@ -2183,6 +2183,8 @@
       // 配布された解答用紙の解答。アプリが書いた modelAnswer とは分けて出す
       officialAnswer: q.officialAnswer || "",
       officialAnswerNote: q.officialAnswerNote || "",
+      // 見出し。年度によっては大学配布ではなく学生作成の解答なので、そう名乗らせる
+      officialAnswerTitle: q.officialAnswerTitle || "",
       // 穴埋め（クローズ）。本文中の {1}{2}… が responseParts の n 番目に対応する
       passage: q.passage || ""
     })).filter(q=>{
@@ -5131,7 +5133,7 @@
         <span class="cwCritMeta">${c.points}点${c.autoCheck?'<span class="cwAuto">仮チェック済み</span>':""}</span></span></label>`;
     }).join("");
     const official = (q.officialAnswer||q.officialAnswerNote)
-      ? `<div class="cwOfficial"><h6>📄 公式解答（配布された解答用紙）</h6>
+      ? `<div class="cwOfficial"><h6>${esc(q.officialAnswerTitle||"📄 公式解答（配布された解答用紙）")}</h6>
           ${q.officialAnswer?`<p class="cwAnswerText" data-el="cwOfficialAnswer"></p>`:""}
           ${q.officialAnswerNote?`<p class="cwOfficialNote" data-el="cwOfficialNote"></p>`:""}</div>`
       : "";
