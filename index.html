@@ -731,6 +731,7 @@
 
   /* ===== quiz ===== */
   .qtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px}
+  .qtop #quitBtn{white-space:nowrap}
   .qtop .prog{flex:1;height:8px;border-radius:999px;background:var(--card2);overflow:hidden}
   .qtop .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));width:0;transition:width .3s}
   .pill{font-size:12px;font-weight:900;padding:5px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);white-space:nowrap}
@@ -754,6 +755,7 @@
   .quizNav .deferBtn:hover:not(:disabled){border-color:var(--warn)}
   @media(max-width:520px){
     .qtop{gap:7px}.qtop .pill{padding:4px 7px;font-size:11px}
+    .qtop #quitBtn{font-size:11px;padding:7px 9px}
     .quizNav{gap:6px;padding:7px;border-radius:16px}
     .quizNav .btn{font-size:12px;padding:9px 5px}
   }
@@ -1787,7 +1789,7 @@
   <!-- ===== QUIZ ===== -->
   <section id="quiz" class="hidden">
     <div class="qtop">
-      <button class="btn ghost small" id="quitBtn">← 中断</button>
+      <button class="btn ghost small" id="quitBtn">ここまでで終了</button>
       <div class="prog"><i id="progBar"></i></div>
       <span class="pill" id="counter">1 / 10</span>
       <span class="pill streak" id="streakPill">🔥 0</span>
@@ -3485,17 +3487,27 @@
     else renderExamResult();
   }
   /* ---------- まとめて採点（選択問題） ---------- */
-  function submitBatchQuiz(){
+  function batchAnswerPicks(cur){
+    const s=session, raw=s&&s.answers[cur.qi];
+    return raw===undefined?[]:(Array.isArray(raw)?raw.slice():[raw]);
+  }
+  function batchEntryAnswered(cur){
+    return batchAnswerPicks(cur).length===(cur.need||1);
+  }
+  function submitBatchQuiz(opts){
+    opts=opts||{};
     const s=session;
     if(!s||!s.batch||s.batchSubmitted) return;
-    const unfinished=nextUnfinishedPageIndex();
+    const unfinished=opts.allowPartial?-1:nextUnfinishedPageIndex();
     if(unfinished>=0){ goToQuizPage(unfinished); return; }
+    const targets=opts.allowPartial?s.queue.filter(batchEntryAnswered):s.queue;
+    if(!targets.length) return;
+    if(opts.allowPartial) s.resultQueue=targets.slice();
     s.batchSubmitted=true;
     const t=todayStr();
     let correct=0, run=0, maxRun=0, gained=0;
-    s.queue.forEach(cur=>{
-      const raw=s.answers[cur.qi];
-      const picks=raw===undefined?[]:(Array.isArray(raw)?raw:[raw]);
+    targets.forEach(cur=>{
+      const picks=batchAnswerPicks(cur);
       const correctPos=cur.choices.map((c,i)=>c.correct?i:-1).filter(i=>i>=0);
       const isCorrect=picks.length>0&&sameSet(picks,correctPos);
       const chosenLabel=picks.length?picks.map(i=>cur.choices[i].text).join(" ／ "):"（未回答）";
@@ -4505,6 +4517,8 @@
     hideAllScreens(); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
     const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam||session.batch);
+    $("#quitBtn").textContent=session.exam?"← 中断":"ここまでで終了";
+    $("#quitBtn").title=session.exam?"採点せずに本番モードを中断します":"未回答を採点せず、解き終えた問題だけで結果を表示します";
     if(session.exam) startExamTimer();
     renderQuestion();
   }
@@ -5830,9 +5844,46 @@
     else if(session.batch) submitBatchQuiz();
     else renderResult();
   };
-  $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）"
-    :session&&session.batch?"まとめて採点を中断してホームに戻りますか？（回答は採点されません）"
-    :"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ gradeUnratedOnPage(); stopExamTimer(); renderHome(); } };
+  function completedPracticeEntries(s){
+    if(!s) return [];
+    return s.batch?s.queue.filter(batchEntryAnswered):s.queue.filter(blockDone);
+  }
+  function finishPracticeEarly(){
+    const s=session; if(!s||s.exam) return;
+    const pendingWritten=s.queue.find(cur=>cur.type==="constructed"&&cur.cw&&cur.cw.submitted&&!cur.cw.finalized);
+    if(pendingWritten){
+      const at=s.pages.indexOf(pendingWritten.page);
+      if(at>=0&&at!==s.p) goToQuizPage(at);
+      toast("記述問題の自己採点を確定してから終了してください",2600);
+      return;
+    }
+    const completed=completedPracticeEntries(s), unanswered=s.queue.length-completed.length;
+    if(!completed.length){
+      if(confirm("まだ採点できる回答がありません。演習を終了してホームに戻りますか？")) renderHome();
+      return;
+    }
+    const msg=unanswered>0
+      ?(s.batch
+        ?`回答済みの${completed.length}問をまとめて採点し、未回答の${unanswered}問は採点せずに終了しますか？`
+        :`解き終えた${completed.length}問だけを結果に反映し、未回答の${unanswered}問は採点せずに終了しますか？`)
+      :`${completed.length}問の演習を終了して結果を表示しますか？`;
+    if(!confirm(msg)) return;
+    s.endedEarly=unanswered>0;
+    s.resultQueue=completed.slice();
+    s.unansweredCount=unanswered;
+    gradeUnratedOnPage();
+    if(s.batch) submitBatchQuiz({allowPartial:true});
+    else renderResult();
+  }
+  $("#quitBtn").onclick=()=>{
+    if(session&&session.exam){
+      if(confirm("本番モードを中断してホームに戻りますか？（採点されません）")){
+        stopExamTimer(); renderHome();
+      }
+      return;
+    }
+    finishPracticeEarly();
+  };
   /* ---------- 忘却曲線の可視化（C） ---------- */
   function renderForgetCurve(){
     const box=$("#forgetPanel"); if(!box) return;
@@ -6075,10 +6126,11 @@
 
   /* ---------- 結果 ---------- */
   function renderBatchResult(){
-    const s=session,total=s.queue.length,pct=Math.round(s.correct/total*100),gained=meta.xp-s.xpStart;
+    const s=session,items=s.resultQueue||s.queue,total=items.length,unanswered=s.queue.length-total;
+    const pct=total?Math.round(s.correct/total*100):0,gained=meta.xp-s.xpStart;
     $("#quiz").classList.add("hidden");
-    const msg=pct===100?"🏆 全問正解！完璧です！":pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
-    const review=s.queue.map((cur,i)=>{
+    const msg=pct===100?(unanswered?"🎉 解いた問題は全問正解！":"🏆 全問正解！完璧です！"):pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
+    const review=items.map((cur,i)=>{
       const r=cur.batchReview||{picks:[],isCorrect:false,chosenLabel:"（未回答）",correctText:ansText(cur.q)};
       return `<article class="rvitem batchRv ${r.isCorrect?"ok":"ng"}">
         <div class="batchRvHead"><span class="batchRvNo">第 ${i+1} 問</span>
@@ -6093,17 +6145,18 @@
     $("#result").innerHTML=`
       <div class="result">
         <div class="score">${s.correct} / ${total}</div>
-        <div class="sub">${esc(s.label)} ・ まとめて採点 ・ 正答率 ${pct}% ${msg}</div>
+        <div class="sub">${esc(s.label)} ・ まとめて採点 ・ 正答率 ${pct}% ${msg}${unanswered?`<br>選択 ${s.queue.length}問中 ${total}問を採点 ・ 未回答 ${unanswered}問は採点対象外`:""}</div>
         <div><span class="xpgain">⭐ +${gained} XP 獲得${s.leveledUp?` ・ 🎉 Lv.${s.leveledUp}`:""}</span></div>
         <div class="stats">
           <div class="stat"><b style="color:var(--good)">${s.correct}</b><span>正解</span></div>
           <div class="stat"><b style="color:var(--bad)">${total-s.correct}</b><span>不正解</span></div>
           <div class="stat"><b style="color:var(--warn)">${s.maxStreak}</b><span>最大連続</span></div>
+          ${unanswered?`<div class="stat"><b style="color:var(--muted)">${unanswered}</b><span>未回答</span></div>`:""}
         </div>
         <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度</button></div>
         ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:""}
       </div>
-      <div class="review"><h4>全問題の採点結果（${total}問）</h4><div class="batchReview">${review}</div></div>`;
+      <div class="review"><h4>${unanswered?"回答した問題":"全問題"}の採点結果（${total}問）</h4><div class="batchReview">${review}</div></div>`;
     $("#result").classList.remove("hidden");
     wireMoreExpl($("#result"));
     window.scrollTo({top:0,behavior:"smooth"});
@@ -6113,20 +6166,22 @@
     const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),s.label+"（復習）");
   }
   function renderResult(){
-    const s=session,total=s.queue.length,pct=Math.round(s.correct/total*100),gained=meta.xp-s.xpStart;
+    const s=session,items=s.resultQueue||s.queue,total=items.length,unanswered=s.queue.length-total;
+    const pct=total?Math.round(s.correct/total*100):0,gained=meta.xp-s.xpStart;
     $("#quiz").classList.add("hidden");
-    const msg=pct===100?"🏆 全問正解！完璧です！":pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
+    const msg=pct===100?(unanswered?"🎉 解いた問題は全問正解！":"🏆 全問正解！完璧です！"):pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
     const wrong=s.wrongList.map(w=>{ const ans=answerSummary(w.q), cw=questionType(w.q)==="constructed";
       return `<div class="rvitem"><div class="q">${qUnderlineHTML(w.q)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div></div>`; }).join("");
     $("#result").innerHTML=`
       <div class="result">
         <div class="score">${s.correct} / ${total}</div>
-        <div class="sub">${esc(s.label)} ・ 正答率 ${pct}% ${msg}</div>
+        <div class="sub">${esc(s.label)} ・ 正答率 ${pct}% ${msg}${unanswered?`<br>選択 ${s.queue.length}問中 ${total}問を採点 ・ 未回答 ${unanswered}問は採点対象外`:""}</div>
         <div><span class="xpgain">⭐ +${gained} XP 獲得${s.leveledUp?` ・ 🎉 Lv.${s.leveledUp}`:''}</span></div>
         <div class="stats">
           <div class="stat"><b style="color:var(--good)">${s.correct}</b><span>正解</span></div>
           <div class="stat"><b style="color:var(--bad)">${total-s.correct}</b><span>不正解</span></div>
           <div class="stat"><b style="color:var(--warn)">${s.maxStreak}</b><span>最大連続</span></div>
+          ${unanswered?`<div class="stat"><b style="color:var(--muted)">${unanswered}</b><span>未回答</span></div>`:""}
         </div>
         <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度</button></div>
         ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:''}
