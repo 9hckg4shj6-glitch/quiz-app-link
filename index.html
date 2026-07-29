@@ -722,6 +722,28 @@
   .qtop .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));width:0;transition:width .3s}
   .pill{font-size:12px;font-weight:900;padding:5px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);white-space:nowrap}
   .pill.streak{color:var(--warn)}
+  .quizQueueBar{display:flex;justify-content:flex-end;min-height:34px;margin:-4px 0 8px}
+  .laterQueueBtn{display:inline-flex;align-items:center;gap:7px;border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));
+    border-radius:999px;background:color-mix(in srgb,var(--warn) 10%,var(--card));color:var(--text);
+    padding:6px 11px;font:inherit;font-size:12px;font-weight:900;cursor:pointer;transition:.15s}
+  .laterQueueBtn:hover{border-color:var(--warn);transform:translateY(-1px)}
+  .laterQueueBtn .laterCount{display:grid;place-items:center;min-width:21px;height:21px;padding:0 6px;border-radius:999px;
+    background:var(--warn);color:#29200a;font-size:11px;font-variant-numeric:tabular-nums}
+  .quizNav{position:sticky;bottom:max(10px,env(safe-area-inset-bottom));z-index:45;display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);gap:9px;margin-top:14px;
+    padding:9px;border:1px solid color-mix(in srgb,var(--line) 78%,transparent);border-radius:18px;
+    background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:saturate(145%) blur(14px);
+    box-shadow:0 14px 34px rgba(10,18,36,.18)}
+  .quizNav .btn{min-width:0;min-height:46px;padding:10px 9px;white-space:nowrap}
+  .quizNav .btn:disabled{opacity:.42;cursor:not-allowed;transform:none}
+  .quizNav .deferBtn{background:color-mix(in srgb,var(--warn) 11%,var(--card2));color:var(--text);
+    border:1px solid color-mix(in srgb,var(--warn) 42%,var(--line))}
+  .quizNav .deferBtn:hover:not(:disabled){border-color:var(--warn)}
+  @media(max-width:520px){
+    .qtop{gap:7px}.qtop .pill{padding:4px 7px;font-size:11px}
+    .quizNav{gap:6px;padding:7px;border-radius:16px}
+    .quizNav .btn{font-size:12px;padding:9px 5px}
+  }
   .qcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
   .qhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
   .qhead .qtag{margin-bottom:0}
@@ -1733,6 +1755,11 @@
       <span class="pill streak" id="streakPill">🔥 0</span>
       <span class="pill timer hidden" id="examTimer">⏱ 50:00</span>
     </div>
+    <div class="quizQueueBar hidden" id="quizQueueBar">
+      <button type="button" class="laterQueueBtn hidden" id="laterQueueBtn" aria-label="後で解く問題へ移動">
+        <span>⏳ 後で解く問題</span><span class="laterCount" id="laterCount">0</span>
+      </button>
+    </div>
     <div class="qcard">
       <div class="qhead">
         <span class="qtag" id="qtag"></span>
@@ -1749,7 +1776,11 @@
         <button type="button" class="btn primary" id="qGroupSubmit">この大問をまとめて採点する</button>
       </div>
     </div>
-    <button class="btn hidden" id="nextBtn">次の問題 →</button>
+    <div class="quizNav" id="quizNav" aria-label="問題の移動">
+      <button type="button" class="btn ghost" id="prevBtn">← 前の問題</button>
+      <button type="button" class="btn deferBtn" id="deferBtn">⏳ 後で解く</button>
+      <button type="button" class="btn" id="nextBtn">次の問題 →</button>
+    </div>
   </section>
 
   <!-- ===== SEARCH ===== -->
@@ -3397,6 +3428,7 @@
     if(!s || s.gradeAt>=s.gradeQueue.length){ renderExamResult(); return; }
     const idx=s.gradeQueue[s.gradeAt], cur=s.queue[idx], q=cur.q;
     hideAllScreens(); $("#quiz").classList.remove("hidden");
+    $("#quizNav").classList.add("hidden"); $("#quizQueueBar").classList.add("hidden");
     $("#examTimer").classList.add("hidden"); $("#streakPill").classList.add("hidden");
     $("#progBar").style.width=(s.gradeAt/s.gradeQueue.length*100)+"%";
     $("#counter").textContent=`自己採点 ${s.gradeAt+1} / ${s.gradeQueue.length}`;
@@ -4240,18 +4272,108 @@
       const gid=cur.q.groupId;
       if(gid && at[gid]!=null){ pages[at[gid]].idxs.push(idx); return; }
       if(gid) at[gid]=pages.length;
-      pages.push({groupId:gid||null, idxs:[idx]});
+      pages.push({groupId:gid||null, idxs:[idx], deferred:false, rendered:false, domCache:null});
     });
+    refreshPageOffsets(pages,queue);
+    return pages;
+  }
+  function refreshPageOffsets(pages,queue){
     let off=0;
     pages.forEach(p=>{
       if(p.groupId) p.idxs.sort((a,b)=>(queue[a].q.groupOrder||0)-(queue[b].q.groupOrder||0));
       p.offset=off; off+=p.idxs.length;
       p.idxs.forEach(i=>{ queue[i].page=p; });
     });
-    return pages;
   }
   function currentPage(){ const s=session; return s && s.pages ? s.pages[s.p] : null; }
   function pageEntries(){ const p=currentPage(); return p ? p.idxs.map(i=>session.queue[i]) : []; }
+  function pageDone(page){
+    if(!session||!page) return false;
+    return page.idxs.map(i=>session.queue[i]).every(blockDone);
+  }
+  function deferredQuestionCount(){
+    if(!session||session.exam) return 0;
+    return session.pages.filter(p=>p.deferred&&!pageDone(p)).reduce((n,p)=>n+p.idxs.length,0);
+  }
+  function nextUnfinishedPageIndex(){
+    if(!session) return -1;
+    let at=session.pages.findIndex(p=>!p.deferred&&!pageDone(p));
+    if(at<0) at=session.pages.findIndex(p=>p.deferred&&!pageDone(p));
+    return at;
+  }
+  // 問題ブロックをページごとに退避し、戻ったときに回答・採点結果・記述途中の内容をそのまま復元する。
+  function cacheCurrentPageDom(){
+    const page=currentPage(), host=$("#qBlocks");
+    if(!page||!page.rendered||!host||page.domCache) return;
+    const frag=document.createDocumentFragment();
+    while(host.firstChild) frag.appendChild(host.firstChild);
+    page.domCache=frag;
+  }
+  function updateQuizNavigation(){
+    const s=session, page=currentPage();
+    if(!s||!page) return;
+    const nav=$("#quizNav"), prev=$("#prevBtn"), defer=$("#deferBtn"), next=$("#nextBtn");
+    nav.classList.remove("hidden");
+    prev.disabled=s.p<=0;
+    prev.classList.toggle("hidden",false);
+
+    const unfinishedOther=s.pages.some((p,i)=>i!==s.p&&!pageDone(p));
+    defer.classList.toggle("hidden",s.exam);
+    defer.disabled=s.exam||pageDone(page)||!unfinishedOther;
+    defer.textContent=page.deferred?"⏳ もう一度あとへ":"⏳ 後で解く";
+    defer.title=!unfinishedOther&&!pageDone(page)?"最後の未回答問題です":"";
+
+    const done=pageDone(page);
+    next.classList.toggle("hidden",!s.exam&&!done);
+    next.disabled=!s.exam&&!done;
+    const unfinished=nextUnfinishedPageIndex();
+    next.textContent=s.p+1<s.pages.length
+      ?"次の問題 →"
+      :(s.exam?"採点する →":(unfinished>=0?"次の未回答 →":"結果を見る →"));
+
+    const later=deferredQuestionCount(), laterBtn=$("#laterQueueBtn"), queueBar=$("#quizQueueBar");
+    $("#laterCount").textContent=String(later);
+    laterBtn.classList.toggle("hidden",s.exam||later===0);
+    queueBar.classList.toggle("hidden",s.exam||later===0);
+    laterBtn.setAttribute("aria-label",`後で解く問題 ${later}問へ移動`);
+  }
+  function goToQuizPage(index){
+    const s=session;
+    if(!s||index<0||index>=s.pages.length||index===s.p) return;
+    captureExamWritten();
+    gradeUnratedOnPage();
+    cacheCurrentPageDom();
+    s.p=index;
+    renderQuestion();
+  }
+  function deferCurrentPage(){
+    const s=session, page=currentPage();
+    if(!s||s.exam||!page||pageDone(page)) return;
+    const unfinishedOther=s.pages.some((p,i)=>i!==s.p&&!pageDone(p));
+    if(!unfinishedOther){ toast("この問題を解くと演習完了です"); return; }
+    cacheCurrentPageDom();
+    page.deferred=true;
+    const oldIndex=s.p;
+    s.pages.splice(oldIndex,1);
+    s.pages.push(page);
+    refreshPageOffsets(s.pages,s.queue);
+    // 元の次の問題が同じ位置へ詰まる。末尾だった場合は先頭の未完了問題へ戻る。
+    s.p=Math.min(oldIndex,s.pages.length-1);
+    if(s.pages[s.p]===page){
+      const next=s.pages.findIndex(p=>p!==page&&!pageDone(p));
+      if(next>=0) s.p=next;
+    }
+    toast(`⏳ 後で解く問題に追加しました（${deferredQuestionCount()}問）`);
+    renderQuestion();
+  }
+  function openDeferredQuestion(){
+    const s=session; if(!s||s.exam) return;
+    let at=s.pages.findIndex((p,i)=>i!==s.p&&p.deferred&&!pageDone(p));
+    if(at<0 && currentPage()&&currentPage().deferred&&!pageDone(currentPage())) at=s.p;
+    if(at<0){ toast("後で解く問題はありません"); return; }
+    if(at===s.p){ toast("この問題は「後で解く」に入っています"); return; }
+    goToQuizPage(at);
+  }
   // 「問13(2)」→「問13」「(2)」に分ける（大問見出しと小問見出しに使う）
   function splitCategory(cat){
     const m=/^(問\s*\d+)\s*(.*)$/.exec(String(cat||"").trim());
@@ -5309,6 +5431,7 @@
     s.i=page.idxs[0];
     const entries=pageEntries(), first=entries[0].q, isGroup=entries.length>1 && !!page.groupId;
     const done=page.offset;
+    $("#quizNav").classList.remove("hidden");
     $("#progBar").style.width=(done/s.queue.length*100)+"%";
     $("#counter").textContent = entries.length>1
       ? `${done+1}〜${done+entries.length} / ${s.queue.length}`
@@ -5316,7 +5439,6 @@
     $("#streakPill").textContent=`🔥 ${s.streak}`;
     $("#qtag").textContent=s.exam ? s.label : ([first.year,first.field].filter(Boolean).join(" ・ ")||s.label);
     updateBookmarkBtn(first.id);
-    $("#nextBtn").classList.add("hidden");
 
     // 大問の見出し（問13 ウシガエル摘出心実験 ・ 17点 ・ 小問5問）
     const gh=$("#qGroupHead");
@@ -5331,19 +5453,32 @@
     renderStem(first, page.groupId ? (first.groupFigures||first.stemImages||[]) : null);
 
     const host=$("#qBlocks"); host.innerHTML="";
-    entries.forEach(cur=>{
-      host.appendChild(buildQBlock(cur,{numbered:isGroup, groupFigures:!!page.groupId}));
-      // 大問のページでは1問ずつ即採点せず、下の「まとめて採点」まで選択を保留する
-      cur.deferred = isGroup && !s.exam;
-      if(cur.type==="constructed"){ renderConstructedQuestion(cur); }
-      else renderChoiceBlock(cur);
-    });
+    if(page.domCache){
+      host.appendChild(page.domCache);
+      page.domCache=null;
+      entries.forEach(cur=>{
+        if(!cur.cw) return;
+        s.cw=cur.cw;
+        Object.values(cur.cw.pads||{}).forEach(pad=>{ if(pad&&pad.resize) setTimeout(()=>pad.resize(),0); });
+      });
+    } else {
+      entries.forEach(cur=>{
+        host.appendChild(buildQBlock(cur,{numbered:isGroup, groupFigures:!!page.groupId}));
+        // 大問のページでは1問ずつ即採点せず、下の「まとめて採点」まで選択を保留する
+        cur.deferred = isGroup && !s.exam;
+        if(cur.type==="constructed"){ renderConstructedQuestion(cur); }
+        else renderChoiceBlock(cur);
+      });
+      page.rendered=true;
+    }
     // 大問のページは「まとめて採点」ボタンを出す
     const foot=$("#qGroupFoot");
-    foot.classList.toggle("hidden", !(isGroup && !s.exam));
-    if(isGroup && !s.exam) updateGroupSubmit();
+    const groupNeedsSubmit=isGroup&&!s.exam&&!entries.every(blockDone);
+    foot.classList.toggle("hidden",!groupNeedsSubmit);
+    if(groupNeedsSubmit) updateGroupSubmit();
     if(s.exam){ entries.forEach(cur=>{ if(cur.type==="constructed") restoreExamWritten(cur); });
-      const nb=$("#nextBtn"); nb.textContent=(page.offset+entries.length<s.queue.length)?"次の問題 →":"採点する →"; nb.classList.remove("hidden"); }
+    }
+    updateQuizNavigation();
     window.scrollTo({top:0,behavior:"auto"});
   }
   function renderChoiceBlock(cur){
@@ -5426,11 +5561,11 @@
     const s=session; if(!s||s.exam) return;
     const entries=pageEntries(); if(!entries.length) return;
     if(!$("#qGroupFoot").classList.contains("hidden")) updateGroupSubmit();
-    if(!entries.every(blockDone)) return;
-    const page=currentPage(), nb=$("#nextBtn");
-    nb.textContent=(page.offset+entries.length<s.queue.length)?"次の問題 →":"結果を見る →";
-    nb.classList.remove("hidden");
-    nb.scrollIntoView({behavior:"smooth",block:"nearest"});
+    if(!entries.every(blockDone)){ updateQuizNavigation(); return; }
+    const page=currentPage();
+    page.deferred=false;
+    updateQuizNavigation();
+    $("#quizNav").scrollIntoView({behavior:"smooth",block:"nearest"});
   }
   function answer(cur,sel){
     const s=session,q=cur.q;
@@ -5556,11 +5691,20 @@
     toast(on ? "🔖 見直したい問題に保存しました" : "保存を解除しました");
   };
   $("#qGroupSubmit").onclick=()=>submitGroupPage();
+  $("#prevBtn").onclick=()=>{ if(session) goToQuizPage(session.p-1); };
+  $("#deferBtn").onclick=()=>deferCurrentPage();
+  $("#laterQueueBtn").onclick=()=>openDeferredQuestion();
   $("#nextBtn").onclick=()=>{
+    if(!session) return;
+    if(session.p+1<session.pages.length){ goToQuizPage(session.p+1); return; }
+    if(!session.exam){
+      const unfinished=nextUnfinishedPageIndex();
+      if(unfinished>=0){ goToQuizPage(unfinished); return; }
+    }
     captureExamWritten();
     gradeUnratedOnPage();
-    if(session.p+1<session.pages.length){ session.p++; renderQuestion(); }
-    else { if(session.exam) submitExam(); else renderResult(); } };
+    if(session.exam) submitExam(); else renderResult();
+  };
   $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ gradeUnratedOnPage(); stopExamTimer(); renderHome(); } };
   /* ---------- 忘却曲線の可視化（C） ---------- */
   function renderForgetCurve(){
@@ -5758,6 +5902,8 @@
     else { const k=e.key.toLowerCase(); if(k>="a" && k<="f") idx=k.charCodeAt(0)-97; }
     if(idx>=0 && idx<choices.length){ e.preventDefault(); choices[idx].click(); return; }
     if(e.key==="Enter" || e.key===" " || e.key==="ArrowRight"){ const nb=$("#nextBtn"); if(nb && !nb.classList.contains("hidden")){ e.preventDefault(); nb.click(); } }
+    else if(e.key==="ArrowLeft"){ const pb=$("#prevBtn"); if(pb&&!pb.disabled){ e.preventDefault(); pb.click(); } }
+    else if(e.key.toLowerCase()==="l"){ const db=$("#deferBtn"); if(db&&!db.disabled&&!db.classList.contains("hidden")){ e.preventDefault(); db.click(); } }
     else if(e.key.toLowerCase()==="b"){ const bb=$("#bookmarkBtn"); if(bb){ e.preventDefault(); bb.click(); } }
   });
 
