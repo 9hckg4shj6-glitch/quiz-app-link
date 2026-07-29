@@ -353,6 +353,19 @@
   #countInput:focus{outline:none;border-color:var(--brand)}
   #countInput::-webkit-outer-spin-button,#countInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .countUnit{font-size:15px;font-weight:800;color:var(--muted)}
+  .gradingMode{margin:2px 0 16px}
+  .gradingModeLabel{display:block;margin:0 0 8px;font-size:12px;font-weight:900;color:var(--text)}
+  .gradingChoices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .gradingChoice{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:76px;text-align:left;
+    border:1.5px solid var(--line);border-radius:13px;background:var(--card2);color:var(--text);
+    padding:10px 11px;font-family:inherit;cursor:pointer;transition:.15s}
+  .gradingChoice:hover{border-color:var(--brand)}
+  .gradingChoice.on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 11%,var(--card2));
+    box-shadow:0 0 0 1px color-mix(in srgb,var(--brand) 28%,transparent) inset}
+  .gradingChoice:disabled{opacity:.42;cursor:not-allowed}
+  .gradingChoiceTitle{font-size:13px;font-weight:900}
+  .gradingChoiceSub{font-size:10.5px;line-height:1.45;color:var(--muted);font-weight:700}
+  .gradingModeNote{min-height:17px;margin:5px 2px 0;font-size:10.5px;line-height:1.5;color:var(--muted)}
   .cmStart{width:100%;border:none;background:var(--brand);color:#fff;font-family:inherit;font-weight:900;
     font-size:16px;padding:14px;border-radius:14px;cursor:pointer;transition:.15s}
   .cmStart:hover{filter:brightness(1.05)} .cmStart:active{transform:scale(.98)}
@@ -1045,6 +1058,17 @@
   .rvitem{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
   .rvitem .q{font-size:14px;font-weight:700;margin-bottom:6px}
   .rvitem .a{font-size:13px} .rvitem .a.you{color:var(--bad)} .rvitem .a.ans{color:var(--good)}
+  .batchReview{display:grid;gap:10px}
+  .batchRv{padding:14px;text-align:left}
+  .batchRv.ok{border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+  .batchRv.ng{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+  .batchRvHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+  .batchRvNo{font-size:11px;font-weight:900;color:var(--muted)}
+  .batchRvState{font-size:12px;font-weight:900}
+  .batchRv.ok .batchRvState{color:var(--good)} .batchRv.ng .batchRvState{color:var(--bad)}
+  .batchExpl{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+  .batchExpl summary{cursor:pointer;font-size:12px;font-weight:900;color:var(--brand)}
+  .batchExplBody{padding-top:8px;font-size:13px;line-height:1.75}
 
   .row{display:flex;gap:10px;margin-top:12px} .row .btn{flex:1}
   .hidden{display:none!important}
@@ -1311,6 +1335,20 @@
       <input type="number" id="countInput" inputmode="numeric" min="1" value="20" aria-label="問題数">
       <button type="button" class="stepBtn" id="countPlus" aria-label="増やす">＋</button>
       <span class="countUnit">問</span>
+    </div>
+    <div class="gradingMode" aria-labelledby="gradingModeLabel">
+      <span class="gradingModeLabel" id="gradingModeLabel">採点方式</span>
+      <div class="gradingChoices">
+        <button type="button" class="gradingChoice on" id="gradingImmediate" data-grading="immediate" aria-pressed="true">
+          <span class="gradingChoiceTitle">一問ずつ採点</span>
+          <span class="gradingChoiceSub">回答するたびに正誤と解説を表示</span>
+        </button>
+        <button type="button" class="gradingChoice" id="gradingBatch" data-grading="batch" aria-pressed="false">
+          <span class="gradingChoiceTitle">まとめて採点</span>
+          <span class="gradingChoiceSub">最後に全問の正誤と解説を表示</span>
+        </button>
+      </div>
+      <p class="gradingModeNote" id="gradingModeNote"></p>
     </div>
     <button type="button" class="cmStart" id="countStart">この数で開始 →</button>
     <button type="button" class="cmStartAlt" id="countStartFlash">🎴 カードでめくる</button>
@@ -2285,7 +2323,8 @@
   function saveLastCount(v){ try{ localStorage.setItem(LIMIT_KEY, String(v)); }catch(e){} }
   function clampCount(v,total){ v=Math.floor(v); if(isNaN(v)||v<1) v=1; if(v>total) v=total; return v; }
   function openCountModal(g, mode){
-    pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN, unmasteredOnly:false, unseenFirst:false};
+    pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN,
+      unmasteredOnly:false, unseenFirst:false, gradingMode:"immediate"};
     $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
     // 年度別・分野別・予想問題・直前スペシャルでは「その範囲の未定着だけ」を選べる
@@ -2323,6 +2362,29 @@
       const num=(c.dataset.n==="all")?pendingSel.total:parseInt(c.dataset.n,10);
       c.classList.toggle("disabled", c.dataset.n!=="all" && num>pendingSel.total);
     });
+    updateGradingOptions();
+  }
+  function updateGradingOptions(){
+    if(!pendingSel) return;
+    const hasWritten=pendingSel.items.some(q=>questionType(q)==="constructed");
+    if(hasWritten && pendingSel.gradingMode==="batch") pendingSel.gradingMode="immediate";
+    const immediate=$("#gradingImmediate"), batch=$("#gradingBatch");
+    batch.disabled=hasWritten;
+    [immediate,batch].forEach(btn=>{
+      const on=btn.dataset.grading===pendingSel.gradingMode;
+      btn.classList.toggle("on",on);
+      btn.setAttribute("aria-pressed",on?"true":"false");
+    });
+    $("#gradingModeNote").textContent=hasWritten
+      ?"記述問題を含む範囲は、自己採点が必要なため「一問ずつ採点」になります。"
+      :(pendingSel.gradingMode==="batch"?"回答中は正解と解説を表示しません。最後にまとめて確認できます。":"");
+    $("#countStart").textContent=pendingSel.gradingMode==="batch"?"まとめて採点で開始 →":"この数で開始 →";
+  }
+  function selectGradingMode(mode){
+    if(!pendingSel) return;
+    if(mode==="batch" && $("#gradingBatch").disabled) return;
+    pendingSel.gradingMode=mode==="batch"?"batch":"immediate";
+    updateGradingOptions();
   }
   function closeCountModal(){ $("#countModal").classList.add("hidden"); pendingSel=null; }
   // 出題順を一元管理：復習=忘れかけ順／試験日=伸び順／未定着=薄い順／未着手優先=未解答先頭／既定=ランダム
@@ -2342,9 +2404,9 @@
     saveLastCount(n===total?0:n);
     const items=orderedPool().slice(0,n);
     const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.unmasteredOnly || pendingSel.unseenFirst;
-    const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key};
+    const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key}, batch=pendingSel.gradingMode==="batch";
     closeCountModal();
-    startQuiz(items,label,ref,{keepOrder});
+    startQuiz(items,label,ref,{keepOrder,batch});
   }
   function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function toast(msg,ms){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),ms||1700); }
@@ -3422,6 +3484,48 @@
     if(pending.length){ toast("記述の答案を1問ずつ自己採点します"); renderExamGrading(); }
     else renderExamResult();
   }
+  /* ---------- まとめて採点（選択問題） ---------- */
+  function submitBatchQuiz(){
+    const s=session;
+    if(!s||!s.batch||s.batchSubmitted) return;
+    const unfinished=nextUnfinishedPageIndex();
+    if(unfinished>=0){ goToQuizPage(unfinished); return; }
+    s.batchSubmitted=true;
+    const t=todayStr();
+    let correct=0, run=0, maxRun=0, gained=0;
+    s.queue.forEach(cur=>{
+      const raw=s.answers[cur.qi];
+      const picks=raw===undefined?[]:(Array.isArray(raw)?raw:[raw]);
+      const correctPos=cur.choices.map((c,i)=>c.correct?i:-1).filter(i=>i>=0);
+      const isCorrect=picks.length>0&&sameSet(picks,correctPos);
+      const chosenLabel=picks.length?picks.map(i=>cur.choices[i].text).join(" ／ "):"（未回答）";
+      const correctText=cur.choices.filter(c=>c.correct).map(c=>c.text).join(" ／ ");
+      const r=rec(cur.q.id); r.seen++;
+      cur.revealed=true; cur.graded=true;
+      cur.batchReview={picks:picks.slice(),isCorrect,chosenLabel,correctText};
+      if(isCorrect){
+        r.correct++; r.streak++; correct++; run++; maxRun=Math.max(maxRun,run);
+        gained+=Math.round(XP_CORRECT*comboMult(run));
+        scheduleSRS(r,3,cur.q.id);
+      } else {
+        r.wrong++; r.streak=0; r.lastWrong=t; run=0; gained+=XP_WRONG;
+        s.wrongList.push({q:cur.q,chosen:chosenLabel});
+        r.miss=r.miss||{};
+        picks.forEach(i=>{ const c=cur.choices[i]; if(c&&!c.correct) r.miss[c.idx]=(r.miss[c.idx]||0)+1; });
+        scheduleSRS(r,1,cur.q.id);
+      }
+      r.lastGrade=isCorrect?3:1;
+      syncWeak(r);
+    });
+    s.correct=correct; s.streak=run; s.maxStreak=maxRun;
+    s.leveledUp=addXP(gained);
+    meta.bestRunStreak=Math.max(meta.bestRunStreak,maxRun);
+    markStudied(); saveProgress(); saveMeta();
+    const ach=checkAch();
+    maybePublishRank(true); maybeAutoSync();
+    renderBatchResult();
+    if(ach) setTimeout(()=>toast(`🏅 実績解除：${ach.n}`),300);
+  }
   /* ---------- 本番モードの記述採点キュー（§9.2） ---------- */
   function renderExamGrading(){
     const s=session;
@@ -4289,6 +4393,7 @@
   function pageEntries(){ const p=currentPage(); return p ? p.idxs.map(i=>session.queue[i]) : []; }
   function pageDone(page){
     if(!session||!page) return false;
+    if(session.batch&&!session.batchSubmitted) return page.idxs.map(i=>session.queue[i]).every(blockAnswered);
     return page.idxs.map(i=>session.queue[i]).every(blockDone);
   }
   function deferredQuestionCount(){
@@ -4329,7 +4434,7 @@
     const unfinished=nextUnfinishedPageIndex();
     next.textContent=s.p+1<s.pages.length
       ?"次の問題 →"
-      :(s.exam?"採点する →":(unfinished>=0?"次の未回答 →":"結果を見る →"));
+      :(s.exam?"採点する →":(unfinished>=0?"次の未回答 →":(s.batch?"まとめて採点する →":"結果を見る →")));
 
     const later=deferredQuestionCount(), laterBtn=$("#laterQueueBtn"), queueBar=$("#quizQueueBar");
     $("#laterCount").textContent=String(later);
@@ -4384,6 +4489,8 @@
     opts=opts||{};
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const base = expandGroupItems(items);
+    const batch=!!opts.batch && base.every(q=>questionType(q)!=="constructed");
+    if(opts.batch&&!batch) toast("記述問題を含むため、一問ずつ採点で開始します");
     const ordered = opts.keepOrder ? base : shuffle(base);  // 復習・試験日モードは並びに意味があるので崩さない
     // queue の要素は「選択問題」「記述問題」の判別共用体（仕様書 §13.2）
     const queue=ordered.map((q,qi)=>{
@@ -4393,11 +4500,11 @@
       return {q,qi,type:"choice",choices:ch,need:ok.size,picks:[],els:null,graded:false}; });
     const pages=buildPages(queue);
     session={label,queue,pages,p:0,i:pages[0]?pages[0].idxs[0]:0,correct:0,streak:0,maxStreak:0,wrongList:[],
-      xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,answers:[],startedAt:Date.now(),
+      xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,batch,batchSubmitted:false,answers:[],startedAt:Date.now(),
       examSessionId: opts.exam ? ("exam-"+Date.now()+"-"+Math.random().toString(36).slice(2,8)) : null, written:{}};
     hideAllScreens(); $("#quiz").classList.remove("hidden");
     const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
-    const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam);
+    const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam||session.batch);
     if(session.exam) startExamTimer();
     renderQuestion();
   }
@@ -4774,6 +4881,20 @@
     }).join("");
     return `<div class="lead">選択肢別の解説</div><ul class="choiceExplainList">${rows}</ul>`;
   }
+  // まとめて採点の結果画面には選択肢ボタンが無いため、選択肢別メモも一覧内へ直接展開する。
+  function renderBatchExplainBody(q,cur,chosen){
+    if(!Array.isArray(q.choiceNotes)||!q.choiceNotes.length) return renderExplainBody(q,cur,chosen);
+    const picked=Array.isArray(chosen)?chosen:[], keys=["A","B","C","D","E","F"];
+    const rows=cur.choices.map((c,i)=>{
+      const mine=picked.indexOf(i)>=0, note=q.choiceNotes[c.idx]||"";
+      const cls=c.correct?"ce-correct":(mine?"ce-wrongchosen":"");
+      const tag=c.correct?'<span class="etag">正解</span>':(mine?'<span class="etag">あなたの回答</span>':"");
+      return `<li class="${cls}"><span class="ekey">${keys[i]}</span><span class="etext">
+        <span class="echoice">${esc(c.text)}${tag}</span>${note?`<span class="edesc">${esc(note)}</span>`:""}</span></li>`;
+    }).join("");
+    return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||"(解説なし)"}</p>${explainFigureHTML(q)}
+      <div class="lead" style="margin-top:10px">選択肢別の解説</div><ul class="choiceExplainList">${rows}</ul>${moreExplHTML(q)}`;
+  }
   function gradeCard(grade,entry){
     const s=session; if(!s) return 0;
     const cur=entry||s.queue[s.i]; if(!cur) return 0;
@@ -4783,7 +4904,7 @@
   }
   // 「次へ」「中断」で、手ごたえ未選択のまま先へ進む選択問題を「できた」で締める
   function gradeUnratedOnPage(){
-    const s=session; if(!s||s.exam) return;
+    const s=session; if(!s||s.exam||s.batch) return;
     pageEntries().forEach(cur=>{ if(cur.type!=="constructed" && cur.revealed && !cur.graded) gradeCard(3,cur); });
   }
   /* ================================================================
@@ -5437,7 +5558,8 @@
       ? `${done+1}〜${done+entries.length} / ${s.queue.length}`
       : `${done+1} / ${s.queue.length}`;
     $("#streakPill").textContent=`🔥 ${s.streak}`;
-    $("#qtag").textContent=s.exam ? s.label : ([first.year,first.field].filter(Boolean).join(" ・ ")||s.label);
+    const baseTag=[first.year,first.field].filter(Boolean).join(" ・ ")||s.label;
+    $("#qtag").textContent=s.exam ? s.label : (s.batch?`${baseTag} ・ まとめて採点`:baseTag);
     updateBookmarkBtn(first.id);
 
     // 大問の見出し（問13 ウシガエル摘出心実験 ・ 17点 ・ 小問5問）
@@ -5465,7 +5587,7 @@
       entries.forEach(cur=>{
         host.appendChild(buildQBlock(cur,{numbered:isGroup, groupFigures:!!page.groupId}));
         // 大問のページでは1問ずつ即採点せず、下の「まとめて採点」まで選択を保留する
-        cur.deferred = isGroup && !s.exam;
+        cur.deferred = isGroup && !s.exam && !s.batch;
         if(cur.type==="constructed"){ renderConstructedQuestion(cur); }
         else renderChoiceBlock(cur);
       });
@@ -5473,7 +5595,7 @@
     }
     // 大問のページは「まとめて採点」ボタンを出す
     const foot=$("#qGroupFoot");
-    const groupNeedsSubmit=isGroup&&!s.exam&&!entries.every(blockDone);
+    const groupNeedsSubmit=isGroup&&!s.exam&&!s.batch&&!entries.every(blockDone);
     foot.classList.toggle("hidden",!groupNeedsSubmit);
     if(groupNeedsSubmit) updateGroupSubmit();
     if(s.exam){ entries.forEach(cur=>{ if(cur.type==="constructed") restoreExamWritten(cur); });
@@ -5499,7 +5621,7 @@
       mc.textContent=`${need}つ選んでください（0/${need}）`;
       mc.onclick=()=>{ if((cur.picks||[]).length===need) answer(cur,cur.picks.slice()); };
     } else mc.classList.add("hidden");
-    if(s.exam){
+    if(s.exam||s.batch){
       const sel=s.answers[cur.qi];
       if(sel!==undefined){
         const bs=box.querySelectorAll(".choice"), arr=Array.isArray(sel)?sel:[sel];
@@ -5521,7 +5643,7 @@
     if(at>=0) cur.picks.splice(at,1);
     else { if(cur.picks.length>=need) cur.picks.shift(); cur.picks.push(idx); }   // 上限を超えたら古い選択から外す
     [...cur.els.choices.querySelectorAll(".choice")].forEach((b,i)=>b.classList.toggle("selected", cur.picks.indexOf(i)>=0));
-    if(s.exam){
+    if(s.exam||s.batch){
       s.answers[cur.qi]=cur.picks.slice();
       updateMultiConfirm(cur);
       return;
@@ -5561,7 +5683,7 @@
     const s=session; if(!s||s.exam) return;
     const entries=pageEntries(); if(!entries.length) return;
     if(!$("#qGroupFoot").classList.contains("hidden")) updateGroupSubmit();
-    if(!entries.every(blockDone)){ updateQuizNavigation(); return; }
+    if(!pageDone(currentPage())){ updateQuizNavigation(); return; }
     const page=currentPage();
     page.deferred=false;
     updateQuizNavigation();
@@ -5570,10 +5692,11 @@
   function answer(cur,sel){
     const s=session,q=cur.q;
     const picks=Array.isArray(sel)?sel.slice():[sel];
-    if(s.exam){
+    if(s.exam||s.batch){
       cur.picks=picks.slice();
       s.answers[cur.qi]=(cur.need>1)?picks:picks[0];
       [...cur.els.choices.querySelectorAll(".choice")].forEach((b,i)=>b.classList.toggle("selected",picks.indexOf(i)>=0));
+      if(s.batch) updatePageDone();
       return;
     }
     // 大問のページ：この時点では選んだ印を付けるだけ。採点は「まとめて採点」で行う
@@ -5703,9 +5826,13 @@
     }
     captureExamWritten();
     gradeUnratedOnPage();
-    if(session.exam) submitExam(); else renderResult();
+    if(session.exam) submitExam();
+    else if(session.batch) submitBatchQuiz();
+    else renderResult();
   };
-  $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）":"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ gradeUnratedOnPage(); stopExamTimer(); renderHome(); } };
+  $("#quitBtn").onclick=()=>{ const msg=session&&session.exam?"本番モードを中断してホームに戻りますか？（採点されません）"
+    :session&&session.batch?"まとめて採点を中断してホームに戻りますか？（回答は採点されません）"
+    :"この演習を中断してホームに戻りますか？"; if(confirm(msg)){ gradeUnratedOnPage(); stopExamTimer(); renderHome(); } };
   /* ---------- 忘却曲線の可視化（C） ---------- */
   function renderForgetCurve(){
     const box=$("#forgetPanel"); if(!box) return;
@@ -5924,6 +6051,8 @@
   $("#countClose").onclick=closeCountModal;
   $("#countModal").onclick=(e)=>{ if(e.target.id==="countModal") closeCountModal(); };
   $("#countStart").onclick=startFromCountModal;
+  $("#gradingImmediate").onclick=()=>selectGradingMode("immediate");
+  $("#gradingBatch").onclick=()=>selectGradingMode("batch");
   $("#countScope").onclick=()=>{
     if(!pendingSel) return;
     const un=pendingSel.baseItems.filter(q=>!cardMastered(q.id));
@@ -5945,6 +6074,44 @@
   $("#countChips").querySelectorAll(".countChip").forEach(c=>{ c.onclick=()=>{ if(c.classList.contains("disabled")||!pendingSel) return; const n=c.dataset.n==="all"?pendingSel.total:parseInt(c.dataset.n,10); $("#countInput").value=clampCount(n, pendingSel.total); }; });
 
   /* ---------- 結果 ---------- */
+  function renderBatchResult(){
+    const s=session,total=s.queue.length,pct=Math.round(s.correct/total*100),gained=meta.xp-s.xpStart;
+    $("#quiz").classList.add("hidden");
+    const msg=pct===100?"🏆 全問正解！完璧です！":pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
+    const review=s.queue.map((cur,i)=>{
+      const r=cur.batchReview||{picks:[],isCorrect:false,chosenLabel:"（未回答）",correctText:ansText(cur.q)};
+      return `<article class="rvitem batchRv ${r.isCorrect?"ok":"ng"}">
+        <div class="batchRvHead"><span class="batchRvNo">第 ${i+1} 問</span>
+          <span class="batchRvState">${r.isCorrect?"⭕ 正解":"❌ 不正解"}</span></div>
+        <div class="q">${qUnderlineHTML(cur.q)}</div>
+        <div class="a ${r.isCorrect?"ans":"you"}">あなたの回答：${esc(r.chosenLabel)}</div>
+        ${r.isCorrect?"":`<div class="a ans">正解：${esc(r.correctText)}</div>`}
+        <details class="batchExpl"><summary>解説を見る</summary>
+          <div class="batchExplBody">${renderBatchExplainBody(cur.q,cur,r.picks)}</div></details>
+      </article>`;
+    }).join("");
+    $("#result").innerHTML=`
+      <div class="result">
+        <div class="score">${s.correct} / ${total}</div>
+        <div class="sub">${esc(s.label)} ・ まとめて採点 ・ 正答率 ${pct}% ${msg}</div>
+        <div><span class="xpgain">⭐ +${gained} XP 獲得${s.leveledUp?` ・ 🎉 Lv.${s.leveledUp}`:""}</span></div>
+        <div class="stats">
+          <div class="stat"><b style="color:var(--good)">${s.correct}</b><span>正解</span></div>
+          <div class="stat"><b style="color:var(--bad)">${total-s.correct}</b><span>不正解</span></div>
+          <div class="stat"><b style="color:var(--warn)">${s.maxStreak}</b><span>最大連続</span></div>
+        </div>
+        <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度</button></div>
+        ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:""}
+      </div>
+      <div class="review"><h4>全問題の採点結果（${total}問）</h4><div class="batchReview">${review}</div></div>`;
+    $("#result").classList.remove("hidden");
+    wireMoreExpl($("#result"));
+    window.scrollTo({top:0,behavior:"smooth"});
+    if(pct===100||s.leveledUp) confetti();
+    $("#rHome").onclick=renderHome;
+    $("#rRetry").onclick=()=>startQuiz(s.queue.map(x=>x.q),s.label,null,{batch:true});
+    const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),s.label+"（復習）");
+  }
   function renderResult(){
     const s=session,total=s.queue.length,pct=Math.round(s.correct/total*100),gained=meta.xp-s.xpStart;
     $("#quiz").classList.add("hidden");
