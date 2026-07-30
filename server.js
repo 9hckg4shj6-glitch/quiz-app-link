@@ -65,7 +65,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 fs.access(ROOT).then(() => server.listen(PORT, HOST, () => {
-  console.log("代謝演習アプリをLAN内に配信しています。");
+  console.log("基礎医学演習アプリをLAN内に配信しています。");
   console.log(`このパソコン: http://localhost:${PORT}/`);
   localAddresses().forEach((url) => console.log(`同じWi-Fi/LAN: ${url}`));
   console.log(APP_PASSWORD ? `簡易認証: ${APP_USER} / APP_PASSWORDの値` : "簡易認証: 無効");

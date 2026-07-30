@@ -306,7 +306,7 @@ async function createDeck(): Promise<void> {
 async function exportData(): Promise<void> {
   const data = { app: "metabolism-study", schemaVersion: 2, exportedAt: nowIso(), cards: await db.cards.filter((card) => !card.builtIn).toArray(), decks: await db.decks.toArray(), reviewEvents: (await db.reviewEvents.toArray()).map(({ syncedAt: _syncedAt, ownerId: _ownerId, ...event }) => event) };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-  const link = document.createElement("a"); link.href = url; link.download = `代謝演習バックアップ_${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(url);
+  const link = document.createElement("a"); link.href = url; link.download = `基礎医学演習アプリ_バックアップ_${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(url);
 }
 
 async function onImport(event: Event): Promise<void> {

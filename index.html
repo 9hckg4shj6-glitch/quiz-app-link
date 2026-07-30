@@ -7,15 +7,15 @@
 <meta name="googlebot" content="noindex, nofollow, noarchive">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
-<title>代謝演習アプリ</title>
+<title>基礎医学演習アプリ</title>
 <!-- PWA -->
 <meta name="theme-color" content="#147d8f" id="themeColorMeta">
 <meta name="color-scheme" content="light dark">
-<meta name="application-name" content="代謝演習">
+<meta name="application-name" content="基礎医学演習アプリ">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="代謝演習">
+<meta name="apple-mobile-web-app-title" content="基礎医学演習アプリ">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -1436,7 +1436,7 @@
     </div>
     <div class="logo" id="appLogo">🧠</div>
     <div class="titleWrap">
-      <h1 id="appTitle">代謝演習アプリ</h1>
+      <h1 id="appTitle">基礎医学演習アプリ</h1>
       <p id="subtitle">読み込み中…</p>
       <div class="subjectWrap hidden" id="subjectWrap">
         <button type="button" class="subjectChip" id="subjectBtn" title="科目をえらぶ">
@@ -6156,8 +6156,8 @@
   $("#backupClose").onclick=closeBackupModal;
   $("#backupModal").onclick=(e)=>{ if(e.target.id==="backupModal") closeBackupModal(); };
   $("#bkCopy").onclick=()=>copyText($("#bkExport").value);
-  $("#bkDownload").onclick=()=>downloadText($("#bkExport").value, `代謝演習_記録_${todayStr()}.json`);
-  if(navigator.share){ $("#bkShare").classList.remove("hidden"); $("#bkShare").onclick=async()=>{ try{ await navigator.share({title:"代謝演習アプリ 学習記録", text:$("#bkExport").value}); }catch(e){} }; }
+  $("#bkDownload").onclick=()=>downloadText($("#bkExport").value, `基礎医学演習アプリ_記録_${todayStr()}.json`);
+  if(navigator.share){ $("#bkShare").classList.remove("hidden"); $("#bkShare").onclick=async()=>{ try{ await navigator.share({title:"基礎医学演習アプリ 学習記録", text:$("#bkExport").value}); }catch(e){} }; }
   $("#bkFile").onclick=()=>$("#bkFileInput").click();
   $("#bkFileInput").onchange=(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ $("#bkImport").value=String(rd.result||""); toast("読み込みました。「統合」か「置き換え」を押してください"); }; rd.readAsText(f); e.target.value=""; };
   $("#bkMerge").onclick=()=>{ const obj=parseImport($("#bkImport").value); if(obj) applyImport(obj,false); };

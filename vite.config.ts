@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icons/*.png"],
       manifest: {
-        name: "代謝・生化学 問題演習",
-        short_name: "代謝演習",
+        name: "基礎医学演習アプリ",
+        short_name: "基礎医学演習アプリ",
         description: "問題演習とFSRSフラッシュカードで学ぶオフライン対応学習アプリ",
         theme_color: "#147d8f",
         background_color: "#f6f8f7",
