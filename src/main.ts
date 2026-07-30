@@ -73,6 +73,7 @@ import {
   updateAttempt,
   upsertFromRemote as upsertWrittenFromRemote,
 } from "./written";
+import { learningDestination, primaryNavKey } from "./navigation";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -115,6 +116,10 @@ async function syncWrittenAttempts(code: string): Promise<{ ok: boolean; pulled:
 }
 
 window.STUDY_CORE = {
+  ui: {
+    learningDestination,
+    primaryNavKey,
+  },
   scheduleReview: (progress, rating, cardId) => scheduleReview(cardId, progress as LegacyProgress, rating as ReviewRating) as Record<string, unknown>,
   refreshCustomCards: mirrorCustomCardsToLegacy,
   saveLegacyProgress: (progress) => queueLegacyStateSave(progress as Record<string, LegacyProgress>),

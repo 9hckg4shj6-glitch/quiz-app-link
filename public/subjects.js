@@ -25,6 +25,7 @@ window.SUBJECTS = [
     name: "代謝・生化学",
     emoji: "⚗️",
     accent: "#147d8f",
+    learningMode: "cards",
     questions: "subjects/metabolism/questions.js",
     terms: "subjects/metabolism/terms.js",
     idPrefix: null,          // 既存科目のみ例外的にプレフィックス検査を免除
@@ -36,6 +37,7 @@ window.SUBJECTS = [
     name: "ゲノム",
     emoji: "🧬",
     accent: "#7c3aed",
+    learningMode: "lessons",
     questions: "subjects/genome/questions.js",
     lessons: "subjects/genome/lessons.js",   // 「📖 学習」画面の要点テキスト（省略可）
     expectQuestions: 500,
@@ -53,6 +55,7 @@ window.SUBJECTS = [
     name: "免疫学（1年次）",
     emoji: "🛡️",
     accent: "#e11d48",
+    learningMode: "lessons",
     draft: true,
     hideCards: true,
     hideExamDay: true,
@@ -62,6 +65,7 @@ window.SUBJECTS = [
     name: "免疫学（2年次）",
     emoji: "🦠",
     accent: "#ea580c",
+    learningMode: "lessons",
     questions: "subjects/immunology2/questions.js",
     // 2025年度（令和7年度）後半のマーク85問 ＋ 2024年度（令和6年度）後半のマーク80問・記述6問
     // ＋ 2023年度（令和5年度）後半のマーク80問・記述6問
@@ -75,6 +79,7 @@ window.SUBJECTS = [
     name: "動物生理",
     emoji: "🐁",
     accent: "#0ea5e9",
+    learningMode: "lessons",
     draft: true,
     hideCards: true,
     hideExamDay: true,
@@ -84,6 +89,7 @@ window.SUBJECTS = [
     name: "植物生理",
     emoji: "🌱",
     accent: "#16a34a",
+    learningMode: "lessons",
     questions: "subjects/plantphysiology/questions.js",
     // 2025年度（令和7年度）前期の43問・100点。
     //   選択27問（うち「2つ選べ」3問）＋記述16問（短答9・記述式3・穴埋め3・記述＋記号1）

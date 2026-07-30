@@ -12,6 +12,10 @@ declare global {
     __CUSTOM_TERM_CARDS?: Array<Record<string, unknown>>;
     __legacyAppRefresh?: () => void;
     STUDY_CORE?: {
+      ui: {
+        learningDestination: (mode: unknown) => "cardsView" | "inputView";
+        primaryNavKey: (screenId: string) => "home" | "learn" | "practice" | "questions" | "search" | "review" | null;
+      };
       scheduleReview: (progress: Record<string, unknown>, rating: 1 | 2 | 3 | 4, cardId: string) => Record<string, unknown>;
       refreshCustomCards: () => Promise<void>;
       saveLegacyProgress: (progress: Record<string, unknown>) => void;

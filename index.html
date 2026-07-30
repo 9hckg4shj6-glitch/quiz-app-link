@@ -1423,19 +1423,15 @@
 <div class="wrap">
   <header class="app">
     <div class="menuWrap">
-      <button class="menuBtn" id="menuBtn" type="button" aria-label="メニュー" aria-expanded="false">☰</button>
+      <button class="menuBtn" id="menuBtn" type="button" aria-label="その他のメニュー" aria-expanded="false">•••</button>
       <div class="menuPanel hidden" id="menuPanel">
-        <button type="button" id="menuSubjects" data-menu-action="subjects"><span class="mi">🗂</span>科目をえらぶ</button>
-        <button type="button" id="menuSearch" data-menu-action="search"><span class="mi">🔍</span>問題検索</button>
-        <button type="button" id="menuBrowse" data-menu-action="browse"><span class="mi">🗂</span>カード一覧</button>
-        <button type="button" id="menuQBrowse" data-menu-action="qbrowse"><span class="mi">📖</span>問題一覧</button>
-        <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">🌓</span>テーマ切替</button>
-        <a href="#inputView" data-menu-view="inputView"><span class="mi">📖</span>学習</a>
-        <a href="#practiceView" data-menu-view="practiceView"><span class="mi">📚</span>問題演習</a>
-        <a href="#cardsView" data-menu-view="cardsView"><span class="mi">🎴</span>カード</a>
-        <a href="#reviewView" data-menu-view="reviewView"><span class="mi">🔥</span>復習・苦手</a>
-        <a href="#statsView" data-menu-view="statsView"><span class="mi">📊</span>学習状況</a>
-        <a href="#moreView" data-menu-view="moreView"><span class="mi">⚙️</span>設定・データ</a>
+        <button type="button" id="menuSubjects" data-menu-action="subjects"><span class="mi">⌘</span>科目をえらぶ</button>
+        <button type="button" id="menuBrowse" data-menu-action="browse"><span class="mi">▤</span>カード一覧</button>
+        <a href="#statsView" data-menu-view="statsView"><span class="mi">⌁</span>学習状況</a>
+        <a href="#rankView" data-menu-view="rankView"><span class="mi">♜</span>ランキング</a>
+        <a href="#communityView" data-menu-view="communityView"><span class="mi">◌</span>コミュニティ</a>
+        <a href="#moreView" data-menu-view="moreView"><span class="mi">⚙</span>設定・データ</a>
+        <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">◐</span>テーマ切替</button>
       </div>
     </div>
     <div class="logo" id="appLogo">🧠</div>
@@ -1457,6 +1453,27 @@
       </div>
     </div>
   </header>
+
+  <nav class="primaryNav" id="primaryNav" aria-label="主要ナビゲーション">
+    <button type="button" data-primary="home" aria-label="ホーム">
+      <span class="pnIcon" aria-hidden="true">⌂</span><span class="pnLabel">ホーム</span>
+    </button>
+    <button type="button" data-primary="learn" aria-label="学習">
+      <span class="pnIcon" aria-hidden="true">▤</span><span class="pnLabel">学習</span>
+    </button>
+    <button type="button" data-primary="practice" aria-label="問題演習">
+      <span class="pnIcon" aria-hidden="true">▶</span><span class="pnLabel">問題演習</span>
+    </button>
+    <button type="button" data-primary="questions" aria-label="問題一覧">
+      <span class="pnIcon" aria-hidden="true">☷</span><span class="pnLabel">問題一覧</span>
+    </button>
+    <button type="button" data-primary="search" aria-label="問題検索">
+      <span class="pnIcon" aria-hidden="true">⌕</span><span class="pnLabel">問題検索</span>
+    </button>
+    <button type="button" data-primary="review" aria-label="復習">
+      <span class="pnIcon" aria-hidden="true">↻</span><span class="pnLabel">復習</span>
+    </button>
+  </nav>
 
   <!-- ===== 根拠スライド（解説をさらに見る） ===== -->
   <section id="slideView" class="hidden">
@@ -1482,9 +1499,9 @@
   <!-- ===== 科目えらび（起動時の入口） ===== -->
   <section id="subjectPicker" class="hidden">
     <div class="spLead">
-      <div class="leadEyebrow">Subjects</div>
-      <h2>どの科目を勉強する？</h2>
-      <p>科目をえらぶと、その科目の問題演習・カード・復習にうつります。あとからいつでも切り替えられます。</p>
+      <div class="leadEyebrow">Study Library</div>
+      <h2>今日の学びを選ぼう</h2>
+      <p>科目ごとの学習・問題演習・復習を、ひとつの流れで進められます。</p>
     </div>
     <div class="spGrid" id="spGrid"></div>
   </section>
@@ -1494,8 +1511,8 @@
     <div class="homeLead">
       <div class="leadCopy">
         <div class="leadEyebrow">人体物質代謝学 / Practice</div>
-        <h2>今日は何をする？</h2>
-        <p>下のボタンから、問題演習・カード・復習・学習状況などの画面へ移動できます。</p>
+        <h2>今日は何を学ぶ？</h2>
+        <p>読む、解く、振り返る。いまの目的から学習を始めましょう。</p>
       </div>
       <div class="leadStats" aria-label="問題データの概要">
         <div class="leadStat"><b id="leadTotal">0</b><span>総問題</span></div>
@@ -1515,7 +1532,9 @@
       </button>
     </div>
 
+    <div class="homeMainLabel"><b>学習メニュー</b><span>目的を選んで始める</span></div>
     <div class="hubGrid" id="hubGrid"></div>
+    <div class="homeUtility" id="homeUtility" aria-label="その他の機能"></div>
   </section>
 
   <!-- ===== VIEW: 学習（授業回の一覧） ===== -->
@@ -1526,12 +1545,19 @@
     </div>
     <div class="homeSection">
       <div class="panel lsLead">
-        <b class="lsLeadTitle">📖 授業回ごとに要点を読む</b>
-        <span class="lsLeadSub">問題を解く前のインプット。要点を読み、授業スライドの図で確かめてから、その回の問題に進みます。</span>
+        <b class="lsLeadTitle" id="learningLeadTitle">授業回ごとに要点を読む</b>
+        <span class="lsLeadSub" id="learningLeadSub">問題を解く前のインプット。要点を読み、授業スライドの図で確かめてから、その回の問題に進みます。</span>
       </div>
     </div>
     <div class="sectlabel">授業回</div>
     <div id="lessonList" class="grid"></div>
+    <div id="learningEmpty" class="panel emptyLearning hidden">
+      <div>
+        <div class="emptyLearningIcon">＋</div>
+        <h3>授業要点を準備しています</h3>
+        <p>この科目の講義回と要点は順次追加されます。問題演習と問題一覧は、いまから利用できます。</p>
+      </div>
+    </div>
   </section>
 
   <!-- ===== VIEW: 問題演習 ===== -->
@@ -1672,6 +1698,28 @@
     <div class="reviewTop">
       <button class="btn ghost small viewBack">← ホーム</button>
       <span class="pill">復習・苦手</span>
+    </div>
+
+    <div class="homeSection" id="reviewDueSection">
+      <button type="button" class="dueCard" id="reviewDueCard">
+        <span class="dueIcon">↻</span>
+        <span class="dueBody">
+          <span class="dueTitle">今日の復習</span>
+          <span class="dueSub" id="reviewDueSub">復習する内容を確認しています</span>
+        </span>
+        <span class="dueRight"><b class="dueCount" id="reviewDueCount">0</b><span class="dueUnit">件</span></span>
+      </button>
+    </div>
+
+    <div class="homeSection hidden" id="reviewPendingSection">
+      <button type="button" class="dueCard" id="reviewPendingCard">
+        <span class="dueIcon">✎</span>
+        <span class="dueBody">
+          <span class="dueTitle">採点待ちの試験</span>
+          <span class="dueSub" id="reviewPendingSub">自己採点の続きがあります</span>
+        </span>
+        <span class="dueRight"><b class="dueCount" id="reviewPendingCount">0</b><span class="dueUnit">問</span></span>
+      </button>
     </div>
 
     <div class="homeSection" id="mistakeEntrySection">
@@ -2045,19 +2093,20 @@
   function renderSubjectUI(){
     const wrap=$("#subjectWrap"); if(!wrap) return;
     const sub=currentSubject();
-    // 科目が1つしかないうちは切替ボタンを出さない（今までの見た目のまま）
+    document.body.classList.toggle("has-subject", !!sub);
     wrap.classList.toggle("hidden", SUBJECTS.length<2 || !sub);
-    if(SUBJECTS.length<2) return;
     const logo=$("#appLogo"), title=$("#appTitle");
     if(sub){
-      // 複数科目のときはヘッダーを「選択中の科目」の見た目にする
       if(logo) logo.textContent=sub.emoji||"📘";
       if(title) title.textContent=sub.name||sub.id;
+      const chipEmoji=wrap.querySelector(".sjEmoji"), chipName=wrap.querySelector(".sjName");
+      if(chipEmoji) chipEmoji.textContent=sub.emoji||"📘";
+      if(chipName) chipName.textContent="科目を変更";
       document.title=`${sub.name||sub.id} 問題演習`;
     }else{
       if(logo) logo.textContent="🧠";
-      if(title) title.textContent="問題演習";
-      document.title="問題演習";
+      if(title) title.textContent="学習ライブラリ";
+      document.title="学習ライブラリ";
     }
   }
 
@@ -2081,16 +2130,18 @@
   function renderSubjectPicker(){
     const grid=$("#spGrid"); if(!grid) return;
     const last=savedSubjectId();
-    grid.innerHTML=SUBJECTS.map(sub=>{
+    const ordered=SUBJECTS.slice().sort((a,b)=>(a.id===last?-1:b.id===last?1:0));
+    grid.innerHTML=ordered.map(sub=>{
       const st=subjectTileStats(sub), empty=st.total===0;
       const pct=st.total?Math.round(st.seen/st.total*100):0;
+      const featured=sub.id===last && !empty;
       const tag = empty ? `<span class="spTag soonTag">準備中</span>`
-                : (sub.id===last ? `<span class="spTag">前回のつづき</span>` : "");
+                : (featured ? `<span class="spTag">前回のつづき</span>` : "");
       const meta_ = empty
         ? `<span class="spMeta"><span>問題はこれから追加されます</span></span>`
         : `<span class="spMeta"><span><b class="spNum">${st.total}</b> 問</span><span>学習済 ${st.seen}問</span></span>
            <span class="spBar"><i style="width:${pct}%"></i></span>`;
-      return `<button type="button" class="spCard${empty?" soon":""}" data-subject="${esc(sub.id)}"
+      return `<button type="button" class="spCard${empty?" soon":""}${featured?" featured":""}" data-subject="${esc(sub.id)}"
           style="--sp-accent:${esc(sub.accent||"var(--brand)")}">
         ${tag}
         <span class="spIcon">${esc(sub.emoji||"📘")}</span>
@@ -2104,14 +2155,12 @@
   }
   function openSubjectPicker(){
     stopExamTimer(); closeFcLightbox();
-    hideAllScreens();
     updateSubjectStats();
     renderBadge();
     $("#subtitle").textContent="科目をえらんでください";
     currentSubjectId=null; renderSubjectUI();
     renderSubjectPicker();
-    $("#subjectPicker").classList.remove("hidden");
-    window.scrollTo(0,0);
+    transitionToScreen("subjectPicker","back");
   }
   // タイルをタップして科目に入る（データはこのタイミングで読み込む）
   async function chooseSubject(id, el){
@@ -2125,7 +2174,7 @@
       session=null; flashSession=null; stopExamTimer();
       if(id!==prev){ meta.lastCategory=null; saveMeta(); }
       await activateSubject(id);
-      renderSubjectUI(); renderHome();
+      renderSubjectUI(); renderHome("forward");
     }catch(e){
       toast("⚠️ 科目の読み込みに失敗しました");
       renderSubjectPicker();
@@ -2477,18 +2526,24 @@
     const card=$("#dueCard"); if(!card) return;
     const questions=dueItems(), terms=dueTermItems(), n=questions.length+terms.length;
     $("#dueCount").textContent=n;
+    $("#reviewDueCount").textContent=n;
     const sub=$("#dueSub");
+    const reviewSub=$("#reviewDueSub");
     if(n>0){
       const parts=[];
       if(questions.length) parts.push(`${questions.length}問`);
       if(terms.length) parts.push(`講義カード${terms.length}枚`);
       sub.textContent=`${parts.join("・")}が復習の時期です`;
+      reviewSub.textContent=`${parts.join("・")}を忘れかけている順に復習します`;
       card.classList.remove("dueEmpty");
+      $("#reviewDueCard").classList.remove("dueEmpty");
     }
     else {
       const nx=nextDueInfo();
       sub.textContent = nx ? `今日はOK。次は ${nx.date.slice(5).replace("-","/")}（${nx.n}件）` : "問題やカードを学習すると、最適な時期に復習が出ます";
+      reviewSub.textContent = nx ? `今日は完了。次は ${nx.date.slice(5).replace("-","/")} に ${nx.n}件です` : "問題を解くと、最適な時期に復習が表示されます";
       card.classList.add("dueEmpty");
+      $("#reviewDueCard").classList.add("dueEmpty");
     }
   }
 
@@ -2665,10 +2720,73 @@
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
   const VIEWS=["inputView","practiceView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
+  const SCREEN_IDS=["home","quiz","result","search","flash","browse","qbrowse","subjectPicker","slideView","lessonView"].concat(VIEWS);
+  let currentScreenId=null;
+  let historyNavigation=false;
   function hideAllScreens(){
     stopRankTimer(); stopCmTimer();
-    ["#home","#quiz","#result","#search","#flash","#browse","#qbrowse","#subjectPicker","#slideView","#lessonView"].forEach(id=>{ const el=$(id); if(el) el.classList.add("hidden"); });
-    VIEWS.forEach(v=>{ const el=$("#"+v); if(el) el.classList.add("hidden"); });
+    SCREEN_IDS.forEach(id=>{ const el=$("#"+id); if(el) el.classList.add("hidden"); });
+  }
+  function navKeyForScreen(id){
+    const ui=window.STUDY_CORE&&window.STUDY_CORE.ui;
+    if(ui&&ui.primaryNavKey) return ui.primaryNavKey(id);
+    if(id==="home") return "home";
+    if(["inputView","lessonView","cardsView","browse","flash"].includes(id)) return "learn";
+    if(["practiceView","quiz","result"].includes(id)) return "practice";
+    if(id==="qbrowse") return "questions";
+    if(id==="search") return "search";
+    if(["reviewView","mistakesView"].includes(id)) return "review";
+    return null;
+  }
+  function updatePrimaryNav(id){
+    const active=navKeyForScreen(id);
+    document.querySelectorAll("#primaryNav [data-primary]").forEach(btn=>{
+      const on=btn.dataset.primary===active;
+      btn.classList.toggle("active",on);
+      if(on) btn.setAttribute("aria-current","page"); else btn.removeAttribute("aria-current");
+    });
+  }
+  function syncScreenHistory(id){
+    if(historyNavigation){ historyNavigation=false; return; }
+    try{
+      const state={...(history.state||{}),studyScreen:id};
+      if(!history.state||!history.state.studyScreen) history.replaceState(state,"");
+      else if(history.state.studyScreen!==id) history.pushState(state,"");
+    }catch(e){}
+  }
+  function transitionToScreen(id,direction,prepare){
+    const target=$("#"+id); if(!target) return;
+    const change=()=>{
+      hideAllScreens();
+      if(prepare) prepare();
+      target.classList.remove("hidden","screen-enter-forward","screen-enter-back","screen-enter-tab");
+      const cls=direction==="back"?"screen-enter-back":direction==="tab"?"screen-enter-tab":"screen-enter-forward";
+      target.classList.add(cls);
+      setTimeout(()=>target.classList.remove(cls),280);
+      currentScreenId=id;
+      document.body.classList.toggle("focus-mode",id==="quiz"||id==="flash");
+      updatePrimaryNav(id);
+      syncScreenHistory(id);
+      window.scrollTo(0,0);
+    };
+    const reduce=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(document.startViewTransition&&!reduce){ document.startViewTransition(change); }
+    else change();
+  }
+  function learningDestination(){
+    const sub=currentSubject(), mode=sub&&sub.learningMode;
+    const ui=window.STUDY_CORE&&window.STUDY_CORE.ui;
+    return ui&&ui.learningDestination ? ui.learningDestination(mode) : (mode==="cards"?"cardsView":"inputView");
+  }
+  function openLearning(){ openView(learningDestination()); }
+  function navigatePrimary(key){
+    if(!currentSubjectId) return;
+    if(key==="home") renderHome("tab");
+    else if(key==="learn") openLearning();
+    else if(key==="practice") openView("practiceView");
+    else if(key==="questions") openQBrowse();
+    else if(key==="search") openSearch();
+    else if(key==="review") openView("reviewView");
   }
   // 科目ごとの機能ON/OFFをメニューに反映する（ハブ・各セクションは各render側で処理）
   function renderSubjectFeatures(){
@@ -2676,10 +2794,6 @@
     // メニュー内の「カード」「カード一覧」は、カード非対応の科目では出さない
     document.querySelectorAll('[data-menu-view="cardsView"],[data-menu-action="browse"]')
       .forEach(el=>el.classList.toggle("hidden", hideCards));
-    // 「学習」は授業回（slideRefs の deck）を持つ科目だけに出す
-    const noLessons=lessonDecks().length===0;
-    document.querySelectorAll('[data-menu-view="inputView"]')
-      .forEach(el=>el.classList.toggle("hidden", noLessons));
   }
   function refreshData(){
     updateSubjectStats();
@@ -2688,28 +2802,32 @@
     renderHero(); renderKpis(); renderHeatmap(); renderAch(); renderUpdatesHome();
     renderExamDay(); renderMistakeEntry();
   }
-  function renderHome(){
+  function renderHome(direction){
     stopExamTimer(); closeFcLightbox();
-    hideAllScreens();
-    $("#home").classList.remove("hidden");
-    syncCmUnread();
-    refreshData(); renderHub();
-    refreshCmUnread(false);
-    refreshPendingExam();
-    window.scrollTo(0,0);
+    transitionToScreen("home",direction||"back",()=>{
+      syncCmUnread();
+      refreshData(); renderHub();
+      refreshCmUnread(false);
+      refreshPendingExam();
+    });
   }
   /* 採点途中で閉じた試験を、ホームから再開できるようにする（§9.2） */
   function refreshPendingExam(){
-    const wa=WA(), sec=$("#pendingExamSection"); if(!sec) return;
-    if(!wa){ sec.classList.add("hidden"); return; }
+    const wa=WA(), sec=$("#pendingExamSection"), reviewSec=$("#reviewPendingSection"); if(!sec) return;
+    if(!wa){ sec.classList.add("hidden"); if(reviewSec) reviewSec.classList.add("hidden"); return; }
     Promise.resolve(wa.listPendingExamAttempts()).then(rows=>{
       const mine=(rows||[]).filter(x=>DATA.some(q=>q.id===x.questionId));
       sec.classList.toggle("hidden", mine.length===0);
+      if(reviewSec) reviewSec.classList.toggle("hidden",mine.length===0);
       if(!mine.length) return;
       $("#pendingExamCount").textContent=mine.length;
       $("#pendingExamSub").textContent=`本番モードの記述答案 ${mine.length}問が自己採点の途中です。タップして続きから採点できます`;
-      $("#pendingExamCard").onclick=()=>resumePendingExamGrading(mine);
-    }).catch(()=>{ sec.classList.add("hidden"); });
+      $("#reviewPendingCount").textContent=mine.length;
+      $("#reviewPendingSub").textContent=`本番モードの記述答案 ${mine.length}問を自己採点します`;
+      const resume=()=>resumePendingExamGrading(mine);
+      $("#pendingExamCard").onclick=resume;
+      $("#reviewPendingCard").onclick=resume;
+    }).catch(()=>{ sec.classList.add("hidden"); if(reviewSec) reviewSec.classList.add("hidden"); });
   }
   function resumePendingExamGrading(rows){
     const items=rows.map(a=>({a, q:DATA.find(q=>q.id===a.questionId)})).filter(x=>x.q);
@@ -2725,40 +2843,51 @@
   function openView(id){
     if(VIEWS.indexOf(id)===-1){ renderHome(); return; }
     stopExamTimer(); closeFcLightbox();
-    hideAllScreens();
-    refreshData();
-    $("#"+id).classList.remove("hidden");
-    if(id==="inputView"){ renderLessonList(); }
-    if(id==="rankView"){ renderRank(true); startRankTimer(); }
-    if(id==="statsView"){ renderForgetCurve(); }
-    if(id==="communityView"){ cmState.boardId=null; renderCommunity(); startCmTimer(); }
-    if(id==="moreView"){ renderSyncBlock(); }
-    if(id==="mistakesView"){ renderMistakes(); }
-    window.scrollTo(0,0);
+    transitionToScreen(id,"tab",()=>{
+      refreshData();
+      if(id==="inputView"){ renderLessonList(); }
+      if(id==="rankView"){ renderRank(true); startRankTimer(); }
+      if(id==="statsView"){ renderForgetCurve(); }
+      if(id==="communityView"){ cmState.boardId=null; renderCommunity(); startCmTimer(); }
+      if(id==="moreView"){ renderSyncBlock(); }
+      if(id==="mistakesView"){ renderMistakes(); }
+      if(id==="reviewView"){ refreshPendingExam(); }
+    });
   }
   function renderHub(){
-    const grid=$("#hubGrid"); if(!grid) return;
+    const grid=$("#hubGrid"), utility=$("#homeUtility"); if(!grid||!utility) return;
     const weakN=DATA.filter(q=>syncWeak(rec(q.id))).length;
     const bmN=DATA.filter(q=>isBookmarked(q.id)).length;
     const decks=lessonDecks();
+    const learningCards=termSources().length;
+    const reviewN=dueItems().length+dueTermItems().length;
+    const cardMode=learningDestination()==="cardsView";
     const items=[
-      ...(decks.length?[{icon:"📖",name:"学習",sub:`授業回ごとに要点を読む（全${decks.length}回）`,go:()=>openView("inputView")}]:[]),
-      {icon:"📚",name:"問題演習",sub:"年度別・予想・直前SP・分野別",go:()=>openView("practiceView")},
-      {icon:"📖",name:"問題一覧",sub:"年度別に全問題を閲覧",go:openQBrowse},
-      ...(subjectFlag("hideCards")?[]:[{icon:"🎴",name:"カード",sub:"フラッシュ・カード一覧",go:()=>openView("cardsView")}]),
-      {icon:"💬",name:"コミュニティ",sub:cmUnread>0?`新しい書き込みが ${cmUnread} 件あります`:"掲示板で質問・情報交換",
-        badge:cmUnread>0?(cmUnread>99?"99+":String(cmUnread)):null, go:()=>openView("communityView")},
-      {icon:"🔥",name:"復習・苦手",sub:`苦手 ${weakN} ・ 見直し ${bmN}`,go:()=>openView("reviewView")},
-      {icon:"📊",name:"学習状況",sub:"進捗・アクティビティ・実績",go:()=>openView("statsView")},
-      {icon:"🏆",name:"ランキング",sub:(SUBJECTS.length>1&&currentSubject())?`${currentSubject().name}で競う`:"解いた問題数でみんなと競う",go:()=>openView("rankView")},
-      {icon:"🔍",name:"検索",sub:"キーワードで問題を探す",go:openSearch},
-      {icon:"⚙️",name:"設定・データ",sub:"更新履歴・バックアップ",go:()=>openView("moreView")}
+      {icon:"▤",name:"学習",accent:"#6d5bd0",
+        sub:cardMode?`${learningCards}枚のカードから理解を深める`:(decks.length?`${decks.length}回の授業要点を読む`:"授業要点を順次追加中"),
+        go:openLearning},
+      {icon:"▶",name:"問題演習",accent:"#147d8f",sub:`${DATA.length}問から範囲を選んで解く`,go:()=>openView("practiceView")},
+      {icon:"☷",name:"問題一覧",accent:"#2f7bdc",sub:`全${DATA.length}問を年度・形式別に確認`,go:openQBrowse},
+      {icon:"↻",name:"復習",accent:"#c5525a",
+        sub:reviewN?`今日 ${reviewN}件 ・ 苦手 ${weakN}問`:`苦手 ${weakN}問 ・ 見直し ${bmN}問`,
+        go:()=>openView("reviewView")},
+      {icon:"⌕",name:"問題検索",accent:"#8a6f2a",sub:"キーワードから目的の問題をすばやく探す",wide:true,go:openSearch}
     ];
-    grid.innerHTML=items.map((it,i)=>`<button type="button" class="hubBtn${it.badge?' hasNew':''}" data-i="${i}">
-      <span class="hubIcon">${it.icon}${it.badge?`<span class="hubDot"></span>`:""}</span>
-      <span class="hubBody"><span class="hubName">${esc(it.name)}${it.badge?`<span class="hubBadge">${esc(it.badge)}</span>`:""}</span><span class="hubSub">${esc(it.sub)}</span></span>
+    grid.innerHTML=items.map((it,i)=>`<button type="button" class="hubBtn primaryHub${it.wide?" searchHub":""}" data-i="${i}" style="--hub-accent:${it.accent}">
+      <span class="hubIcon">${it.icon}</span>
+      <span class="hubBody"><span class="hubName">${esc(it.name)}</span><span class="hubSub">${esc(it.sub)}</span></span>
       <span class="hubChev">›</span></button>`).join("");
     grid.querySelectorAll(".hubBtn").forEach(el=>{ el.onclick=items[+el.dataset.i].go; });
+    const tools=[
+      {icon:"⌁",name:"学習状況",go:()=>openView("statsView")},
+      {icon:"♜",name:"ランキング",go:()=>openView("rankView")},
+      {icon:"◌",name:"コミュニティ",badge:cmUnread>0?(cmUnread>99?"99+":String(cmUnread)):null,go:()=>openView("communityView")},
+      {icon:"⚙",name:"設定・データ",go:()=>openView("moreView")}
+    ];
+    utility.innerHTML=tools.map((it,i)=>`<button type="button" class="utilityBtn" data-i="${i}">
+      <span class="utIcon">${it.icon}</span><span>${esc(it.name)}</span>${it.badge?`<span class="utBadge">${esc(it.badge)}</span>`:""}
+    </button>`).join("");
+    utility.querySelectorAll(".utilityBtn").forEach(el=>{ el.onclick=tools[+el.dataset.i].go; });
   }
 
   /* ---------- 公開ランキング（解いた問題数） ---------- */
@@ -3079,6 +3208,8 @@
     $("#leadTotal").textContent=o.total;
     $("#leadFields").textContent=groups("field").length;
     $("#leadDone").textContent=o.seenQ;
+    const eyebrow=$("#home .leadEyebrow"), sub=currentSubject();
+    if(eyebrow&&sub) eyebrow.textContent=`${sub.name} / Study`;
   }
 
   function ring(pct,size,stroke,color){
@@ -3664,7 +3795,7 @@
       </div>
       ${writtenRows?`<div class="review"><h4>記述問題の部分点</h4>${writtenRows}</div>`:''}
       ${wrong?`<div class="review"><h4>間違えた問題（${s.wrongList.length}問）</h4>${wrong}</div>`:''}`;
-    $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
+    transitionToScreen("result","forward");
     if(pct>=90||s.leveledUp) confetti();
     $("#rHome").onclick=renderHome;
     $("#rRetry").onclick=startExam;
@@ -3706,9 +3837,7 @@
   }
   function openSearch(){
     stopExamTimer(); closeFcLightbox();
-    hideAllScreens();
-    $("#search").classList.remove("hidden");
-    runSearch();
+    transitionToScreen("search","forward",runSearch);
     const inp=$("#searchInput"); setTimeout(()=>inp.focus(),60);
   }
   function closeSearch(){ $("#search").classList.add("hidden"); renderHome(); }
@@ -4003,8 +4132,7 @@
   }
   function showFlashView(){
     stopExamTimer(); closeFcLightbox();
-    hideAllScreens();
-    $("#flash").classList.remove("hidden"); window.scrollTo(0,0);
+    transitionToScreen("flash","forward");
   }
   function startFlash(cards,label,opts){
     if(!cards || !cards.length){ toast("カードがありません"); return; }
@@ -4048,7 +4176,7 @@
         <button class="btn ghost" id="rUndo" style="margin-top:10px">↩ 直前の評価を取り消す</button>
         ${s.ng?`<button class="btn ghost" id="rNg" style="margin-top:10px">👎 微妙だけ もう一周</button>`:''}
       </div>`;
-    $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
+    transitionToScreen("result","forward");
     if(certified||pct>=90) confetti();
     const deckCopy=s.deck.slice(), ngCopy=s.ngList.slice(), lbl=s.label;
     $("#rHome").onclick=renderHome;
@@ -4189,10 +4317,8 @@
   }
   function openBrowse(){
     stopExamTimer(); closeFcLightbox();
-    hideAllScreens();
-    $("#browse").classList.remove("hidden");
     browseState={deck:null,q:""}; $("#browseInput").value="";
-    renderBrowse(); window.scrollTo(0,0);
+    transitionToScreen("browse","forward",renderBrowse);
   }
   function closeBrowse(){ $("#browse").classList.add("hidden"); renderHome(); }
 
@@ -4353,10 +4479,8 @@
   }
   function openQBrowse(){
     stopExamTimer(); closeFcLightbox();
-    hideAllScreens();
-    $("#qbrowse").classList.remove("hidden");
     qbrowseState={group:null,page:0};
-    renderQBrowse(); window.scrollTo(0,0);
+    transitionToScreen("qbrowse","tab",renderQBrowse);
   }
   function closeQBrowse(){ $("#qbrowse").classList.add("hidden"); renderHome(); }
 
@@ -4514,13 +4638,14 @@
     session={label,queue,pages,p:0,i:pages[0]?pages[0].idxs[0]:0,correct:0,streak:0,maxStreak:0,wrongList:[],
       xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,batch,batchSubmitted:false,answers:[],startedAt:Date.now(),
       examSessionId: opts.exam ? ("exam-"+Date.now()+"-"+Math.random().toString(36).slice(2,8)) : null, written:{}};
-    hideAllScreens(); $("#quiz").classList.remove("hidden");
-    const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
-    const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam||session.batch);
-    $("#quitBtn").textContent=session.exam?"← 中断":"ここまでで終了";
-    $("#quitBtn").title=session.exam?"採点せずに本番モードを中断します":"未回答を採点せず、解き終えた問題だけで結果を表示します";
-    if(session.exam) startExamTimer();
-    renderQuestion();
+    transitionToScreen("quiz","forward",()=>{
+      const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
+      const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam||session.batch);
+      $("#quitBtn").textContent=session.exam?"← 中断":"ここまでで終了";
+      $("#quitBtn").title=session.exam?"採点せずに本番モードを中断します":"未回答を採点せず、解き終えた問題だけで結果を表示します";
+      if(session.exam) startExamTimer();
+      renderQuestion();
+    });
   }
   function parseChoiceExplanations(text){
     if(!text || !/^[a-f]:\s*[×○]/.test(text.trim())) return null;
@@ -4762,7 +4887,10 @@
   function renderLessonList(){
     const list=$("#lessonList"); if(!list) return;
     const decks=lessonDecks();
-    if(!decks.length){ list.innerHTML=`<div class="empty">この科目にはまだ学習コンテンツがありません。</div>`; return; }
+    const empty=$("#learningEmpty");
+    list.classList.toggle("hidden",decks.length===0);
+    if(empty) empty.classList.toggle("hidden",decks.length>0);
+    if(!decks.length){ list.innerHTML=""; return; }
     list.innerHTML=decks.map((d,i)=>{
       const s=catStats(d.items), pct=s.total?Math.round(s.seen/s.total*100):0;
       const written=lessonWritten(d.lesson);
@@ -4783,10 +4911,7 @@
     const d=lessonDecks().find(x=>x.deck===String(deck));
     if(!d){ openView("inputView"); return; }
     stopExamTimer(); closeFcLightbox();
-    hideAllScreens();
-    renderLesson(d);
-    $("#lessonView").classList.remove("hidden");
-    window.scrollTo(0,0);
+    transitionToScreen("lessonView","forward",()=>renderLesson(d));
   }
   // 図のかたまりを組み立てる（根拠スライド画面と同じ .svPage を使う）
   // キャプションは章名だと長くなるので「第1回 ・ p30」の形にする
@@ -6086,7 +6211,7 @@
   });
 
   /* 今日の復習カード */
-  $("#dueCard").onclick=()=>{
+  function openDueReview(){
     const questions=dueItems(), terms=dueTermItems();
     if(!questions.length&&!terms.length){ toast("🎉 今日の復習はありません"); return; }
     // 講義カードが含まれる日は、問題とカードをまとめてフラッシュカードで復習する
@@ -6096,7 +6221,9 @@
       startFlash(deck,"今日の復習カード",{keepOrder:true}); return;
     }
     openCountModal({items:questions,label:"今日の復習",key:"__due__"},"due");
-  };
+  }
+  $("#dueCard").onclick=openDueReview;
+  $("#reviewDueCard").onclick=openDueReview;
 
   /* 出題数モーダルのイベント（1回だけ登録） */
   $("#countClose").onclick=closeCountModal;
@@ -6157,7 +6284,7 @@
         ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:""}
       </div>
       <div class="review"><h4>${unanswered?"回答した問題":"全問題"}の採点結果（${total}問）</h4><div class="batchReview">${review}</div></div>`;
-    $("#result").classList.remove("hidden");
+    transitionToScreen("result","forward");
     wireMoreExpl($("#result"));
     window.scrollTo({top:0,behavior:"smooth"});
     if(pct===100||s.leveledUp) confetti();
@@ -6187,7 +6314,7 @@
         ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:''}
       </div>
       ${wrong?`<div class="review"><h4>間違えた問題（${s.wrongList.length}問）</h4>${wrong}</div>`:''}`;
-    $("#result").classList.remove("hidden"); window.scrollTo({top:0,behavior:"smooth"});
+    transitionToScreen("result","forward");
     maybePublishRank(true);
     if(pct===100||s.leveledUp) confetti();
     $("#rHome").onclick=renderHome;
@@ -6250,6 +6377,28 @@
   $("#updatesModalDismiss").onclick=()=>{ markUpdatesSeen(); refreshUpdateDot(); closeUpdatesModal(); };
   menuPanel.querySelectorAll("[data-menu-view]").forEach(item=>{
     item.onclick=e=>{ e.preventDefault(); closeMenu(); openView(item.dataset.menuView); };
+  });
+  $("#primaryNav").querySelectorAll("[data-primary]").forEach(item=>{
+    item.onclick=()=>navigatePrimary(item.dataset.primary);
+  });
+  window.addEventListener("popstate",async e=>{
+    const id=e.state&&e.state.studyScreen;
+    if(!id||!SCREEN_IDS.includes(id)) return;
+    if(id!=="subjectPicker"&&!currentSubjectId){
+      try{ await activateSubject(savedSubjectId()||defaultSubjectId()); renderSubjectUI(); }catch(err){ openSubjectPicker(); return; }
+    }
+    historyNavigation=true;
+    if(id==="subjectPicker") openSubjectPicker();
+    else if(id==="home") renderHome("back");
+    else if(VIEWS.includes(id)) openView(id);
+    else if(id==="search") openSearch();
+    else if(id==="browse") openBrowse();
+    else if(id==="qbrowse") openQBrowse();
+    else if(id==="lessonView"&&lessonDecks().length) openLesson(lessonDecks()[0].deck);
+    else if(id==="quiz"&&session) transitionToScreen("quiz","back",renderQuestion);
+    else if(id==="flash"&&flashSession) transitionToScreen("flash","back",renderCard);
+    else if(id==="result") transitionToScreen("result","back");
+    else renderHome("back");
   });
 
   /* ---------- 折りたたみセクション ---------- */
