@@ -91,6 +91,7 @@ window.SUBJECTS = [
     accent: "#16a34a",
     learningMode: "lessons",
     questions: "subjects/plantphysiology/questions.js",
+    lessons: "subjects/plantphysiology/lessons.js",   // 「📖 学習」画面の要点テキスト
     // 2025年度（令和7年度）前期の43問・100点。
     //   選択27問（うち「2つ選べ」3問）＋記述16問（短答9・記述式3・穴埋め3・記述＋記号1）
     // 2024年度（令和6年度）前期の40問・100点。
