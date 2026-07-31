@@ -142,7 +142,7 @@
   .lsHeadMeta{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:11px}
   .lsHeadMeta span{border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:3px 9px;font-weight:800}
   .lsIntro{font-size:14.5px;line-height:1.95}
-  .lsSect{margin:20px 0 0}
+  .lsSect{margin:20px 0 0;scroll-margin-top:178px}
   .lsSectHead{display:flex;align-items:baseline;gap:9px;margin:0 2px 10px}
   .lsSectNo{flex:0 0 auto;font-size:11px;font-weight:900;color:var(--brand);
     border:1px solid var(--line);background:color-mix(in srgb,var(--brand) 12%,var(--card2));
@@ -150,6 +150,8 @@
   .lsSectName{font-size:16.5px;font-weight:900;line-height:1.5}
   .lsBody{padding:15px 17px;font-size:14.5px;line-height:2.0;white-space:pre-wrap;word-break:break-word}
   .lsFigs{margin-top:11px}
+  /* 画像読込前も授業スライドの標準比率で領域を予約し、索引ジャンプのズレを抑える */
+  .lsFigs .svPage img{aspect-ratio:auto 4 / 3}
   .lsSolve{margin:26px 0 34px}
   .lsSolveBtn{width:100%;display:flex;align-items:center;gap:13px;text-align:left;
     border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);
@@ -162,6 +164,54 @@
   .lsSolveChev{flex:0 0 auto;color:var(--muted);font-size:22px}
   .lsSoon{margin:16px 0 4px;font-size:13px;line-height:1.95;color:var(--muted);
     padding:14px 16px;border:1px dashed var(--line);border-radius:14px}
+  /* 長い学習コンテンツを読みながら使えるクイック索引 */
+  .lessonQuickNav{position:sticky;top:104px;z-index:42;margin:14px 0 18px}
+  .lessonQuickBtn{width:100%;min-height:58px;display:flex;align-items:center;gap:12px;text-align:left;
+    border:1px solid color-mix(in srgb,var(--subject-accent,var(--brand)) 30%,var(--line));
+    border-radius:16px;background:var(--surface-blur);color:var(--text);font-family:inherit;padding:9px 13px;
+    cursor:pointer;box-shadow:0 12px 30px rgba(29,45,68,.14);backdrop-filter:saturate(145%) blur(16px)}
+  .lessonQuickBtn:hover{border-color:var(--subject-accent,var(--brand))}
+  .lqIcon{flex:0 0 auto;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;font-size:18px;
+    background:color-mix(in srgb,var(--subject-accent,var(--brand)) 13%,var(--card2));color:var(--subject-accent,var(--brand))}
+  .lqBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .lqTitle{font-size:13.5px;font-weight:900}
+  .lqCurrent{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lqProgress{flex:0 0 auto;font-size:11.5px;font-weight:900;color:var(--subject-accent,var(--brand));
+    border:1px solid var(--line);border-radius:999px;background:var(--card2);padding:4px 9px}
+  .lqChev{flex:0 0 auto;color:var(--muted);font-size:20px;transition:transform .15s}
+  .lessonQuickBtn[aria-expanded="true"] .lqChev{transform:rotate(180deg)}
+  .lessonIndexBackdrop{position:fixed;inset:0;z-index:1040;background:rgba(10,14,24,.48);backdrop-filter:blur(3px)}
+  .lessonIndexSheet{position:fixed;z-index:1041;top:142px;left:50%;transform:translateX(-50%);
+    width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 172px);display:flex;flex-direction:column;
+    background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 28px 80px rgba(10,20,36,.28);overflow:hidden}
+  .liSheetHead{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:15px 17px;border-bottom:1px solid var(--line)}
+  .liSheetTitle{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .liSheetTitle b{font-size:16px}.liSheetTitle span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .liClose{flex:0 0 auto;width:40px;height:40px;border:1px solid var(--line);border-radius:12px;background:var(--card2);
+    color:var(--text);font-size:17px;font-weight:900;cursor:pointer}
+  .liActions{flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .liAction{min-height:54px;display:flex;align-items:center;gap:9px;text-align:left;border:1px solid var(--line);border-radius:14px;
+    background:var(--card2);color:var(--text);padding:9px 11px;font-family:inherit;cursor:pointer}
+  .liAction:hover{border-color:var(--subject-accent,var(--brand))}.liActionIcon{font-size:18px}.liActionBody{min-width:0;display:grid;gap:1px}
+  .liActionTitle{font-size:12.5px;font-weight:900}.liActionSub{font-size:10.5px;color:var(--muted)}
+  .liList{min-height:0;overflow:auto;padding:8px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .liItem{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:start;gap:8px;text-align:left;
+    border:1px solid transparent;border-radius:12px;background:transparent;color:var(--text);padding:9px 10px;font-family:inherit;cursor:pointer}
+  .liItem:hover{background:var(--card2)}
+  .liItem.active{border-color:color-mix(in srgb,var(--subject-accent,var(--brand)) 35%,var(--line));
+    background:color-mix(in srgb,var(--subject-accent,var(--brand)) 10%,var(--card2))}
+  .liNo{font-size:11px;font-weight:900;color:var(--subject-accent,var(--brand));padding-top:2px}.liText{font-size:13px;font-weight:800;line-height:1.55}
+  /* 索引から開く「この回のスライド」専用ビュー */
+  .lessonSlidesOverlay{position:fixed;inset:0;z-index:1120;display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
+  .lsoBar{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:10px max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));
+    padding-top:max(10px,env(safe-area-inset-top));border-bottom:1px solid var(--line);background:var(--surface-blur);backdrop-filter:blur(16px)}
+  .lsoBack{flex:0 0 auto;min-height:42px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);
+    font-family:inherit;font-size:13px;font-weight:900;padding:9px 13px;cursor:pointer}
+  .lsoHeading{flex:1;min-width:0}.lsoHeading b,.lsoHeading span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lsoHeading b{font-size:15px}.lsoHeading span{font-size:11.5px;color:var(--muted)}
+  .lsoScroll{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:16px max(16px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+  .lsoContent{width:min(820px,100%);margin:0 auto}.lsoHint{font-size:12px;font-weight:800;color:var(--muted);margin:0 2px 12px}
+  .lsoContent .lsFigs{margin-top:0}
   /* 「解説をさらに見る」ボタン */
   .moreExpl{display:inline-flex;align-items:center;gap:8px;margin-top:12px;
     border:1px solid var(--line);background:var(--card2);color:var(--text);
@@ -1265,6 +1315,13 @@
     .sectToggle .stCount{display:none}
     .quick{grid-template-columns:1fr}.qbtn{min-height:0;flex-direction:row;align-items:center}
     .hero-grid{align-items:flex-start}.lvring{width:88px;height:88px}.lvring svg{width:88px;height:88px}
+    .lessonQuickNav{top:104px;margin:10px 0 14px}.lsSect{scroll-margin-top:174px}
+    .lessonQuickBtn{min-height:54px;padding:8px 10px;border-radius:15px}.lqIcon{width:35px;height:35px}.lqProgress{padding:3px 8px}
+    .lessonIndexSheet{top:auto;left:0;right:0;bottom:0;transform:none;width:100%;max-height:min(78vh,720px);
+      border-radius:24px 24px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+    .lessonIndexSheet::before{content:"";flex:0 0 auto;width:42px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 0}
+    .liSheetHead{padding:10px 14px 12px}.liActions{padding:10px 12px}.liAction{min-height:52px;padding:8px 9px}
+    .liActionTitle{font-size:12px}.liActionSub{font-size:10px}.liList{padding:7px 8px 10px}
   }
 
   @media(prefers-reduced-motion:reduce){
@@ -1946,6 +2003,31 @@
       <button type="button" class="slideLbBtn" id="slideLbClose" aria-label="閉じる">✕ 閉じる</button>
     </div>
     <div class="slideLbBody" id="slideLbBody"><img id="slideLbImg" alt=""></div>
+  </div>
+
+  <!-- ===== 学習章のクイック索引 ===== -->
+  <div id="lessonIndexBackdrop" class="lessonIndexBackdrop hidden"></div>
+  <div id="lessonIndexSheet" class="lessonIndexSheet hidden" role="dialog" aria-modal="true" aria-labelledby="lessonIndexTitle">
+    <div class="liSheetHead">
+      <div class="liSheetTitle"><b id="lessonIndexTitle">クイック索引</b><span id="lessonIndexChapter"></span></div>
+      <button type="button" class="liClose" id="lessonIndexClose" aria-label="索引を閉じる">✕</button>
+    </div>
+    <div class="liActions" id="lessonIndexActions"></div>
+    <nav class="liList" id="lessonIndexList" aria-label="この回の見出し"></nav>
+  </div>
+
+  <!-- ===== 学習章の全スライド専用ビュー ===== -->
+  <div id="lessonSlidesOverlay" class="lessonSlidesOverlay hidden" role="dialog" aria-modal="true" aria-labelledby="lessonSlidesTitle">
+    <div class="lsoBar">
+      <button type="button" class="lsoBack" id="lessonSlidesBack">← 学習にもどる</button>
+      <div class="lsoHeading"><b id="lessonSlidesTitle">この回のスライド</b><span id="lessonSlidesMeta"></span></div>
+    </div>
+    <div class="lsoScroll" id="lessonSlidesScroll">
+      <div class="lsoContent">
+        <div class="lsoHint">画像をタップすると全画面で開き、さらに拡大できます</div>
+        <div id="lessonSlidesBody"></div>
+      </div>
+    </div>
   </div>
 
   <div id="fcLightbox" class="fcLightbox hidden">
@@ -4758,19 +4840,24 @@
   /* スライドの全画面ビューア。
      以前はカード内で画像を原寸にしていたが、枠が小さいと画像が枠外へ出てしまい、
      縦方向はスクロールできず見えなくなっていた。全画面にして縦横とも辿れるようにした。 */
+  function syncOverlayScrollLock(){
+    const ids=["slideLightbox","lessonIndexSheet","lessonSlidesOverlay"];
+    const locked=ids.some(id=>{ const el=$("#"+id); return el && !el.classList.contains("hidden"); });
+    document.body.style.overflow=locked?"hidden":"";
+  }
   function openSlideLightbox(src,cap){
     const lb=$("#slideLightbox"); if(!lb) return;
     $("#slideLbImg").src=src; $("#slideLbImg").alt=cap||"スライド";
     $("#slideLbCap").textContent=cap||"";
     lb.classList.remove("zoom"); $("#slideLbZoom").textContent="🔍 拡大";
     lb.classList.remove("hidden");
-    document.body.style.overflow="hidden";       // 背面がスクロールしないように
+    syncOverlayScrollLock();                    // 背面がスクロールしないように
   }
   function closeSlideLightbox(){
     const lb=$("#slideLightbox"); if(!lb || lb.classList.contains("hidden")) return false;
     lb.classList.add("hidden"); lb.classList.remove("zoom");
     $("#slideLbImg").removeAttribute("src");
-    document.body.style.overflow="";
+    syncOverlayScrollLock();
     return true;
   }
   function toggleSlideZoom(){
@@ -4944,6 +5031,152 @@
       img.onclick=()=>openSlideLightbox(img.getAttribute("src"), cap?cap.textContent:"");
     });
   }
+
+  let lessonQuickState=null;
+  let lessonIndexReturnFocus=null;
+  let lessonSlidesReturnFocus=null;
+  let lessonSlidesReturnScroll=0;
+  let lessonSlidesReturnAnchor=null;
+  let lessonSlidesReturnAnchorTop=0;
+  let lessonProgressQueued=false;
+
+  function lessonSectionId(deck,index){
+    const safe=String(deck).replace(/[^0-9A-Za-z_-]/g,"-");
+    return `lesson-section-${safe}-${index+1}`;
+  }
+  function startLessonRound(d){
+    if(!d.items.length){ toast("この回の問題が見つかりません"); return; }
+    if(d.items.length<2){ startQuiz(d.items, `${deckLabel(d.deck)} ${d.name}`, {mode:"playlist", key:"__lesson_"+d.deck}); return; }
+    openCountModal({items:d.items, label:`${deckLabel(d.deck)} ${d.name}`, key:"__lesson_"+d.deck}, "playlist");
+  }
+  function setLessonActiveSection(index){
+    const st=lessonQuickState; if(!st || st.active===index) return;
+    st.active=index;
+    const count=$("#lessonQuickCount"), current=$("#lessonQuickCurrent");
+    if(count) count.textContent=`${index} / ${st.sections.length}`;
+    if(current) current.textContent=index ? st.sections[index-1].heading||`項目 ${index}` : "章のはじめ";
+    $("#lessonIndexList")?.querySelectorAll(".liItem").forEach(btn=>{
+      const on=Number(btn.dataset.section)===index;
+      btn.classList.toggle("active",on);
+      if(on) btn.setAttribute("aria-current","location"); else btn.removeAttribute("aria-current");
+    });
+  }
+  function updateLessonActiveSection(){
+    lessonProgressQueued=false;
+    const st=lessonQuickState;
+    if(!st || $("#lessonView").classList.contains("hidden")) return;
+    const threshold=innerWidth<=700?178:182;
+    let active=0;
+    st.elements.forEach((el,i)=>{ if(el.getBoundingClientRect().top<=threshold) active=i+1; });
+    setLessonActiveSection(active);
+  }
+  function queueLessonProgressUpdate(){
+    if(lessonProgressQueued) return;
+    lessonProgressQueued=true;
+    requestAnimationFrame(updateLessonActiveSection);
+  }
+  window.addEventListener("scroll",queueLessonProgressUpdate,{passive:true});
+  window.addEventListener("resize",queueLessonProgressUpdate);
+
+  function closeLessonIndex(restoreFocus=true){
+    const sheet=$("#lessonIndexSheet");
+    if(!sheet || sheet.classList.contains("hidden")) return false;
+    sheet.classList.add("hidden"); $("#lessonIndexBackdrop").classList.add("hidden");
+    const trigger=$("#lessonQuickBtn"); if(trigger) trigger.setAttribute("aria-expanded","false");
+    syncOverlayScrollLock();
+    const back=lessonIndexReturnFocus; lessonIndexReturnFocus=null;
+    if(restoreFocus && back && back.isConnected) requestAnimationFrame(()=>back.focus({preventScroll:true}));
+    return true;
+  }
+  function openLessonIndex(trigger){
+    const st=lessonQuickState; if(!st || !st.sections.length) return;
+    lessonIndexReturnFocus=trigger||document.activeElement;
+    $("#lessonIndexBackdrop").classList.remove("hidden"); $("#lessonIndexSheet").classList.remove("hidden");
+    trigger.setAttribute("aria-expanded","true"); syncOverlayScrollLock();
+    const active=$("#lessonIndexList").querySelector(".liItem.active");
+    if(active){
+      const list=$("#lessonIndexList");
+      list.scrollTop=Math.max(0,active.offsetTop-list.clientHeight/2+active.offsetHeight/2);
+    }
+    requestAnimationFrame(()=>$("#lessonIndexClose").focus());
+  }
+  function alignLessonJumpTarget(){
+    const st=lessonQuickState, target=st&&st.jumpTarget;
+    if(!target || Date.now()>st.jumpUntil){
+      if(st){ st.jumpTarget=null; clearTimeout(st.jumpTimer); st.jumpTimer=null; }
+      return;
+    }
+    const offset=Number.isFinite(st.jumpOffset)?st.jumpOffset:(innerWidth<=700?174:178);
+    const delta=target.getBoundingClientRect().top-offset;
+    if(Math.abs(delta)>2) window.scrollBy({top:delta,left:0,behavior:"auto"});
+    queueLessonProgressUpdate();
+    clearTimeout(st.jumpTimer);
+    st.jumpTimer=setTimeout(alignLessonJumpTarget,120);
+  }
+  function jumpToLessonSection(index){
+    const st=lessonQuickState, target=st&&st.elements[index-1]; if(!target) return;
+    closeLessonIndex(false);
+    const reduce=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const far=Math.abs(target.getBoundingClientRect().top)>(innerHeight*2);
+    st.jumpTarget=target; st.jumpOffset=innerWidth<=700?174:178; st.jumpUntil=Date.now()+8000;
+    target.scrollIntoView({behavior:(reduce||far)?"auto":"smooth",block:"start"});
+    target.focus({preventScroll:true});
+    requestAnimationFrame(alignLessonJumpTarget);
+  }
+  function openLessonSlides(d,trigger){
+    if(!d.pages.length){ toast("この回のスライドが見つかりません"); return; }
+    const quick=$("#lessonQuickBtn");
+    lessonSlidesReturnFocus=(trigger && !$("#lessonIndexSheet").contains(trigger))?trigger:(quick||trigger);
+    lessonSlidesReturnScroll=window.scrollY;
+    const active=lessonQuickState&&lessonQuickState.active;
+    lessonSlidesReturnAnchor=lessonQuickState&&lessonQuickState.jumpTarget
+      ? lessonQuickState.jumpTarget : (active ? lessonQuickState.elements[active-1] : quick);
+    lessonSlidesReturnAnchorTop=lessonQuickState&&lessonQuickState.jumpTarget
+      ? lessonQuickState.jumpOffset : (lessonSlidesReturnAnchor?lessonSlidesReturnAnchor.getBoundingClientRect().top:0);
+    closeLessonIndex(false);
+    $("#lessonSlidesTitle").textContent=`${deckLabel(d.deck)} ・ ${d.name}`;
+    $("#lessonSlidesMeta").textContent=`解説の根拠になった ${d.pages.length}ページ`;
+    const body=$("#lessonSlidesBody"); body.innerHTML=lessonFigsHTML(d.deck,d.name,d.pages); wireLessonFigs(body);
+    $("#lessonSlidesOverlay").classList.remove("hidden"); $("#lessonSlidesScroll").scrollTop=0;
+    syncOverlayScrollLock(); requestAnimationFrame(()=>$("#lessonSlidesBack").focus());
+  }
+  function closeLessonSlides(restoreFocus=true){
+    const overlay=$("#lessonSlidesOverlay");
+    if(!overlay || overlay.classList.contains("hidden")) return false;
+    overlay.classList.add("hidden"); $("#lessonSlidesBody").innerHTML=""; syncOverlayScrollLock();
+    window.scrollTo(0,lessonSlidesReturnScroll);
+    const anchor=lessonSlidesReturnAnchor; lessonSlidesReturnAnchor=null;
+    if(anchor&&anchor.isConnected&&lessonQuickState){
+      lessonQuickState.jumpTarget=anchor; lessonQuickState.jumpOffset=lessonSlidesReturnAnchorTop;
+      lessonQuickState.jumpUntil=Date.now()+3000; requestAnimationFrame(alignLessonJumpTarget);
+    }
+    const back=lessonSlidesReturnFocus; lessonSlidesReturnFocus=null;
+    if(restoreFocus && back && back.isConnected) requestAnimationFrame(()=>back.focus({preventScroll:true}));
+    return true;
+  }
+  function setupLessonQuickIndex(d,sects,s){
+    if(!sects.length){ lessonQuickState=null; return; }
+    const elements=[...$("#lessonBody").querySelectorAll(".lsSect")];
+    lessonQuickState={d,sections:sects,elements,active:-1};
+    $("#lessonIndexChapter").textContent=`${deckLabel(d.deck)} ・ ${d.name}`;
+    $("#lessonIndexActions").innerHTML=`<button type="button" class="liAction" data-lesson-index-action="solve">
+        <span class="liActionIcon">📚</span><span class="liActionBody"><span class="liActionTitle">この回を解く</span><span class="liActionSub">${s.total}問から出題</span></span></button>
+      ${d.pages.length?`<button type="button" class="liAction" data-lesson-index-action="slides">
+        <span class="liActionIcon">📘</span><span class="liActionBody"><span class="liActionTitle">スライドをすべて見る</span><span class="liActionSub">${d.pages.length}ページ</span></span></button>`:""}`;
+    $("#lessonIndexList").innerHTML=sects.map((sc,i)=>`<button type="button" class="liItem" data-section="${i+1}">
+      <span class="liNo">${i+1}</span><span class="liText">${esc(sc.heading||`項目 ${i+1}`)}</span></button>`).join("");
+    $("#lessonIndexList").querySelectorAll(".liItem").forEach(btn=>{ btn.onclick=()=>jumpToLessonSection(Number(btn.dataset.section)); });
+    const solve=$("#lessonIndexActions").querySelector('[data-lesson-index-action="solve"]');
+    if(solve) solve.onclick=()=>{ closeLessonIndex(false); startLessonRound(d); };
+    const slides=$("#lessonIndexActions").querySelector('[data-lesson-index-action="slides"]');
+    if(slides) slides.onclick=()=>openLessonSlides(d,slides);
+    const quick=$("#lessonQuickBtn"); if(quick) quick.onclick=()=>openLessonIndex(quick);
+    setLessonActiveSection(0); queueLessonProgressUpdate();
+  }
+  $("#lessonBody").addEventListener("load",e=>{ if(e.target&&e.target.tagName==="IMG") requestAnimationFrame(alignLessonJumpTarget); },true);
+  ["wheel","touchmove"].forEach(type=>window.addEventListener(type,()=>{
+    if(lessonQuickState){ lessonQuickState.jumpTarget=null; clearTimeout(lessonQuickState.jumpTimer); lessonQuickState.jumpTimer=null; }
+  },{passive:true}));
   function renderLesson(d){
     const body=$("#lessonBody"); if(!body) return;
     const s=catStats(d.items), ls=d.lesson||{};
@@ -4957,41 +5190,37 @@
         ${ls.intro?`<div class="lsIntro">${esc(String(ls.intro))}</div>`:""}
       </div></div>`;
     const keyFigs=figs(ls.keySlides);
-    const sectHTML=sects.map((sc,i)=>`<div class="lsSect">
+    const quick=sects.length?`<div class="lessonQuickNav"><button type="button" class="lessonQuickBtn" id="lessonQuickBtn"
+        aria-expanded="false" aria-controls="lessonIndexSheet">
+        <span class="lqIcon" aria-hidden="true">☷</span><span class="lqBody"><span class="lqTitle">クイック索引</span>
+          <span class="lqCurrent" id="lessonQuickCurrent">章のはじめ</span></span>
+        <span class="lqProgress" id="lessonQuickCount">0 / ${sects.length}</span><span class="lqChev" aria-hidden="true">⌄</span>
+      </button></div>`:"";
+    const sectHTML=sects.map((sc,i)=>`<div class="lsSect" id="${lessonSectionId(d.deck,i)}" tabindex="-1">
         <div class="lsSectHead"><span class="lsSectNo">${i+1}</span><span class="lsSectName">${esc(sc.heading||"")}</span></div>
         ${sc.body?`<div class="panel lsBody">${esc(String(sc.body))}</div>`:""}
         ${figs(sc.slides)}
       </div>`).join("");
     const soon=sects.length?"":`<div class="lsSoon">この回の要点テキストはまだ準備中です。授業スライドの図を見ながら、下のボタンで問題を解いてみてください。</div>`;
-    // この回のスライド全ページ。枚数が多いので、開いたときにだけ組み立てる
+    // 章末の従来導線も残し、索引内と同じ専用ビューを開く
     const all=d.pages.length?`<div class="lsSolve"><button type="button" class="lsSolveBtn" id="lessonAllBtn">
         <span class="lsSolveIcon">📘</span>
         <span class="lsSolveBody"><span class="lsSolveTitle">この回のスライドをすべて見る</span>
           <span class="lsSolveSub">解説の根拠になった ${d.pages.length}ページ</span></span>
-        <span class="lsSolveChev">›</span></button><div id="lessonAllFigs" class="hidden"></div></div>`:"";
+        <span class="lsSolveChev">›</span></button></div>`:"";
     const solve=`<div class="lsSolve"><button type="button" class="lsSolveBtn" id="lessonSolveBtn">
         <span class="lsSolveIcon">📚</span>
         <span class="lsSolveBody"><span class="lsSolveTitle">この回を解く（${s.total}問）</span>
           <span class="lsSolveSub">${s.seen?`学習済 ${s.seen}/${s.total}問 ・ 正答率 ${s.acc}%`:"まだ解いていません"}</span></span>
         <span class="lsSolveChev">›</span></button></div>`;
 
-    body.innerHTML=head+keyFigs+soon+sectHTML+solve+all;
+    closeLessonIndex(false); closeLessonSlides(false);
+    body.innerHTML=head+quick+keyFigs+soon+sectHTML+solve+all;
     wireLessonFigs(body);
     const solveBtn=$("#lessonSolveBtn");
-    if(solveBtn) solveBtn.onclick=()=>{
-      if(!d.items.length){ toast("この回の問題が見つかりません"); return; }
-      if(d.items.length<2){ startQuiz(d.items, `${deckLabel(d.deck)} ${d.name}`, {mode:"playlist", key:"__lesson_"+d.deck}); return; }
-      openCountModal({items:d.items, label:`${deckLabel(d.deck)} ${d.name}`, key:"__lesson_"+d.deck}, "playlist");
-    };
-    const allBtn=$("#lessonAllBtn"), allBox=$("#lessonAllFigs");
-    if(allBtn && allBox) allBtn.onclick=()=>{
-      const open=allBox.classList.contains("hidden");
-      if(open && !allBox.innerHTML){ allBox.innerHTML=figs(d.pages); wireLessonFigs(allBox); }
-      allBox.classList.toggle("hidden", !open);
-      allBtn.querySelector(".lsSolveSub").textContent = open
-        ? `${d.pages.length}ページを表示中 ・ タップして閉じる`
-        : `解説の根拠になった ${d.pages.length}ページ`;
-    };
+    if(solveBtn) solveBtn.onclick=()=>startLessonRound(d);
+    const allBtn=$("#lessonAllBtn"); if(allBtn) allBtn.onclick=()=>openLessonSlides(d,allBtn);
+    setupLessonQuickIndex(d,sects,s);
   }
 
   // 授業スライドから切り出した補足図。問題の図と混同しないよう見出しを付けて解説内に出す。
@@ -6126,7 +6355,10 @@
 
   /* 問題検索 */
   $("#slideBack").onclick=closeSlideView;
-  $("#lessonBack").onclick=()=>openView("inputView");
+  $("#lessonBack").onclick=()=>{ closeLessonIndex(false); closeLessonSlides(false); lessonQuickState=null; openView("inputView"); };
+  $("#lessonIndexClose").onclick=()=>closeLessonIndex();
+  $("#lessonIndexBackdrop").onclick=()=>closeLessonIndex();
+  $("#lessonSlidesBack").onclick=()=>closeLessonSlides();
   $("#slideLbClose").onclick=closeSlideLightbox;
   $("#slideLbZoom").onclick=toggleSlideZoom;
   $("#slideLbImg").onclick=toggleSlideZoom;
@@ -6359,11 +6591,30 @@
   menuBackdrop.onclick=()=>{ closeMenu(); closeUpdates(); };
   // ヘッダーの「科目をえらぶ」で科目選択画面へ戻る
   $("#subjectBtn").onclick=()=>{ closeMenu(); closeUpdates(); openSubjectPicker(); };
-  document.addEventListener("keydown",e=>{ if(e.key==="Escape"){
+  function containOverlayFocus(e,root){
+    if(!root || root.classList.contains("hidden")) return false;
+    const focusable=[...root.querySelectorAll('button:not([disabled]),[href],input:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+      .filter(el=>el.offsetParent!==null);
+    if(!focusable.length){ e.preventDefault(); root.focus?.(); return true; }
+    const first=focusable[0], last=focusable[focusable.length-1], active=document.activeElement;
+    if(!root.contains(active)){ e.preventDefault(); first.focus(); }
+    else if(e.shiftKey&&active===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey&&active===last){ e.preventDefault(); first.focus(); }
+    return true;
+  }
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Tab"){
+      if(containOverlayFocus(e,$("#slideLightbox"))) return;
+      if(containOverlayFocus(e,$("#lessonSlidesOverlay"))) return;
+      if(containOverlayFocus(e,$("#lessonIndexSheet"))) return;
+    }
+    if(e.key==="Escape"){
     const lbOpen=!$("#fcLightbox").classList.contains("hidden");
     closeFcLightbox(); closeMenu(); closeUpdates(); closeUpdatesModal();
     if(lbOpen) return;
     if(closeSlideLightbox()) return;
+    if(closeLessonSlides()) return;
+    if(closeLessonIndex()) return;
     if(!$("#slideView").classList.contains("hidden")){ closeSlideView(); return; }
     if(!$("#lessonView").classList.contains("hidden")){ openView("inputView"); return; }
     if(!$("#browse").classList.contains("hidden")) browseBackStep();
