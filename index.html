@@ -4127,14 +4127,25 @@
     if(state.status!=="authenticated"||!state.userId) return false;
     if(!state.localOwnerId){ state=await ac.bindCurrent(); }
     const legacyCode=ds.isLinked()?ds.getCode():"";
-    if(legacyCode) ac.setMigrating(true);
+    let shouldMigrateLegacy=!!legacyCode, migratedLegacy=false;
+    if(shouldMigrateLegacy) ac.setMigrating(true);
     try{
-      if(legacyCode){
+      if(shouldMigrateLegacy){
         const claimed=await ds.claimCode(legacyCode);
-        if(!claimed.ok){ if(!silent) toast(syncErrText(claimed.error)); return false; }
-        mergeRemote(claimed.payload);
-        const imported=await ds.importWrittenFromCode(legacyCode);
-        if(!imported.ok){ if(!silent) toast(syncErrText(imported.error)); return false; }
+        if(!claimed.ok){
+          if(claimed.missing){
+            // サーバーに存在しない古いコードが端末へ残っていても、
+            // Googleアカウント同期そのものは継続する。
+            ds.unlink(); shouldMigrateLegacy=false;
+          }else{
+            if(!silent) toast(syncErrText(claimed.error)); return false;
+          }
+        }else{
+          mergeRemote(claimed.payload);
+          const imported=await ds.importWrittenFromCode(legacyCode);
+          if(!imported.ok){ if(!silent) toast(syncErrText(imported.error)); return false; }
+          migratedLegacy=true;
+        }
       }
       const snapshot=await syncAccountSnapshot(ds);
       if(!snapshot.ok){ if(!silent) toast(syncErrText(snapshot.error)); return false; }
@@ -4142,12 +4153,14 @@
       if(!written.ok){ if(!silent) toast(syncErrText(written.error)); return false; }
       const cardStatus=await window.STUDY_CORE.syncNow();
       if(cardStatus.error){ if(!silent) toast(syncErrText(cardStatus.error)); return false; }
-      if(legacyCode){
+      if(shouldMigrateLegacy){
         const completed=await ds.completeCodeMigration(legacyCode);
         if(!completed.ok){ if(!silent) toast(syncErrText(completed.error)); return false; }
         ds.unlink();
       }
-      if(!silent){ toast(legacyCode?"✅ アカウントへ記録を移行しました":"✅ アカウントと同期しました"); refreshCurrentScreen(); }
+      // 自動同期でも現在の画面だけを再描画し、取り込んだ件数をすぐ表示する。
+      refreshCurrentScreen();
+      if(!silent) toast(migratedLegacy?"✅ アカウントへ記録を移行しました":"✅ アカウントと同期しました");
       return true;
     } finally {
       if(legacyCode) ac.setMigrating(false);

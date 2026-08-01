@@ -283,12 +283,15 @@ export async function pushAccountSnapshot(
 
 export async function claimSyncCode(
   code: string,
-): Promise<{ ok: boolean; payload?: SyncPayload; retired?: boolean; error?: string }> {
+): Promise<{ ok: boolean; payload?: SyncPayload; retired?: boolean; missing?: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "同期は現在利用できません" };
   const { data, error } = await supabase.rpc("claim_sync_code", { p_key: normalizeCode(code) });
   if (error) return { ok: false, error: rpcError(error).message };
   const row = Array.isArray(data) ? data[0] as Record<string, unknown> | undefined : undefined;
-  if (!row) return { ok: false, error: "この同期コードは見つかりません" };
+  // 端末にコードだけが残り、サーバー行が既に存在しない場合がある。
+  // この状態はアカウント同期を永久に止めてはいけないため、呼び出し側が
+  // 古いローカルコードを破棄して通常のアカウント同期へ進めるよう明示する。
+  if (!row) return { ok: false, missing: true, error: "この同期コードは見つかりません" };
   return { ok: true, payload: (row.payload ?? {}) as SyncPayload, retired: Boolean(row.retired) };
 }
 

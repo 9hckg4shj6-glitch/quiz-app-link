@@ -115,7 +115,7 @@ declare global {
         syncWritten: (code: string) => Promise<{ ok: boolean; pulled: number; pushed: number; error?: string }>;
         pullAccount: () => Promise<{ ok: boolean; snapshot?: { payload: SyncPayload; version: number; updatedAt: string | null }; error?: string }>;
         pushAccount: (payload: SyncPayload, expectedVersion: number) => Promise<{ ok: boolean; version?: number; conflict?: boolean; error?: string }>;
-        claimCode: (code: string) => Promise<{ ok: boolean; payload?: SyncPayload; retired?: boolean; error?: string }>;
+        claimCode: (code: string) => Promise<{ ok: boolean; payload?: SyncPayload; retired?: boolean; missing?: boolean; error?: string }>;
         completeCodeMigration: (code: string) => Promise<{ ok: boolean; error?: string }>;
         importWrittenFromCode: (code: string) => Promise<{ ok: boolean; pulled: number; error?: string }>;
         syncAccountWritten: (userId: string) => Promise<{ ok: boolean; pulled: number; pushed: number; error?: string }>;
