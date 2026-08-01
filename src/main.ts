@@ -4,7 +4,26 @@ import { installCardManager, openCardManager } from "./card-manager";
 import { migrateLegacyStorage, mirrorCustomCardsToLegacy } from "./migration";
 import { mirrorSchedulesToLegacy, queueLegacyStateSave, reconcileLegacyAfterSync } from "./legacy-bridge";
 import { examGain, retrievabilityAt, retrievabilityCurve, scheduleReview, undoLastReview } from "./fsrs";
-import { startAutomaticSync, syncNow } from "./sync";
+import {
+  clearPrivateStudyDataForAccountSwitch,
+  deleteAccount,
+  getSyncStatus,
+  requestOtp,
+  startAutomaticSync,
+  syncNow,
+} from "./sync";
+import {
+  bindCurrentAccount,
+  consumeAuthCallbackMessage,
+  getCachedAccountState,
+  linkProvider,
+  refreshAccountState,
+  resolveAccountSwitch,
+  setAccountMigrationState,
+  signInWithProvider,
+  signOutAccount,
+  startAccountAuth,
+} from "./account-auth";
 import {
   fetchLeaderboard,
   getSavedName,
@@ -40,19 +59,27 @@ import {
 } from "./community";
 import {
   createCode,
+  claimSyncCode,
+  completeSyncCodeMigration,
   deleteRemote,
   formatCode,
   getLastSyncedAt,
+  getAccountWrittenCursor,
   getSyncCode,
   getWrittenCursor,
   isLinked,
   link,
   normalizeCode,
   pull,
+  pullAccountSnapshot,
+  pullAccountWrittenAttempts,
   pullWrittenAttempts,
   push,
+  pushAccountSnapshot,
+  pushAccountWrittenAttempts,
   pushWrittenAttempts,
   setWrittenCursor,
+  setAccountWrittenCursor,
   syncEnabled,
   unlink,
 } from "./datasync";
@@ -74,6 +101,8 @@ import {
   upsertFromRemote as upsertWrittenFromRemote,
 } from "./written";
 import { learningDestination, primaryNavKey } from "./navigation";
+import { syncSnapshotWithRetry } from "./account-sync";
+import { getAccountEntryChoice, saveAccountEntryChoice } from "./account-choice";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -81,6 +110,7 @@ async function bootstrap(): Promise<void> {
   await mirrorCustomCardsToLegacy();
   await mirrorSchedulesToLegacy(); // ホームの復習予定を Dexie/FSRS と一致させる
   await installCardManager();
+  startAccountAuth();
   startAutomaticSync();
 }
 
@@ -95,7 +125,7 @@ window.addEventListener("study:sync-changed", () => void reconcileLegacyAfterSyn
 async function syncWrittenAttempts(code: string): Promise<{ ok: boolean; pulled: number; pushed: number; error?: string }> {
   let pulled = 0;
   let cursor = getWrittenCursor(code);
-  for (let page = 0; page < 50; page += 1) {
+  for (let page = 0; page < 10_000; page += 1) {
     const result = await pullWrittenAttempts(code, cursor);
     if (!result.ok) return { ok: false, pulled, pushed: 0, error: result.error };
     const rows = result.rows ?? [];
@@ -115,6 +145,44 @@ async function syncWrittenAttempts(code: string): Promise<{ ok: boolean; pulled:
   return { ok: true, pulled, pushed: pushResult.sentIds.length };
 }
 
+/** 旧コードの答案をローカルへ取り込むだけ。アカウントへ保存できるまでコード側は変更しない。 */
+async function importWrittenAttemptsFromCode(code: string): Promise<{ ok: boolean; pulled: number; error?: string }> {
+  let pulled = 0;
+  let cursor = { after: null as string | null, afterId: null as string | null };
+  for (let page = 0; page < 10_000; page += 1) {
+    const result = await pullWrittenAttempts(code, cursor);
+    if (!result.ok) return { ok: false, pulled, error: result.error };
+    const rows = result.rows ?? [];
+    if (result.cursor) cursor = result.cursor;
+    if (!rows.length) break;
+    pulled += await upsertWrittenFromRemote(rows);
+    if (rows.length < 100) break;
+  }
+  return { ok: true, pulled };
+}
+
+async function syncAccountWrittenAttempts(userId: string): Promise<{ ok: boolean; pulled: number; pushed: number; error?: string }> {
+  let pulled = 0;
+  let cursor = getAccountWrittenCursor(userId);
+  for (let page = 0; page < 10_000; page += 1) {
+    const result = await pullAccountWrittenAttempts(cursor);
+    if (!result.ok) return { ok: false, pulled, pushed: 0, error: result.error };
+    const rows = result.rows ?? [];
+    if (result.cursor) cursor = result.cursor;
+    if (!rows.length) break;
+    pulled += await upsertWrittenFromRemote(rows);
+    setAccountWrittenCursor(userId, cursor);
+    if (rows.length < 100) break;
+  }
+  setAccountWrittenCursor(userId, cursor);
+  const unsynced = await listUnsyncedWritten();
+  if (!unsynced.length) return { ok: true, pulled, pushed: 0 };
+  const pushed = await pushAccountWrittenAttempts(unsynced as unknown as Array<Record<string, unknown>>);
+  await markWrittenSynced(pushed.sentIds);
+  if (!pushed.ok) return { ok: false, pulled, pushed: pushed.sentIds.length, error: pushed.error };
+  return { ok: true, pulled, pushed: pushed.sentIds.length };
+}
+
 window.STUDY_CORE = {
   ui: {
     learningDestination,
@@ -125,6 +193,25 @@ window.STUDY_CORE = {
   saveLegacyProgress: (progress) => queueLegacyStateSave(progress as Record<string, LegacyProgress>),
   openCardManager,
   syncNow,
+  account: {
+    state: getCachedAccountState,
+    refresh: refreshAccountState,
+    consumeCallback: consumeAuthCallbackMessage,
+    signIn: signInWithProvider,
+    link: linkProvider,
+    requestOtp,
+    syncStatus: getSyncStatus,
+    setMigrating: setAccountMigrationState,
+    entryChoice: getAccountEntryChoice,
+    chooseEntry: saveAccountEntryChoice,
+    signOut: signOutAccount,
+    deleteAccount,
+    bindCurrent: bindCurrentAccount,
+    resolveSwitch: async (action: "replace" | "cancel") => {
+      if (action === "replace") await clearPrivateStudyDataForAccountSwitch();
+      return resolveAccountSwitch(action);
+    },
+  },
   undoLastReview,
   memory: {
     retrievability: (progress, atMs) =>
@@ -194,6 +281,13 @@ window.STUDY_CORE = {
     unlink,
     deleteRemote,
     syncWritten: syncWrittenAttempts,
+    pullAccount: pullAccountSnapshot,
+    pushAccount: pushAccountSnapshot,
+    claimCode: claimSyncCode,
+    completeCodeMigration: completeSyncCodeMigration,
+    importWrittenFromCode: importWrittenAttemptsFromCode,
+    syncAccountWritten: syncAccountWrittenAttempts,
+    syncAccountSnapshot: syncSnapshotWithRetry,
   },
 };
 

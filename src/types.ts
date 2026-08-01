@@ -1,5 +1,17 @@
 export type CardKind = "basic" | "multiple-choice" | "term";
 export type ReviewRating = 1 | 2 | 3 | 4;
+export type AuthProvider = "google" | "apple" | "email";
+
+export interface AccountState {
+  status: "loading" | "disabled" | "guest" | "authenticated" | "migrating" | "conflict";
+  enabled: boolean;
+  socialEnabled: boolean;
+  localOwnerId: string | null;
+  userId: string | null;
+  email: string | null;
+  displayName: string | null;
+  providers: AuthProvider[];
+}
 
 /* ============================================================
    問題データ（public/subjects/<id>/questions.js）の形

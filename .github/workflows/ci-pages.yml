@@ -32,6 +32,8 @@ jobs:
           # 未設定でもビルドは成功し、アプリはローカル専用（ランキングは「準備中」表示）で動作する。
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # DB・Google・Apple設定完了後、Actions Variableを true にして公開する。
+          VITE_SOCIAL_AUTH_ENABLED: ${{ vars.VITE_SOCIAL_AUTH_ENABLED }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

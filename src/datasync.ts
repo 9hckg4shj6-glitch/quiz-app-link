@@ -1,4 +1,4 @@
-import { supabase } from "./sync";
+import { supabase } from "./backend";
 
 // 端末間データ同期（同期コード方式）。
 // 統合は index.html 側の mergeProgress/mergeMeta（最大値・和集合）で行うため、
@@ -17,6 +17,9 @@ function rpcError(error: { code?: string; message?: string }): Error {
   if (error.code === "PGRST202" || /Could not find the function/i.test(message)) {
     return new Error(NOT_READY);
   }
+  if (/SYNC_CODE_CLAIMED/i.test(message)) return new Error("この同期コードは別のアカウントへ移行済みです");
+  if (/SYNC_CODE_RETIRED/i.test(message)) return new Error("この同期コードはアカウントへ移行済みです。ログインしてください");
+  if (/AUTH_REQUIRED/i.test(message)) return new Error("ログインが必要です");
   return new Error(message || "通信に失敗しました");
 }
 
@@ -216,6 +219,145 @@ export async function pushWrittenAttempts(
   for (const attempt of attempts) {
     const size = JSON.stringify(attempt).length;
     // 1件だけで上限を超える答案（巨大な描画）は送らずに飛ばす。次回も同じ判定になる
+    if (size > PUSH_BYTES) continue;
+    if (batch.length >= PUSH_LIMIT || bytes + size > PUSH_BYTES) {
+      const failed = await flush();
+      if (failed) return { ok: false, sentIds, error: failed };
+    }
+    batch.push(attempt);
+    bytes += size;
+  }
+  const failed = await flush();
+  if (failed) return { ok: false, sentIds, error: failed };
+  markSynced();
+  return { ok: true, sentIds };
+}
+
+/* ============================================================
+   アカウント単位の学習記録同期
+   ============================================================ */
+
+export interface AccountSnapshot {
+  payload: SyncPayload;
+  version: number;
+  updatedAt: string | null;
+}
+
+export async function pullAccountSnapshot(): Promise<{ ok: boolean; snapshot?: AccountSnapshot; error?: string }> {
+  if (!supabase) return { ok: false, error: "同期は現在利用できません" };
+  const { data, error } = await supabase.rpc("account_sync_pull");
+  if (error) return { ok: false, error: rpcError(error).message };
+  const row = Array.isArray(data) ? data[0] as Record<string, unknown> | undefined : undefined;
+  return {
+    ok: true,
+    snapshot: row
+      ? {
+          payload: (row.payload ?? {}) as SyncPayload,
+          version: Number(row.version ?? 0),
+          updatedAt: row.updated_at == null ? null : String(row.updated_at),
+        }
+      : { payload: {}, version: 0, updatedAt: null },
+  };
+}
+
+export async function pushAccountSnapshot(
+  payload: SyncPayload,
+  expectedVersion: number,
+): Promise<{ ok: boolean; version?: number; conflict?: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "同期は現在利用できません" };
+  const { data, error } = await supabase.rpc("account_sync_push", {
+    p_payload: payload,
+    p_expected_version: expectedVersion,
+  });
+  if (error) return { ok: false, error: rpcError(error).message };
+  const row = Array.isArray(data) ? data[0] as Record<string, unknown> | undefined : undefined;
+  if (!row) return { ok: false, error: "同期結果を確認できませんでした" };
+  if (Boolean(row.ok)) markSynced();
+  return {
+    ok: Boolean(row.ok),
+    version: Number(row.version ?? expectedVersion),
+    conflict: Boolean(row.conflict),
+    error: row.conflict ? "別の端末で更新されたため再統合します" : undefined,
+  };
+}
+
+export async function claimSyncCode(
+  code: string,
+): Promise<{ ok: boolean; payload?: SyncPayload; retired?: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "同期は現在利用できません" };
+  const { data, error } = await supabase.rpc("claim_sync_code", { p_key: normalizeCode(code) });
+  if (error) return { ok: false, error: rpcError(error).message };
+  const row = Array.isArray(data) ? data[0] as Record<string, unknown> | undefined : undefined;
+  if (!row) return { ok: false, error: "この同期コードは見つかりません" };
+  return { ok: true, payload: (row.payload ?? {}) as SyncPayload, retired: Boolean(row.retired) };
+}
+
+export async function completeSyncCodeMigration(code: string): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "同期は現在利用できません" };
+  const { error } = await supabase.rpc("complete_sync_code_migration", { p_key: normalizeCode(code) });
+  if (error) return { ok: false, error: rpcError(error).message };
+  markSynced();
+  return { ok: true };
+}
+
+function accountCursorKey(userId: string): string {
+  return `account_written_cursor_${userId}`;
+}
+
+export function getAccountWrittenCursor(userId: string): WrittenCursor {
+  try {
+    const raw = localStorage.getItem(accountCursorKey(userId));
+    if (!raw) return { after: null, afterId: null };
+    const value = JSON.parse(raw) as Partial<WrittenCursor>;
+    return { after: value.after ?? null, afterId: value.afterId ?? null };
+  } catch { return { after: null, afterId: null }; }
+}
+
+export function setAccountWrittenCursor(userId: string, cursor: WrittenCursor): void {
+  try { localStorage.setItem(accountCursorKey(userId), JSON.stringify(cursor)); } catch { /* noop */ }
+}
+
+export async function pullAccountWrittenAttempts(
+  cursor: WrittenCursor,
+  limit = 100,
+): Promise<{ ok: boolean; rows?: unknown[]; cursor?: WrittenCursor; error?: string }> {
+  if (!supabase) return { ok: false, error: "同期は現在利用できません" };
+  const { data, error } = await supabase.rpc("account_written_attempts_pull", {
+    p_after: cursor.after,
+    p_after_id: cursor.afterId,
+    p_limit: limit,
+  });
+  if (error) return { ok: false, error: rpcError(error).message };
+  const list = Array.isArray(data) ? data : [];
+  const rows = list.map((row) => (row as { payload?: unknown }).payload);
+  const last = list[list.length - 1] as { server_updated_at?: string; attempt_id?: string } | undefined;
+  return {
+    ok: true,
+    rows,
+    cursor: last
+      ? { after: last.server_updated_at ?? cursor.after, afterId: last.attempt_id ?? cursor.afterId }
+      : cursor,
+  };
+}
+
+export async function pushAccountWrittenAttempts(
+  attempts: Array<Record<string, unknown>>,
+): Promise<{ ok: boolean; sentIds: string[]; error?: string }> {
+  if (!supabase) return { ok: false, sentIds: [], error: "同期は現在利用できません" };
+  const sentIds: string[] = [];
+  let batch: Array<Record<string, unknown>> = [];
+  let bytes = 0;
+  const flush = async (): Promise<string | null> => {
+    if (!batch.length) return null;
+    const { error } = await supabase!.rpc("account_written_attempts_push", { p_attempts: batch });
+    if (error) return rpcError(error).message;
+    for (const row of batch) sentIds.push(String(row.id));
+    batch = [];
+    bytes = 0;
+    return null;
+  };
+  for (const attempt of attempts) {
+    const size = JSON.stringify(attempt).length;
     if (size > PUSH_BYTES) continue;
     if (batch.length >= PUSH_LIMIT || bytes + size > PUSH_BYTES) {
       const failed = await flush();

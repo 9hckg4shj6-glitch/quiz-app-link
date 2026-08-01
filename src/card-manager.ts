@@ -1,7 +1,7 @@
 import { db, nowIso, saveCard, saveDeck, uuid } from "./db";
 import { importBundleSchema } from "./schema";
 import { mirrorCustomCardsToLegacy } from "./migration";
-import { deleteAccount, getSyncStatus, requestOtp, signOut, syncNow } from "./sync";
+import { getSyncStatus } from "./sync";
 import type { CardKind, StudyCard } from "./types";
 
 let modal: HTMLElement | null = null;
@@ -57,12 +57,11 @@ function template(): string {
         </section>
         <section class="study-tab hidden" data-panel="stats"><div id="studyStats"></div></section>
         <section class="study-tab hidden" data-panel="sync">
-          <div class="study-sync-card"><h3>複数端末同期</h3><div id="studySyncStatus"></div>
-            <label>メールアドレス<input id="studyEmail" type="email" autocomplete="email" placeholder="you@example.com"></label>
-            <div class="study-form-actions"><button type="button" class="study-primary" data-action="otp">認証メールを送る</button><button type="button" class="study-secondary" data-action="sync-now">今すぐ同期</button><button type="button" class="study-secondary" data-action="sign-out">ログアウト</button></div>
+          <div class="study-sync-card"><h3>アカウントと同期</h3><div id="studySyncStatus"></div>
+            <p>Google／Appleログイン、ログアウト、同期方法の追加は「設定・データ」で管理します。</p>
+            <div class="study-form-actions"><button type="button" class="study-primary" data-action="account-settings">アカウント設定を開く</button></div>
           </div>
           <div class="study-sync-card"><h3>バックアップ</h3><p>カード、デッキ、復習イベントをバージョン付きJSONで保存できます。</p><div class="study-form-actions"><button type="button" class="study-secondary" data-action="export">書き出す</button><button type="button" class="study-secondary" data-action="import">読み込む</button><input id="studyImport" class="hidden" type="file" accept="application/json,.json"></div></div>
-          <div class="study-danger"><h3>アカウント削除</h3><p>クラウド上の同期データとアカウントを削除します。端末内データは残ります。</p><button type="button" data-action="delete-account">アカウントを削除</button></div>
         </section>
       </div>
     </div>`;
@@ -267,7 +266,7 @@ async function renderSync(message = ""): Promise<void> {
   const status = await getSyncStatus();
   const node = $("#studySyncStatus");
   node.className = status.error ? "study-sync-status error" : "study-sync-status";
-  node.textContent = message || (!status.enabled ? "Supabase未設定：ゲストとして端末内に保存中" : status.userEmail ? `${status.userEmail} · 同期待ち ${status.pending}件 · 最終同期 ${status.lastSyncedAt ? new Date(status.lastSyncedAt).toLocaleString() : "未実行"}` : "ゲスト利用中：メール認証すると複数端末同期を開始します");
+  node.textContent = message || (!status.enabled ? "Supabase未設定：ゲストとして端末内に保存中" : status.userEmail ? `${status.userEmail} · 同期待ち ${status.pending}件 · 最終同期 ${status.lastSyncedAt ? new Date(status.lastSyncedAt).toLocaleString() : "未実行"}` : "ゲスト利用中：アカウントへログインすると複数端末同期を開始します");
 }
 
 async function onClick(event: Event): Promise<void> {
@@ -288,12 +287,9 @@ async function onClick(event: Event): Promise<void> {
   if (action === "duplicate" && rowId) { const card = await db.cards.get(rowId); if (card) await saveCard({ ...card, id: uuid(), front: `${card.front}（コピー）`, version: 1, createdAt: nowIso(), updatedAt: nowIso() }); await mirrorCustomCardsToLegacy(); await renderCards(); }
   if (action === "delete" && rowId && confirm("このカードを削除しますか？")) { const card = await db.cards.get(rowId); if (card) await saveCard({ ...card, deletedAt: nowIso(), updatedAt: nowIso(), version: card.version + 1 }); await mirrorCustomCardsToLegacy(); await renderCards(); }
   if (action === "new-deck") await createDeck();
-  if (action === "otp") { try { const email = ($("#studyEmail") as HTMLInputElement).value.trim(); if (!email) throw new Error("メールアドレスを入力してください"); await requestOtp(email); await renderSync("認証メールを送信しました。メール内のリンクを開いてください。"); } catch (error) { await renderSync(error instanceof Error ? error.message : String(error)); } }
-  if (action === "sync-now") { const status = await syncNow(); await mirrorCustomCardsToLegacy(); await renderSync(status.error ?? "同期が完了しました"); }
-  if (action === "sign-out") { await signOut(); await renderSync("ログアウトしました。端末内データは引き続き利用できます。"); }
+  if (action === "account-settings") { closeModal(); window.dispatchEvent(new Event("study:open-account-settings")); }
   if (action === "export") await exportData();
   if (action === "import") ($("#studyImport") as HTMLInputElement).click();
-  if (action === "delete-account" && confirm("クラウド上のアカウントと同期データを削除します。この操作は取り消せません。続けますか？")) { try { await deleteAccount(); await renderSync("アカウントを削除しました。端末内データは残っています。"); } catch (error) { await renderSync(error instanceof Error ? error.message : String(error)); } }
 }
 
 async function createDeck(): Promise<void> {

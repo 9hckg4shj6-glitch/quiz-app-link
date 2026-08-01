@@ -1,6 +1,6 @@
 import { getDeviceId } from "./db";
 import { getSavedName as getRankName } from "./leaderboard";
-import { supabase } from "./sync";
+import { supabase } from "./backend";
 
 // コミュニティ（掲示板）。全公開・誰でも掲示板を作成できる。
 // 識別は端末ごとの device_id。アクセスはすべて security definer の RPC 経由

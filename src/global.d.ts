@@ -1,4 +1,4 @@
-import type { StudyCard, SyncStatus, WrittenAttempt, WrittenDraft } from "./types";
+import type { AccountState, StudyCard, SyncStatus, WrittenAttempt, WrittenDraft } from "./types";
 import type { StoredSchedule } from "./types";
 import type { SaveAttemptInput } from "./written";
 import type { LeaderboardView } from "./leaderboard";
@@ -21,6 +21,22 @@ declare global {
       saveLegacyProgress: (progress: Record<string, unknown>) => void;
       openCardManager: () => Promise<void>;
       syncNow: () => Promise<SyncStatus>;
+      account: {
+        state: () => AccountState;
+        refresh: () => Promise<AccountState>;
+        consumeCallback: () => Promise<string | null>;
+        signIn: (provider: "google" | "apple") => Promise<void>;
+        link: (provider: "google" | "apple") => Promise<void>;
+        requestOtp: (email: string) => Promise<void>;
+        syncStatus: () => Promise<SyncStatus>;
+        setMigrating: (active: boolean) => AccountState;
+        entryChoice: () => "login" | "guest" | null;
+        chooseEntry: (choice: "login" | "guest") => void;
+        signOut: () => Promise<void>;
+        deleteAccount: () => Promise<void>;
+        bindCurrent: () => Promise<AccountState>;
+        resolveSwitch: (action: "replace" | "cancel") => Promise<AccountState>;
+      };
       undoLastReview: (cardId: string) => Promise<StoredSchedule | null>;
       memory: {
         retrievability: (progress: Record<string, unknown>, atMs?: number) => number | null;
@@ -98,6 +114,16 @@ declare global {
         deleteRemote: (code: string) => Promise<void>;
         /** 記述問題の答案履歴だけを差分同期する（1MBスナップショットとは独立） */
         syncWritten: (code: string) => Promise<{ ok: boolean; pulled: number; pushed: number; error?: string }>;
+        pullAccount: () => Promise<{ ok: boolean; snapshot?: { payload: SyncPayload; version: number; updatedAt: string | null }; error?: string }>;
+        pushAccount: (payload: SyncPayload, expectedVersion: number) => Promise<{ ok: boolean; version?: number; conflict?: boolean; error?: string }>;
+        claimCode: (code: string) => Promise<{ ok: boolean; payload?: SyncPayload; retired?: boolean; error?: string }>;
+        completeCodeMigration: (code: string) => Promise<{ ok: boolean; error?: string }>;
+        importWrittenFromCode: (code: string) => Promise<{ ok: boolean; pulled: number; error?: string }>;
+        syncAccountWritten: (userId: string) => Promise<{ ok: boolean; pulled: number; pushed: number; error?: string }>;
+        syncAccountSnapshot: (
+          getLocalPayload: () => SyncPayload,
+          mergeRemotePayload: (payload: SyncPayload) => void,
+        ) => Promise<{ ok: boolean; attempts: number; error?: string }>;
       };
     };
     __STUDY_CARDS?: StudyCard[];

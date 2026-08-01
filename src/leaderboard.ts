@@ -1,5 +1,5 @@
 import { getDeviceId } from "./db";
-import { supabase } from "./sync";
+import { supabase } from "./backend";
 
 // 公開ランキング（グローバル1本）。端末ごとの device_id で識別し、名前は表示ラベル。
 // アクセスはすべて security definer の RPC 経由（supabase/migrations/002_leaderboard.sql）。

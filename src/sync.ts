@@ -1,11 +1,11 @@
-import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
+import { assessAccountBinding, clearLocalDataOwner, getLocalDataOwner } from "./account-auth";
+import { supabase } from "./backend";
 import { db, nowIso, saveCard, saveSetting, uuid } from "./db";
 import { rebuildScheduleFromEvents } from "./fsrs";
 import type { OutboxRecord, StudyCard, SyncStatus } from "./types";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-export const supabase: SupabaseClient | null = url && key ? createClient(url, key) : null;
+export { supabase } from "./backend";
 
 async function currentUser(): Promise<User | null> {
   if (!supabase) return null;
@@ -205,7 +205,10 @@ export async function syncNow(): Promise<SyncStatus> {
   if (!supabase) return getSyncStatus("Supabaseの環境変数が未設定です");
   if (!navigator.onLine) return getSyncStatus("オフラインのため同期待ちです");
   const user = await currentUser();
-  if (!user) return getSyncStatus("同期するにはメール認証が必要です");
+  if (!user) return getSyncStatus("同期するにはログインが必要です");
+  const binding = assessAccountBinding(user.id);
+  if (binding === "conflict") return getSyncStatus("別のアカウントの端末データがあるため同期を停止しました");
+  if (binding === "unbound") return getSyncStatus("アカウント同期を初期化しています");
 
   try {
     await attachOwner(user.id);
@@ -236,14 +239,51 @@ export async function deleteAccount(): Promise<void> {
   const { error } = await supabase.rpc("delete_my_account");
   if (error) throw error;
   await supabase.auth.signOut();
+  await releaseLocalDataToGuest();
+}
+
+/** 別アカウントへ切り替える直前に、非公開の学習データだけを端末から除去する。 */
+export async function clearPrivateStudyDataForAccountSwitch(): Promise<void> {
+  const device = await db.settings.get("deviceId");
+  await db.transaction(
+    "rw",
+    [db.cards, db.decks, db.reviewEvents, db.schedules, db.outbox, db.settings, db.writtenAttempts, db.writtenDrafts],
+    async () => {
+      await db.cards.filter((card) => !card.builtIn).delete();
+      await Promise.all([
+        db.decks.clear(), db.reviewEvents.clear(), db.schedules.clear(), db.outbox.clear(),
+        db.settings.clear(), db.writtenAttempts.clear(), db.writtenDrafts.clear(),
+      ]);
+      if (device) await db.settings.put(device);
+    },
+  );
+}
+
+/** 退会後はクラウド由来の印を外し、現在の端末データをゲストとして使い続けられるようにする。 */
+export async function releaseLocalDataToGuest(): Promise<void> {
+  await db.transaction(
+    "rw",
+    [db.cards, db.decks, db.reviewEvents, db.settings, db.outbox, db.writtenAttempts],
+    async () => {
+      await db.cards.filter((card) => !card.builtIn).modify({ ownerId: null });
+      await db.decks.toCollection().modify({ ownerId: null });
+      await db.reviewEvents.toCollection().modify((event) => { event.ownerId = null; event.syncedAt = null; });
+      await db.settings.toCollection().modify({ ownerId: null });
+      await db.writtenAttempts.toCollection().modify((attempt) => { attempt.syncedAt = null; });
+      await db.outbox.clear();
+    },
+  );
+  clearLocalDataOwner();
 }
 
 export function startAutomaticSync(): void {
   if (!supabase) return;
   window.addEventListener("online", () => void syncNow());
-  supabase.auth.onAuthStateChange((event) => {
-    if (event === "SIGNED_IN") void syncNow();
+  supabase.auth.onAuthStateChange(() => {
     window.dispatchEvent(new Event("study:sync-changed"));
   });
-  setInterval(() => void syncNow(), 5 * 60 * 1000);
+  setInterval(() => {
+    const owner = getLocalDataOwner();
+    if (owner) void syncNow();
+  }, 5 * 60 * 1000);
 }
