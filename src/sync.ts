@@ -26,15 +26,6 @@ export async function getSyncStatus(error: string | null = null): Promise<SyncSt
   };
 }
 
-export async function requestOtp(email: string): Promise<void> {
-  if (!supabase) throw new Error("Supabaseの環境変数が設定されていません");
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: `${location.origin}${import.meta.env.BASE_URL}` },
-  });
-  if (error) throw error;
-}
-
 export async function signOut(): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.auth.signOut();

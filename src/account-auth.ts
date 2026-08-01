@@ -80,7 +80,7 @@ export function assessAccountBinding(userId: string, owner = getLocalDataOwner()
 function providersFor(user: User): AuthProvider[] {
   const values = (user.identities ?? []).map((identity) => identity.provider);
   return [...new Set(values.filter((value): value is AuthProvider =>
-    value === "google" || value === "apple" || value === "email"))];
+    value === "google" || value === "email"))];
 }
 
 function nameFor(user: User): string | null {
@@ -135,7 +135,7 @@ function rememberPending(provider: Exclude<AuthProvider, "email">, action: "sign
   writeSession(PENDING_ACTION_KEY, action);
 }
 
-export async function signInWithProvider(provider: "google" | "apple"): Promise<void> {
+export async function signInWithProvider(provider: "google"): Promise<void> {
   if (!supabase) throw new Error("アカウント機能は現在利用できません");
   if (!socialAuthEnabled) throw new Error("ソーシャルログインは現在準備中です");
   rememberPending(provider, "signin");
@@ -150,7 +150,7 @@ export async function signInWithProvider(provider: "google" | "apple"): Promise<
   }
 }
 
-export async function linkProvider(provider: "google" | "apple"): Promise<void> {
+export async function linkProvider(provider: "google"): Promise<void> {
   if (!supabase) throw new Error("アカウント機能は現在利用できません");
   if (!socialAuthEnabled) throw new Error("ソーシャルログインは現在準備中です");
   const state = await refreshAccountState();
@@ -192,7 +192,7 @@ export async function consumeAuthCallbackMessage(): Promise<string | null> {
   try { history.replaceState(history.state, "", getOAuthRedirectUrl()); } catch { /* noop */ }
   if (error) return translateAuthError(error);
   if (state.status === "conflict") return "別のアカウントの端末データを検出しました";
-  const label = provider === "apple" ? "Apple" : provider === "google" ? "Google" : "メール";
+  const label = provider === "google" ? "Google" : "メール";
   return action === "link" ? `${label}をログイン方法に追加しました` : `${label}でログインしました`;
 }
 

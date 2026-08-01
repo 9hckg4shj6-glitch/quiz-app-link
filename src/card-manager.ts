@@ -58,7 +58,7 @@ function template(): string {
         <section class="study-tab hidden" data-panel="stats"><div id="studyStats"></div></section>
         <section class="study-tab hidden" data-panel="sync">
           <div class="study-sync-card"><h3>アカウントと同期</h3><div id="studySyncStatus"></div>
-            <p>Google／Appleログイン、ログアウト、同期方法の追加は「設定・データ」で管理します。</p>
+            <p>Googleログイン、ログアウト、同期方法の設定は「設定・データ」で管理します。</p>
             <div class="study-form-actions"><button type="button" class="study-primary" data-action="account-settings">アカウント設定を開く</button></div>
           </div>
           <div class="study-sync-card"><h3>バックアップ</h3><p>カード、デッキ、復習イベントをバージョン付きJSONで保存できます。</p><div class="study-form-actions"><button type="button" class="study-secondary" data-action="export">書き出す</button><button type="button" class="study-secondary" data-action="import">読み込む</button><input id="studyImport" class="hidden" type="file" accept="application/json,.json"></div></div>

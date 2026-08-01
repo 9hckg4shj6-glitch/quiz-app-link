@@ -1,4 +1,4 @@
--- Google / Apple / メールOTPで認証した利用者向けの学習記録同期。
+-- Googleで認証した利用者向けの学習記録同期。
 -- 旧同期コードは安全に「取得 → 統合 → 移行済み」へできるよう所有者を持たせる。
 
 create table if not exists public.account_sync_data (

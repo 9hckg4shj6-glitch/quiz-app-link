@@ -8,7 +8,6 @@ import {
   clearPrivateStudyDataForAccountSwitch,
   deleteAccount,
   getSyncStatus,
-  requestOtp,
   startAutomaticSync,
   syncNow,
 } from "./sync";
@@ -199,7 +198,6 @@ window.STUDY_CORE = {
     consumeCallback: consumeAuthCallbackMessage,
     signIn: signInWithProvider,
     link: linkProvider,
-    requestOtp,
     syncStatus: getSyncStatus,
     setMigrating: setAccountMigrationState,
     entryChoice: getAccountEntryChoice,

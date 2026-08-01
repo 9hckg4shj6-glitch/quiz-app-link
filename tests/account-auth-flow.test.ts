@@ -48,14 +48,14 @@ beforeEach(() => {
 });
 
 describe("account authentication flow", () => {
-  it.each(["google", "apple"] as const)("%s OAuthを正しいlocalhost戻り先で開始する", async (provider) => {
+  it("Google OAuthを正しいlocalhost戻り先で開始する", async () => {
     const account = await import("../src/account-auth");
-    await account.signInWithProvider(provider);
+    await account.signInWithProvider("google");
     expect(authMock.signInWithOAuth).toHaveBeenCalledWith({
-      provider,
+      provider: "google",
       options: { redirectTo: "http://localhost:5173/" },
     });
-    expect(sessionStorage.setItem).toHaveBeenCalledWith("auth_pending_provider_v1", provider);
+    expect(sessionStorage.setItem).toHaveBeenCalledWith("auth_pending_provider_v1", "google");
   });
 
   it("既存メールOTPセッションをログイン済みとして復元する", async () => {
@@ -67,12 +67,12 @@ describe("account authentication flow", () => {
     });
   });
 
-  it("Apple非公開メールでも現在のユーザーへ手動連携する", async () => {
-    authMock.getUser.mockResolvedValue(userResult("abc123@privaterelay.appleid.com"));
+  it("Googleを現在のユーザーへ手動連携する", async () => {
+    authMock.getUser.mockResolvedValue(userResult());
     const account = await import("../src/account-auth");
-    await account.linkProvider("apple");
+    await account.linkProvider("google");
     expect(authMock.linkIdentity).toHaveBeenCalledWith({
-      provider: "apple",
+      provider: "google",
       options: { redirectTo: "http://localhost:5173/" },
     });
   });

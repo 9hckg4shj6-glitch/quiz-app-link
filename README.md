@@ -38,27 +38,24 @@ APP_USER="study" APP_PASSWORD="任意のパスワード" node server.js
 - Supabase未設定でも全ローカル機能を利用できます。
 - PWAは新しい配信を検出するとService Workerを自動更新し、古いキャッシュを表示し続けないようにします。長時間開いたままの場合も1時間ごとに更新を確認します。
 - 複数端末同期を有効にする場合は `.env.example` を `.env` にコピーして値を設定し、`supabase/migrations/001_initial.sql` から番号順にマイグレーションを適用します。
-- Google／Apple／メールOTP、Row Level Security、オフライン送信待ちキューを使用します。
+- Googleログイン、Row Level Security、オフライン送信待ちキューを使用します。
 
-## Google／Appleアカウントと同期
+## Googleアカウントと同期
 
 「設定・データ」→「アカウントと同期」からログインできます。ゲスト利用は継続でき、初回ログイン時は端末内データをアカウントへ統合します。ログイン後は学習進捗、XP・実績、FSRS、採点済み答案、自作カード・デッキ・画像が同期されます。ランキングとコミュニティは従来どおり端末ID単位です。
 
-この機能の導入後に各端末で初めてアプリを開くと、「ログインする／ゲストで進む」を一度だけ確認します。選択は `account_entry_choice_v1` として端末へ保存され、どちらを選んでも次回以降は表示しません。ログイン状態の変更はいつでも設定画面から行えます。
+この機能の導入後に各端末で初めてアプリを開くと、「Googleでログイン／ゲストで進む」を一度だけ確認します。選択は `account_entry_choice_v1` として端末へ保存され、どちらを選んでも次回以降は表示しません。ログイン状態の変更はいつでも設定画面から行えます。
 
 本番への導入順序:
 
 1. Supabase SQL Editorで既存のマイグレーションに続けて `supabase/migrations/009_account_auth.sql` を適用する。
 2. Supabase AuthのSite URLを `https://9hckg4shj6-glitch.github.io/quiz-app-link/` にし、Redirect URLsへ同URLと `http://localhost:5173/` を登録する。
 3. Google OAuthクライアントを作り、Google側の承認済みリダイレクトURIへ `https://<project-ref>.supabase.co/auth/v1/callback` を登録して、Client IDとSecretをSupabaseのGoogle providerへ保存する。
-4. Apple DeveloperでApp ID、Services ID、Web return URL、署名鍵を作り、同じSupabase callbackを登録して、Services IDとSecretをSupabaseのApple providerへ保存する。
-5. Supabase AuthのManual Linkingを有効にする。
-6. ローカルまたはプレビューで実アカウントのログイン、追加連携、同期コード移行、別アカウント切替、退会を確認する。
-7. GitHub Actions Variable `VITE_SOCIAL_AUTH_ENABLED` を `true` にして再デプロイする。設定完了までは `false` のままにする。
+4. Supabase AuthのManual Linkingを有効にする。
+5. ローカルまたはプレビューで実アカウントのログイン、追加連携、同期コード移行、別アカウント切替、退会を確認する。
+6. GitHub Actions Variable `VITE_SOCIAL_AUTH_ENABLED` を `true` にして再デプロイする。設定完了までは `false` のままにする。
 
-Google Client Secret、Apple署名鍵（`.p8`）、Apple OAuth Secretはフロントエンド、`.env`、GitHubへ保存しません。Supabase Authのprovider設定だけへ登録します。公開ビルドに入るのは既存のSupabase URL／anon keyと機能フラグだけです。詳細は [Supabase Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)、[Google login](https://supabase.com/docs/guides/auth/social-login/auth-google)、[Apple login](https://supabase.com/docs/guides/auth/social-login/auth-apple)、[Identity linking](https://supabase.com/docs/guides/auth/auth-identity-linking) を参照してください。
-
-Apple OAuth Secretは最長6か月なので、GitHub Actions Variable `APPLE_OAUTH_SECRET_EXPIRES_ON` に有効期限を `YYYY-MM-DD` で登録します。`.github/workflows/apple-secret-reminder.yml` が毎日確認し、期限30日前からGitHub Issueを1件作成します。更新後はSupabaseのSecretとこの日付を両方更新し、`.p8`はApple Developer管理者が安全な保管場所で管理してください。
+Google Client Secretはフロントエンド、`.env`、GitHubへ保存しません。Supabase AuthのGoogle provider設定だけへ登録します。公開ビルドに入るのは既存のSupabase URL／anon keyと機能フラグだけです。詳細は [Supabase Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)、[Google login](https://supabase.com/docs/guides/auth/social-login/auth-google)、[Identity linking](https://supabase.com/docs/guides/auth/auth-identity-linking) を参照してください。
 
 ## 公開ランキング（解いた問題数）
 

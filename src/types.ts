@@ -1,6 +1,6 @@
 export type CardKind = "basic" | "multiple-choice" | "term";
 export type ReviewRating = 1 | 2 | 3 | 4;
-export type AuthProvider = "google" | "apple" | "email";
+export type AuthProvider = "google" | "email";
 
 export interface AccountState {
   status: "loading" | "disabled" | "guest" | "authenticated" | "migrating" | "conflict";

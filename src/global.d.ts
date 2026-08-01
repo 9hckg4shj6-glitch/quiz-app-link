@@ -25,9 +25,8 @@ declare global {
         state: () => AccountState;
         refresh: () => Promise<AccountState>;
         consumeCallback: () => Promise<string | null>;
-        signIn: (provider: "google" | "apple") => Promise<void>;
-        link: (provider: "google" | "apple") => Promise<void>;
-        requestOtp: (email: string) => Promise<void>;
+        signIn: (provider: "google") => Promise<void>;
+        link: (provider: "google") => Promise<void>;
         syncStatus: () => Promise<SyncStatus>;
         setMigrating: (active: boolean) => AccountState;
         entryChoice: () => "login" | "guest" | null;
