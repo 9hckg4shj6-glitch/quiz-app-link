@@ -149,6 +149,8 @@
     border-radius:999px;padding:3px 9px}
   .lsSectName{font-size:16.5px;font-weight:900;line-height:1.5}
   .lsBody{padding:15px 17px;font-size:14.5px;line-height:2.0;white-space:pre-wrap;word-break:break-word}
+  /* 学習本文の ==重要語== だけを赤字にする。文章全体を赤くせず、暗記語と正答語に限定する。 */
+  .lsEmphasis{color:var(--bad);font-weight:900}
   .lsFigs{margin-top:11px}
   /* 画像読込前も授業スライドの標準比率で領域を予約し、索引ジャンプのズレを抑える */
   .lsFigs .svPage img{aspect-ratio:auto 4 / 3}
@@ -4923,6 +4925,11 @@
   function lessonEntries(){ return Array.isArray(window.LESSONS) ? window.LESSONS : []; }
   function lessonEntry(deck){ return lessonEntries().find(l=>l && String(l.deck)===String(deck)) || null; }
   function lessonWritten(ls){ return !!(ls && (ls.intro || (Array.isArray(ls.sections) && ls.sections.length))); }
+  // 本文は先に全体をエスケープし、==...== だけを安全な強調spanへ変換する。
+  // lessons.js 側から任意のHTMLを注入できないよう、改行をまたぐ記法や入れ子は許可しない。
+  function lessonBodyHTML(text){
+    return esc(String(text)).replace(/==([^=\n]+)==/g,'<span class="lsEmphasis">$1</span>');
+  }
   /* 授業回の見出し。deck が数字のうちは「第3回」、
      植物生理編のような文字列ID（"YY03"）は回番号ではないのでそのまま出す。 */
   function deckLabel(deck){
@@ -5198,7 +5205,7 @@
       </button></div>`:"";
     const sectHTML=sects.map((sc,i)=>`<div class="lsSect" id="${lessonSectionId(d.deck,i)}" tabindex="-1">
         <div class="lsSectHead"><span class="lsSectNo">${i+1}</span><span class="lsSectName">${esc(sc.heading||"")}</span></div>
-        ${sc.body?`<div class="panel lsBody">${esc(String(sc.body))}</div>`:""}
+        ${sc.body?`<div class="panel lsBody">${lessonBodyHTML(sc.body)}</div>`:""}
         ${figs(sc.slides)}
       </div>`).join("");
     const soon=sects.length?"":`<div class="lsSoon">この回の要点テキストはまだ準備中です。授業スライドの図を見ながら、下のボタンで問題を解いてみてください。</div>`;
