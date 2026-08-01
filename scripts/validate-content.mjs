@@ -191,7 +191,39 @@ for (const subject of subjects) {
       seenDecks.add(deck);
       if (!decks.has(deck)) errors.push(`[${label}] 学習 deck ${deck}: この deck を持つ問題（slideRefs）がありません`);
       const pages = [...(lesson.keySlides || [])];
-      for (const section of lesson.sections || []) pages.push(...(section?.slides || []));
+      for (const [sectionIndex, section] of (lesson.sections || []).entries()) {
+        pages.push(...(section?.slides || []));
+
+        // 第14回以降の免疫学学習コンテンツでは、重要語を ==...== で囲み赤字表示する。
+        // 覚えることの指定漏れは見た目だけでは気づきにくいため、全箇条書きを検査する。
+        if (subject.id === "immunology2" && Number(deck) >= 14) {
+          const body = String(section?.body || "");
+          const [part1, afterPart1] = body.split("【2】覚えること");
+          const [part2, part3] = (afterPart1 || "").split("【3】試験ではこう出る");
+          const sectionLabel = `学習 deck ${deck} 第${sectionIndex + 1}項目`;
+          const emphasis = /==[^=\n]+==/;
+          if (afterPart1 == null || part3 == null) {
+            errors.push(`[${label}] ${sectionLabel}: 3部構成の見出しが足りません`);
+          } else {
+            if ((part1.match(/==/g) || []).length) {
+              errors.push(`[${label}] ${sectionLabel}: 赤字は「覚えること」以降に限定してください`);
+            }
+            const bullets = part2.split("\n").map((line) => line.trim()).filter((line) => line.startsWith("・"));
+            if (!bullets.length) errors.push(`[${label}] ${sectionLabel}: 「覚えること」の箇条書きがありません`);
+            for (const [bulletIndex, bullet] of bullets.entries()) {
+              if (!emphasis.test(bullet)) {
+                errors.push(`[${label}] ${sectionLabel}: 「覚えること」${bulletIndex + 1}行目に赤字の重要語がありません`);
+              }
+            }
+            if (!emphasis.test(part3)) {
+              errors.push(`[${label}] ${sectionLabel}: 「試験ではこう出る」に赤字の重要語がありません`);
+            }
+            if ((body.match(/==/g) || []).length % 2 !== 0) {
+              errors.push(`[${label}] ${sectionLabel}: 赤字記号 == が閉じていません`);
+            }
+          }
+        }
+      }
       for (const page of pages) {
         // "08a:15" と書くと同じ回の別デッキ（前半コマ）のページを参照できる
         const ref = /^([0-9A-Za-z]+):(\d+)$/.exec(String(page));
