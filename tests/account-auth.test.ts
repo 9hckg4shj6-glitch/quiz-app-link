@@ -12,6 +12,11 @@ describe("account auth helpers", () => {
       .toBe("http://localhost:5173/");
   });
 
+  it("CIのPagesベースパスがあってもlocalhostではルートへ戻す", () => {
+    expect(getOAuthRedirectUrl("http://localhost:5173", "/quiz-app-link/"))
+      .toBe("http://localhost:5173/");
+  });
+
   it("端末所有者が無い・同じ・異なる状態を区別する", () => {
     expect(assessAccountBinding("user-a", null)).toBe("unbound");
     expect(assessAccountBinding("user-a", "user-a")).toBe("same");

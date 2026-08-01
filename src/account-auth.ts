@@ -46,7 +46,9 @@ export function getOAuthRedirectUrl(
   origin = location.origin,
   baseUrl = import.meta.env.BASE_URL,
 ): string {
-  return new URL(baseUrl, origin).href;
+  const parsed = new URL(origin);
+  const localHosts = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1"]);
+  return new URL(localHosts.has(parsed.hostname) ? "/" : baseUrl, parsed).href;
 }
 
 export function getLocalDataOwner(): string | null {
