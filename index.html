@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <title>基礎医学演習アプリ</title>
 <!-- PWA -->
-<meta name="theme-color" content="#147d8f" id="themeColorMeta">
+<meta name="theme-color" content="#eaf2ff" id="themeColorMeta">
 <meta name="color-scheme" content="light dark">
 <meta name="application-name" content="基礎医学演習アプリ">
 <meta name="mobile-web-app-capable" content="yes">
@@ -266,8 +266,9 @@
   .menuPanel .ms{margin-left:auto;color:var(--muted);font-size:11px;font-weight:700}
   .menuBackdrop{position:fixed;inset:0;z-index:70;background:transparent}
   .logo{width:44px;height:44px;border-radius:13px;flex:0 0 auto;
-    background:linear-gradient(135deg,var(--brand),var(--brand2));
-    display:grid;place-items:center;font-size:23px;box-shadow:var(--shadow)}
+    background:#f3f6fb;overflow:hidden;
+    display:grid;place-items:center;box-shadow:var(--shadow)}
+  .logo img{display:block;width:100%;height:100%;object-fit:cover}
   header.app h1{font-size:19px;margin:0;font-weight:900;letter-spacing:0}
   header.app p{margin:0;font-size:12px;color:var(--muted)}
   .lvbadge{margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--card);
@@ -1200,7 +1201,7 @@
   .menuPanel a,.menuPanel button{padding:12px;border-radius:12px;font-size:14px}
   .menuPanel .mi{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--card2)}
   .menuBackdrop{z-index:60;background:rgba(12,18,28,.18);backdrop-filter:blur(1px)}
-  .logo{border-radius:14px;background:linear-gradient(135deg,#0f8d8d,#1f6feb)}
+  .logo{border-radius:14px;background:#f3f6fb}
   header.app h1{letter-spacing:0}
   .lvbadge{border-radius:16px;background:var(--surface-blur);backdrop-filter:blur(12px)}
   .lvbadge .dot{background:linear-gradient(135deg,#0f8d8d,#1f6feb)}
@@ -1493,7 +1494,9 @@
         <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">◐</span>テーマ切替</button>
       </div>
     </div>
-    <div class="logo" id="appLogo">🧠</div>
+    <div class="logo" id="appLogo" aria-label="基礎医学演習アプリのロゴ">
+      <img src="icons/icon-192.png" alt="">
+    </div>
     <div class="titleWrap">
       <h1 id="appTitle">基礎医学演習アプリ</h1>
       <p id="subtitle">読み込み中…</p>
@@ -2179,16 +2182,14 @@
     const sub=currentSubject();
     document.body.classList.toggle("has-subject", !!sub);
     wrap.classList.toggle("hidden", SUBJECTS.length<2 || !sub);
-    const logo=$("#appLogo"), title=$("#appTitle");
+    const title=$("#appTitle");
     if(sub){
-      if(logo) logo.textContent=sub.emoji||"📘";
       if(title) title.textContent=sub.name||sub.id;
       const chipEmoji=wrap.querySelector(".sjEmoji"), chipName=wrap.querySelector(".sjName");
       if(chipEmoji) chipEmoji.textContent=sub.emoji||"📘";
       if(chipName) chipName.textContent="科目を変更";
       document.title=`${sub.name||sub.id} 問題演習`;
     }else{
-      if(logo) logo.textContent="🧠";
       if(title) title.textContent="学習ライブラリ";
       document.title="学習ライブラリ";
     }
@@ -6691,7 +6692,7 @@
 
   /* ---------- テーマ切替 ---------- */
   function applyTheme(mode){ if(mode) document.documentElement.setAttribute("data-theme",mode); else document.documentElement.removeAttribute("data-theme"); updateThemeColor(); }
-  function updateThemeColor(){ try{ const cur=document.documentElement.getAttribute("data-theme"); const isDark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches; const m=document.getElementById("themeColorMeta"); if(m) m.setAttribute("content", isDark?"#0b1220":"#147d8f"); }catch(e){} }
+  function updateThemeColor(){ try{ const cur=document.documentElement.getAttribute("data-theme"); const isDark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches; const m=document.getElementById("themeColorMeta"); if(m) m.setAttribute("content", isDark?"#0b1220":"#eaf2ff"); }catch(e){} }
   (function(){ try{ const t=localStorage.getItem(THEME_KEY); if(t) applyTheme(t); }catch(e){} })();
   function toggleTheme(){
     const cur=document.documentElement.getAttribute("data-theme");

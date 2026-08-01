@@ -16,8 +16,8 @@ export default defineConfig({
         name: "基礎医学演習アプリ",
         short_name: "基礎医学演習アプリ",
         description: "問題演習とFSRSフラッシュカードで学ぶオフライン対応学習アプリ",
-        theme_color: "#147d8f",
-        background_color: "#f6f8f7",
+        theme_color: "#eaf2ff",
+        background_color: "#f3f6fb",
         display: "standalone",
         start_url: ".",
         icons: [
