@@ -2421,6 +2421,8 @@
         // pageNotes は植物生理編で足した任意欄。持たない科目は null のままで表示も従来どおり
         pageNotes:Array.isArray(r.pageNotes)?r.pageNotes.map(n=>({page:Number(n.page),panel:String(n.panel||""),label:String(n.label||"")})).filter(n=>Number.isFinite(n.page)):null})) : null,
       choiceNotes: Array.isArray(q.choiceNotes) ? q.choiceNotes.slice() : null,
+      // 選択肢が図中の記号そのものの問題は並べ替えない（動物生理編で追加した任意欄）
+      noShuffle: !!q.noShuffle,
       // --- 大問の共通設問文（案A：属する小問へ複製して持たせる）---
       stem: q.stem || "",
       stemTitle: q.stemTitle || "",
@@ -4941,7 +4943,9 @@
     const queue=ordered.map((q,qi)=>{
       if(questionType(q)==="constructed") return {q,qi,type:"constructed",parts:q.responseParts||[],els:null,cw:null};
       const ok=new Set(ansIdxs(q));
-      let ch=q.choices.map((c,i)=>({text:c,correct:ok.has(i),idx:i})); if(SHUFFLE_CHOICES) ch=shuffle(ch);
+      // noShuffle: 選択肢が図中の記号そのもの（"A"〜"E"）の問題。並べ替えると
+      // 表示上の見出し記号と選択肢の記号が食い違って読めなくなるので原本の順のまま出す。
+      let ch=q.choices.map((c,i)=>({text:c,correct:ok.has(i),idx:i})); if(SHUFFLE_CHOICES && !q.noShuffle) ch=shuffle(ch);
       return {q,qi,type:"choice",choices:ch,need:ok.size,picks:[],els:null,graded:false}; });
     const pages=buildPages(queue);
     session={label,queue,pages,p:0,i:pages[0]?pages[0].idxs[0]:0,correct:0,streak:0,maxStreak:0,wrongList:[],

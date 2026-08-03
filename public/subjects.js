@@ -81,7 +81,11 @@ window.SUBJECTS = [
     emoji: "🐁",
     accent: "#0ea5e9",
     learningMode: "lessons",
-    draft: true,
+    questions: "subjects/animalphysiology/questions.js",
+    // 2025年度（令和7年度）前期の35問・100点。
+    //   選択25問（うち「すべて選べ」1問）＋記述10問
+    //   （短答5・穴埋め2・構造化3。うち1問はGoldmanの式による数値計算）
+    expectQuestions: 35,
     hideCards: true,
     hideExamDay: true,
   },
