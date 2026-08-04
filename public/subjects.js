@@ -85,7 +85,8 @@ window.SUBJECTS = [
     // 令和7年度 前期 35問・100点（選択25＋記述10）
     // 令和6年度 前期 31問・100点（選択21＋記述10）
     // 令和5年度 前期 11問・100点（選択3＋記述8。問Ⅱ以外はすべて記述）
-    expectQuestions: 77,
+    // 令和4年度 前期 11問・100点（選択5＋記述6。公式解答が無い年度）
+    expectQuestions: 88,
     hideCards: true,
     hideExamDay: true,
   },
