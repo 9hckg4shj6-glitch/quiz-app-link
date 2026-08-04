@@ -84,7 +84,8 @@ window.SUBJECTS = [
     questions: "subjects/animalphysiology/questions.js",
     // 令和7年度 前期 35問・100点（選択25＋記述10）
     // 令和6年度 前期 31問・100点（選択21＋記述10）
-    expectQuestions: 66,
+    // 令和5年度 前期 11問・100点（選択3＋記述8。問Ⅱ以外はすべて記述）
+    expectQuestions: 77,
     hideCards: true,
     hideExamDay: true,
   },
