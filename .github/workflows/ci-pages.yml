@@ -53,12 +53,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Pages 側のキューが混むと deployment_queued のまま10分で打ち切られることがある。
+      # 打ち切りはそのデプロイを「キャンセル済み」にするので、次のデプロイが
+      # "due to in progress deployment" で弾かれ、本番が更新できなくなる循環に入る
+      # （2026-08-06 に発生し、本番が第7回のまま数十分止まった）。
+      # timeout 入力は10分（600000ms）が上限でクランプされるため、延ばして回避はできない。
+      # 詰まったときは詰まったデプロイをキャンセルし、新しいコミットで押し直す：
+      #   gh api -X POST "repos/:owner/:repo/pages/deployments/<SHA>/cancel"
+      #   git commit --allow-empty -m "Pages の再デプロイ" && git push
+      # 同一SHAでの rerun は効かない（デプロイIDがSHAと同じで、キャンセル済み記録に当たる）。
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          # 既定の10分だと Pages 側のキューが混んだときに打ち切られる。しかも打ち切りは
-          # そのデプロイを「キャンセル済み」にするので、次のデプロイが
-          # "due to in progress deployment" で弾かれ、本番が更新できなくなる。
-          # 2026-08-06 に3回連続で発生し、本番が第7回のまま止まった。30分待たせる。
-          timeout: 1800000
