@@ -51,17 +51,43 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://9hckg4shj6-glitch.github.io/quiz-app-link/
     steps:
-      # Pages 側のキューが混むと deployment_queued のまま10分で打ち切られることがある。
-      # 打ち切りはそのデプロイを「キャンセル済み」にするので、次のデプロイが
-      # "due to in progress deployment" で弾かれ、本番が更新できなくなる循環に入る
-      # （2026-08-06 に発生し、本番が第7回のまま数十分止まった）。
-      # timeout 入力は10分（600000ms）が上限でクランプされるため、延ばして回避はできない。
-      # 詰まったときは詰まったデプロイをキャンセルし、新しいコミットで押し直す：
-      #   gh api -X POST "repos/:owner/:repo/pages/deployments/<SHA>/cancel"
-      #   git commit --allow-empty -m "Pages の再デプロイ" && git push
-      # 同一SHAでの rerun は効かない（デプロイIDがSHAと同じで、キャンセル済み記録に当たる）。
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # actions/deploy-pages は使わない。あれは完了までポーリングし、待ちきれないと
+      # デプロイ自体をキャンセルする（src/internal/deployment.js の timeout ハンドラ）。
+      # timeout 入力は10分（600000ms）でクランプされるので延ばせない。
+      # このサイトは画像込みで約140MB あり Pages 側の処理が10分を超えるため、
+      # 2026-08-06 に7回連続で「投げる→10分で自分でキャンセル」を繰り返して本番が止まった。
+      # そこでデプロイ生成のAPIだけ叩いて待たずに抜ける。完了確認は下の curl で行う。
+      - name: Create Pages deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          id_token=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" | python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])')
+          artifact_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name == "github-pages")][0].id')
+          gh api -X POST "repos/$GITHUB_REPOSITORY/pages/deployments" \
+            -F artifact_id="$artifact_id" \
+            -f pages_build_version="$GITHUB_SHA" \
+            -f oidc_token="$id_token" \
+            --jq '.page_url'
+
+      # 状態を見るだけ。ここで打ち切ってもデプロイはサーバ側で走り続ける。
+      - name: Wait for the deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          for _ in $(seq 1 60); do
+            status=$(gh api "repos/$GITHUB_REPOSITORY/pages/deployments/$GITHUB_SHA" --jq '.status' 2>/dev/null || echo unknown)
+            case "$status" in
+              succeed) echo "デプロイ完了"; exit 0 ;;
+              error|failed) echo "デプロイ失敗: $status"; exit 1 ;;
+              *) echo "$status" ;;
+            esac
+            sleep 30
+          done
+          echo "30分たっても完了しなかった（最後の状態: $status）。デプロイ自体は進行中の可能性が高いので、押し直さず本番を確認すること。"
+          exit 1
