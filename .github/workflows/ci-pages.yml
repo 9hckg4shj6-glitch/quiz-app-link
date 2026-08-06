@@ -56,3 +56,9 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # 既定の10分だと Pages 側のキューが混んだときに打ち切られる。しかも打ち切りは
+          # そのデプロイを「キャンセル済み」にするので、次のデプロイが
+          # "due to in progress deployment" で弾かれ、本番が更新できなくなる。
+          # 2026-08-06 に3回連続で発生し、本番が第7回のまま止まった。30分待たせる。
+          timeout: 1800000
