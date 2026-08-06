@@ -40,7 +40,7 @@ window.SUBJECTS = [
     learningMode: "lessons",
     questions: "subjects/genome/questions.js",
     lessons: "subjects/genome/lessons.js",   // 「📖 学習」画面の要点テキスト（省略可）
-    expectQuestions: 500,
+    expectQuestions: 600,
     hideCards: true,     // この科目では「カード」機能を出さない（メニュー・ハブ・カード一覧）
     hideExamDay: true,   // この科目では「試験日モード」を出さない
   },
