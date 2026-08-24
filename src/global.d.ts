@@ -123,6 +123,25 @@ declare global {
           getLocalPayload: () => SyncPayload,
           mergeRemotePayload: (payload: SyncPayload) => void,
         ) => Promise<{ ok: boolean; attempts: number; error?: string }>;
+        syncAccountData: (
+          legacyCode: string,
+          operations: {
+            claimLegacyCode: (code: string) => Promise<{ ok: boolean; payload?: SyncPayload; missing?: boolean; error?: string }>;
+            mergeLegacyPayload: (payload: SyncPayload) => void;
+            importLegacyWritten: (code: string) => Promise<{ ok: boolean; error?: string }>;
+            syncSnapshot: () => Promise<{ ok: boolean; error?: string }>;
+            syncWritten: () => Promise<{ ok: boolean; error?: string }>;
+            syncCards: () => Promise<{ error?: string | null }>;
+            completeLegacyMigration: (code: string) => Promise<{ ok: boolean; error?: string }>;
+            unlinkLegacyCode: () => void;
+          },
+        ) => Promise<{
+          ok: boolean;
+          migratedLegacy: boolean;
+          legacyPending: boolean;
+          error?: string;
+          legacyError?: string;
+        }>;
       };
     };
     __STUDY_CARDS?: StudyCard[];

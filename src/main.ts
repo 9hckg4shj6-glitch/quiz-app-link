@@ -100,7 +100,7 @@ import {
   upsertFromRemote as upsertWrittenFromRemote,
 } from "./written";
 import { learningDestination, primaryNavKey } from "./navigation";
-import { syncSnapshotWithRetry } from "./account-sync";
+import { syncAccountData, syncSnapshotWithRetry } from "./account-sync";
 import { getAccountEntryChoice, saveAccountEntryChoice } from "./account-choice";
 import type { LegacyProgress, ReviewRating } from "./types";
 
@@ -286,6 +286,7 @@ window.STUDY_CORE = {
     importWrittenFromCode: importWrittenAttemptsFromCode,
     syncAccountWritten: syncAccountWrittenAttempts,
     syncAccountSnapshot: syncSnapshotWithRetry,
+    syncAccountData,
   },
 };
 
