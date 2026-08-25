@@ -197,6 +197,21 @@ for (const subject of subjects) {
       for (const [sectionIndex, section] of (lesson.sections || []).entries()) {
         pages.push(...(section?.slides || []));
 
+        // 表ブロックは列数がずれると行がまるごと欠けて見えるため、ヘッダとの一致を検査する。
+        const table = section?.table;
+        if (table) {
+          const sectionLabel = `学習 deck ${deck} 第${sectionIndex + 1}項目`;
+          if (!Array.isArray(table.rows) || !table.rows.length) {
+            errors.push(`[${label}] ${sectionLabel}: table.rows が空です`);
+          } else if (Array.isArray(table.headers) && table.headers.length) {
+            for (const [rowIndex, row] of table.rows.entries()) {
+              if (!Array.isArray(row) || row.length !== table.headers.length) {
+                errors.push(`[${label}] ${sectionLabel}: table 第${rowIndex + 1}行の列数が headers（${table.headers.length}列）と一致しません`);
+              }
+            }
+          }
+        }
+
         // 第14回以降の免疫学学習コンテンツでは、重要語を ==...== で囲み赤字表示する。
         // 覚えることの指定漏れは見た目だけでは気づきにくいため、全箇条書きを検査する。
         if (subject.id === "immunology2" && Number(deck) >= 14) {

@@ -150,6 +150,18 @@
     border-radius:999px;padding:3px 9px}
   .lsSectName{font-size:16.5px;font-weight:900;line-height:1.5}
   .lsBody{padding:15px 17px;font-size:14.5px;line-height:2.0;white-space:pre-wrap;word-break:break-word}
+  /* 対比・一覧は文章より表のほうが速く読める。列が多い表はモバイルで潰れるので横スクロールで包む。 */
+  .lsTableWrap{margin-top:11px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    border:1px solid var(--line);border-radius:14px;background:var(--card)}
+  .lsTableCap{padding:10px 14px 0;font-size:12.5px;color:var(--muted)}
+  .lsTable{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.75}
+  .lsTable th,.lsTable td{padding:9px 12px;border-bottom:1px solid var(--line);
+    text-align:left;vertical-align:top;word-break:break-word}
+  .lsTable thead th{background:var(--card2);font-weight:900;font-size:12.5px;
+    color:var(--muted);white-space:nowrap}
+  .lsTable tbody th{font-weight:800}
+  .lsTable tbody tr:last-child th,.lsTable tbody tr:last-child td{border-bottom:0}
+  @media(max-width:520px){ .lsTable{font-size:12.5px} .lsTable th,.lsTable td{padding:8px 10px} }
   /* 学習本文の ==重要語== だけを赤字にする。文章全体を赤くせず、暗記語と正答語に限定する。 */
   .lsEmphasis{color:var(--bad);font-weight:900}
   .lsFigs{margin-top:11px}
@@ -5292,6 +5304,16 @@
     const m=/^0*(\d+)[a-z]$/i.exec(String(deck));
     return `${m?`第${m[1]}回（前半）`:deckLabel(deck)} ・ p${page}`;
   }
+  /* 表のセルも本文と同じ lessonBodyHTML を通す。エスケープ経路が1本のままなので
+     lessons.js 側からHTMLを注入できる面は増えず、==強調== はセル内でも効く。 */
+  function lessonTableHTML(t){
+    if(!t || !Array.isArray(t.rows) || !t.rows.length) return "";
+    const head=Array.isArray(t.headers)&&t.headers.length
+      ? `<thead><tr>${t.headers.map(h=>`<th scope="col">${lessonBodyHTML(h)}</th>`).join("")}</tr></thead>` : "";
+    const rows=t.rows.map(r=>`<tr>${(r||[]).map((c,i)=>
+      i===0 ? `<th scope="row">${lessonBodyHTML(c)}</th>` : `<td>${lessonBodyHTML(c)}</td>`).join("")}</tr>`).join("");
+    return `<div class="lsTableWrap">${t.caption?`<div class="lsTableCap">${esc(String(t.caption))}</div>`:""}<table class="lsTable">${head}<tbody>${rows}</tbody></table></div>`;
+  }
   function lessonFigsHTML(deck, name, pages){
     const list=(pages||[]).map(p=>lessonSlideRef(deck,p)).filter(r=>r.page>0);
     if(!list.length) return "";
@@ -5459,7 +5481,7 @@
   function renderLesson(d){
     const body=$("#lessonBody"); if(!body) return;
     const s=catStats(d.items), ls=d.lesson||{};
-    const sects=(Array.isArray(ls.sections)?ls.sections:[]).filter(x=>x && (x.heading||x.body));
+    const sects=(Array.isArray(ls.sections)?ls.sections:[]).filter(x=>x && (x.heading||x.body||x.table));
     const figs=(pages)=>lessonFigsHTML(d.deck, d.name, pages);
 
     const head=`<div class="homeSection"><div class="panel lsHead">
@@ -5478,6 +5500,8 @@
     const sectHTML=sects.map((sc,i)=>`<div class="lsSect" id="${lessonSectionId(d.deck,i)}" tabindex="-1">
         <div class="lsSectHead"><span class="lsSectNo">${i+1}</span><span class="lsSectName">${esc(sc.heading||"")}</span></div>
         ${sc.body?`<div class="panel lsBody">${lessonBodyHTML(sc.body)}</div>`:""}
+        ${lessonTableHTML(sc.table)}
+        ${sc.note?`<div class="panel lsBody">${lessonBodyHTML(sc.note)}</div>`:""}
         ${figs(sc.slides)}
       </div>`).join("");
     const soon=sects.length?"":`<div class="lsSoon">この回の要点テキストはまだ準備中です。授業スライドの図を見ながら、下のボタンで問題を解いてみてください。</div>`;
