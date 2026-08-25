@@ -2,6 +2,10 @@ export type CardKind = "basic" | "multiple-choice" | "term";
 export type ReviewRating = 1 | 2 | 3 | 4;
 export type AuthProvider = "google" | "email";
 
+export const DEFAULT_NEW_CARDS_PER_DAY = 20;
+export const DEFAULT_REVIEWS_PER_DAY = 200;
+export const DEFAULT_DESIRED_RETENTION = 0.9;
+
 export interface AccountState {
   status: "loading" | "disabled" | "guest" | "authenticated" | "migrating" | "conflict";
   enabled: boolean;
@@ -250,6 +254,12 @@ export interface StudyCard {
   image: string | null;
   imageAlt: string;
   version: number;
+  /** 復習キューから一時的に除外する。削除とは別扱い。 */
+  suspendedAt: string | null;
+  /** 共有デッキから取り込んだカードだけが持つ由来情報。 */
+  originDeckId: string | null;
+  originVersion: number | null;
+  originCardId: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -261,6 +271,9 @@ export interface Deck {
   name: string;
   description: string;
   order: number;
+  newCardsPerDay: number;
+  reviewsPerDay: number;
+  desiredRetention: number;
   version: number;
   createdAt: string;
   updatedAt: string;

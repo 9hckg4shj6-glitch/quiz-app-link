@@ -4,6 +4,7 @@ import type { SaveAttemptInput } from "./written";
 import type { LeaderboardView } from "./leaderboard";
 import type { BoardRow, PostRow } from "./community";
 import type { SyncPayload } from "./datasync";
+import type { CardHomeSnapshot } from "./card-home";
 
 declare global {
   interface Window {
@@ -20,6 +21,9 @@ declare global {
       refreshCustomCards: () => Promise<void>;
       saveLegacyProgress: (progress: Record<string, unknown>) => void;
       openCardManager: () => Promise<void>;
+      cardHome: {
+        snapshot: () => Promise<CardHomeSnapshot>;
+      };
       syncNow: () => Promise<SyncStatus>;
       account: {
         state: () => AccountState;

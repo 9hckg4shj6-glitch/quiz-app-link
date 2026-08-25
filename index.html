@@ -1801,29 +1801,51 @@
   <section id="cardsView" class="hidden">
     <div class="reviewTop">
       <button class="btn ghost small viewBack">← ホーム</button>
-      <span class="pill">カード</span>
+      <span class="pill">カード学習</span>
     </div>
 
-    <div class="homeSection examSection" id="flashSection">
-      <button type="button" class="dueCard flashEntry" id="flashCardBtn">
-        <span class="dueIcon">🎴</span>
-        <span class="dueBody">
-          <span class="dueTitle">フラッシュカード</span>
-          <span class="dueSub">選択肢なしで表↔裏を素早くめくる暗記モード</span>
-        </span>
-        <span class="dueRight"><span class="dueUnit" style="font-size:15px">めくる →</span></span>
-      </button>
+    <div class="cardHomeHero" aria-labelledby="cardHomeTitle">
+      <div class="cardHomeIntro">
+        <span class="cardHomeEyebrow">SPACED REPETITION</span>
+        <h2 id="cardHomeTitle">今日、覚えるカード</h2>
+        <p>忘れかけたカードを先に復習し、無理のない枚数だけ新しく学びます。</p>
+      </div>
+      <div class="cardHomeStats" aria-label="カード学習の状況">
+        <div><b id="cardHomeDue">—</b><span>今日の復習</span></div>
+        <div><b id="cardHomeNew">—</b><span>未学習</span></div>
+        <div><b id="cardHomePersonal">—</b><span>自作カード</span></div>
+      </div>
+      <div class="cardHomeActions">
+        <button type="button" class="cardHomePrimary" id="cardHomeReviewBtn">今日の復習を始める</button>
+        <button type="button" class="cardHomeSecondary" id="cardHomeNewBtn">新しいカードを学ぶ</button>
+      </div>
+      <p class="cardHomeStatus" id="cardHomeStatus" aria-live="polite">学習状況を確認しています</p>
     </div>
 
-    <div class="homeSection" id="browseSection">
-      <button type="button" class="dueCard browseEntry" id="browseBtn">
-        <span class="dueIcon">🗂</span>
-        <span class="dueBody">
-          <span class="dueTitle">カードをぜんぶ見る</span>
-          <span class="dueSub">授業回ごとに、見たいカードを開いて確認</span>
-        </span>
-        <span class="dueRight"><span class="dueUnit" style="font-size:15px">一覧 →</span></span>
-      </button>
+    <div class="homeSection cardHomeDeckSection" id="personalDeckSection">
+      <div class="cardHomeSectionHead">
+        <div><b>自分のデッキ</b><span>デッキごとの今日の学習量</span></div>
+        <button type="button" id="cardHomeManageBtn">カード管理</button>
+      </div>
+      <div class="cardHomeDeckList" id="cardHomeDeckList">
+        <div class="cardHomeLoading">デッキを読み込んでいます</div>
+      </div>
+    </div>
+
+    <div class="homeSection">
+      <div class="cardHomeSectionHead"><div><b>カードを選んで学ぶ</b><span>科目や授業回から自由に選択</span></div></div>
+      <div class="cardHomeLibraryGrid">
+        <button type="button" class="cardHomeLibraryCard" id="flashCardBtn">
+          <span class="cardHomeLibraryIcon">🎴</span>
+          <span><b>範囲を選んでめくる</b><small>復習・苦手・分野・授業回から選択</small></span>
+          <i aria-hidden="true">›</i>
+        </button>
+        <button type="button" class="cardHomeLibraryCard" id="browseBtn">
+          <span class="cardHomeLibraryIcon">🗂</span>
+          <span><b>カード一覧</b><small>表と裏を確認して、1枚から学習</small></span>
+          <i aria-hidden="true">›</i>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -3011,6 +3033,7 @@
       if(id==="moreView"){ renderSyncBlock(); }
       if(id==="mistakesView"){ renderMistakes(); }
       if(id==="reviewView"){ refreshPendingExam(); }
+      if(id==="cardsView"){ renderCardHome(); }
     });
   }
   function renderHub(){
@@ -4382,6 +4405,81 @@
   };
   window.addEventListener("study:auth-changed",maybeShowAccountChoice);
   setTimeout(maybeShowAccountChoice,1800);
+
+  /* ---------- カード学習ホーム ---------- */
+  let cardHomeRenderToken=0;
+  function cardHomeApi(){ return window.STUDY_CORE&&window.STUDY_CORE.cardHome; }
+  function cardIsNew(id){ const r=progress[id]; return !(r&&((r.reps||0)>0||(r.seen||0)>0||r.lastReviewed)); }
+  function personalStudyCards(deckId){
+    return (Array.isArray(window.__STUDY_CARDS)?window.__STUDY_CARDS:[])
+      .filter(c=>c&&!c.deletedAt&&!c.suspendedAt&&(!deckId||c.deckId===deckId))
+      .map(c=>{
+        if(c.kind==="multiple-choice"){
+          const answer=c.correctChoiceIndex==null?"":(c.choices[c.correctChoiceIndex]||c.back||"");
+          return {id:c.id,kind:"q",field:c.field||"",front:c.front||"",answer,expl:c.explanation||c.back||"",image:c.image||null,imageAlt:c.imageAlt||""};
+        }
+        return {id:c.id,kind:"term",field:c.field||"",front:c.front||"",desc:c.back||c.explanation||"",image:c.image||null,imageAlt:c.imageAlt||""};
+      });
+  }
+  function newCardCandidates(){
+    const personal=personalStudyCards(), personalIds=new Set(personal.map(c=>c.id));
+    const standard=termSources().filter(c=>!personalIds.has(c.id)).map((c,i)=>termToCard(c,i));
+    return standard.concat(personal).filter(c=>cardIsNew(c.id));
+  }
+  function startNewCards(){
+    const cards=newCardCandidates().slice(0,20);
+    if(!cards.length){ toast("🎉 未学習のカードはありません"); return; }
+    startFlash(cards,"今日の新しいカード",{keepOrder:true});
+  }
+  function startPersonalDeck(deck){
+    const cards=personalStudyCards(deck.id), today=todayStr();
+    const due=sortByUrgency(cards.filter(c=>{ const r=progress[c.id]; return r&&r.due&&r.due<=today; }))
+      .slice(0,deck.reviewsPerDay);
+    const dueIds=new Set(due.map(c=>c.id));
+    const fresh=cards.filter(c=>!dueIds.has(c.id)&&cardIsNew(c.id)).slice(0,deck.newCardsPerDay);
+    const queue=due.concat(fresh);
+    if(!queue.length){ toast(cards.length?"🎉 このデッキの今日の学習は完了です":"このデッキにはカードがありません"); return; }
+    startFlash(queue,deck.name,{keepOrder:true});
+  }
+  function renderCardDecks(snapshot){
+    const box=$("#cardHomeDeckList"); if(!box) return;
+    const decks=snapshot.decks||[];
+    if(!decks.length){
+      box.innerHTML=`<div class="cardHomeEmpty"><b>自分のデッキはまだありません</b><span>「カード管理」から最初のデッキとカードを作成できます。</span></div>`;
+      return;
+    }
+    box.innerHTML=decks.map((deck,i)=>{
+      const scheduled=Math.min(deck.dueCards,deck.reviewsPerDay)+Math.min(deck.newCards,deck.newCardsPerDay);
+      const pct=deck.activeCards?Math.round(deck.learnedCards/deck.activeCards*100):0;
+      const detail=deck.suspendedCards?` ・ 休止 ${deck.suspendedCards}`:"";
+      return `<button type="button" class="cardHomeDeck" data-i="${i}">
+        <span class="cardHomeDeckIcon">${i%2?"◆":"●"}</span>
+        <span class="cardHomeDeckBody"><b>${esc(deck.name)}</b><small>${deck.activeCards}枚 ・ 学習済み ${pct}%${detail}</small><span class="cardHomeDeckBar"><i style="width:${pct}%"></i></span></span>
+        <span class="cardHomeDeckToday"><b>${scheduled}</b><small>今日</small></span>
+        <span class="cardHomeDeckArrow" aria-hidden="true">›</span>
+      </button>`;
+    }).join("");
+    box.querySelectorAll(".cardHomeDeck").forEach(el=>{ el.onclick=()=>startPersonalDeck(decks[+el.dataset.i]); });
+  }
+  async function renderCardHome(){
+    const due=dueReviewCards().length, fresh=newCardCandidates().length;
+    $("#cardHomeDue").textContent=due;
+    $("#cardHomeNew").textContent=fresh;
+    $("#cardHomeReviewBtn").disabled=due===0;
+    $("#cardHomeNewBtn").disabled=fresh===0;
+    $("#cardHomeStatus").textContent=due>0?`忘れかけた${due}件を先に復習しましょう`:fresh>0?"今日の復習は完了しています。新しいカードへ進めます":"今日のカード学習は完了です";
+    const token=++cardHomeRenderToken, api=cardHomeApi();
+    if(!api){ $("#cardHomePersonal").textContent="0"; return; }
+    try{
+      const snapshot=await api.snapshot(); if(token!==cardHomeRenderToken) return;
+      $("#cardHomePersonal").textContent=snapshot.activeCards;
+      renderCardDecks(snapshot);
+    }catch(e){
+      if(token!==cardHomeRenderToken) return;
+      $("#cardHomePersonal").textContent="—";
+      $("#cardHomeDeckList").innerHTML=`<div class="cardHomeEmpty"><b>デッキを読み込めませんでした</b><span>画面を開き直して再試行してください。</span></div>`;
+    }
+  }
 
   /* ---------- フラッシュカード ---------- */
   let flashSession=null, flashTouch=null, lastFlashTouch=0, flashAnimating=false;
@@ -6700,6 +6798,9 @@
   $("#bkReplace").onclick=()=>{ const obj=parseImport($("#bkImport").value); if(!obj) return; if(confirm("現在の学習記録をすべて消して、取り込む記録で置き換えます。よろしいですか？")) applyImport(obj,true); };
 
   /* フラッシュカード */
+  $("#cardHomeReviewBtn").onclick=openDueReview;
+  $("#cardHomeNewBtn").onclick=startNewCards;
+  $("#cardHomeManageBtn").onclick=()=>{ const core=window.STUDY_CORE; if(core&&core.openCardManager) core.openCardManager(); };
   $("#flashCardBtn").onclick=openFlashChooser;
   $("#flashChooserClose").onclick=closeFlashChooser;
   $("#flashChooser").onclick=(e)=>{ if(e.target.id==="flashChooser") closeFlashChooser(); };
@@ -7051,7 +7152,12 @@
 
   /* ---------- 起動 ---------- */
   // 科目データは非同期で読むため、DATAが入るまで renderHome() を待つ。
-  window.__legacyAppRefresh=()=>{ if(!currentSubjectId) return; loadProgress(); loadData(); renderHome(); };
+  window.__legacyAppRefresh=()=>{
+    if(!currentSubjectId) return;
+    loadProgress(); loadData();
+    if(currentScreenId==="cardsView"){ refreshData(); renderCardHome(); }
+    else renderHome();
+  };
   (async function boot(){
     const firstLaunch = isFirstEverLaunch();
     loadProgress(); loadMeta(); loadUpdates();

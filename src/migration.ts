@@ -2,6 +2,11 @@ import { cardToStored, legacyToFsrs } from "./fsrs";
 import { db, nowIso, saveCard, saveDeck, saveSetting, uuid } from "./db";
 import { cardSchema } from "./schema";
 import type { LegacyProgress, StudyCard } from "./types";
+import {
+  DEFAULT_DESIRED_RETENTION,
+  DEFAULT_NEW_CARDS_PER_DAY,
+  DEFAULT_REVIEWS_PER_DAY,
+} from "./types";
 
 const MIGRATION_KEY = "migration.localStorage.v2";
 const CUSTOM_DATA_KEY = "quizCustomData_v1";
@@ -41,6 +46,10 @@ function legacyQuestionToCard(question: Record<string, unknown>, index: number):
     image: typeof question.image === "string" ? question.image : null,
     imageAlt: String(question.imageAlt ?? ""),
     version: 1,
+    suspendedAt: null,
+    originDeckId: null,
+    originVersion: null,
+    originCardId: null,
     createdAt: timestamp,
     updatedAt: timestamp,
     deletedAt: null,
@@ -59,6 +68,9 @@ export async function migrateLegacyStorage(): Promise<void> {
     name: "自作カード",
     description: "この端末で作成・取り込みしたカード",
     order: 0,
+    newCardsPerDay: DEFAULT_NEW_CARDS_PER_DAY,
+    reviewsPerDay: DEFAULT_REVIEWS_PER_DAY,
+    desiredRetention: DEFAULT_DESIRED_RETENTION,
     version: 1,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -127,6 +139,7 @@ export function builtInCards(): StudyCard[] {
       source: String(question.mockTitle ?? question.year ?? "標準問題"),
       tags: [String(question.category ?? "")].filter(Boolean),
       image: typeof question.image === "string" ? question.image : null, imageAlt: String(question.imageAlt ?? ""),
+      suspendedAt: null, originDeckId: null, originVersion: null, originCardId: null,
       version: 1, createdAt: now, updatedAt: now, deletedAt: null,
     }];
   });
@@ -139,6 +152,7 @@ export function builtInCards(): StudyCard[] {
       front, back: String(term.desc ?? ""), choices: [], correctChoiceIndex: null, explanation: "",
       field: String(term.field ?? ""), source: String(term.src ?? "標準用語カード"), tags: [],
       image: typeof term.image === "string" ? term.image : null, imageAlt: String(term.imageAlt ?? ""),
+      suspendedAt: null, originDeckId: null, originVersion: null, originCardId: null,
       version: 1, createdAt: now, updatedAt: now, deletedAt: null,
     }];
   });

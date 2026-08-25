@@ -48,7 +48,7 @@ APP_USER="study" APP_PASSWORD="任意のパスワード" node server.js
 
 本番への導入順序:
 
-1. Supabase SQL Editorで既存のマイグレーションに続けて `supabase/migrations/009_account_auth.sql` を適用する。
+1. Supabase SQL Editorで既存のマイグレーションに続けて `supabase/migrations/009_account_auth.sql`、`010_card_learning_settings.sql` を番号順に適用する。
 2. Supabase AuthのSite URLを `https://9hckg4shj6-glitch.github.io/quiz-app-link/` にし、Redirect URLsへ同URLと `http://localhost:5173/` を登録する。
 3. Google OAuthクライアントを作り、Google側の承認済みリダイレクトURIへ `https://<project-ref>.supabase.co/auth/v1/callback` を登録して、Client IDとSecretをSupabaseのGoogle providerへ保存する。
 4. Supabase AuthのManual Linkingを有効にする。

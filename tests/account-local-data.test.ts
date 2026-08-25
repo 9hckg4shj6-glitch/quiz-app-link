@@ -9,6 +9,7 @@ function card(id: string, builtIn: boolean): StudyCard {
     id, ownerId: builtIn ? null : "old-user", builtIn, kind: "basic", deckId: "deck-personal",
     front: id, back: "", choices: [], correctChoiceIndex: null, explanation: "", field: "",
     source: "", tags: [], image: null, imageAlt: "", version: 1,
+    suspendedAt: null, originDeckId: null, originVersion: null, originCardId: null,
     createdAt: "2026-08-01T00:00:00.000Z", updatedAt: "2026-08-01T00:00:00.000Z", deletedAt: null,
   };
 }
@@ -29,6 +30,7 @@ describe("account local data isolation", () => {
     ]);
     await db.decks.put({
       id: "deck-personal", ownerId: "old-user", name: "自作", description: "", order: 0, version: 1,
+      newCardsPerDay: 20, reviewsPerDay: 200, desiredRetention: 0.9,
       createdAt: "2026-08-01T00:00:00.000Z", updatedAt: "2026-08-01T00:00:00.000Z", deletedAt: null,
     });
 

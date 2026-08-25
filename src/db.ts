@@ -10,6 +10,11 @@ import type {
   WrittenAttempt,
   WrittenDraft,
 } from "./types";
+import {
+  DEFAULT_DESIRED_RETENTION,
+  DEFAULT_NEW_CARDS_PER_DAY,
+  DEFAULT_REVIEWS_PER_DAY,
+} from "./types";
 
 export class StudyDatabase extends Dexie {
   cards!: EntityTable<StudyCard, "id">;
@@ -43,6 +48,28 @@ export class StudyDatabase extends Dexie {
       settings: "&key, ownerId, updatedAt",
       writtenAttempts: "&id, subjectId, questionId, gradedAt, updatedAt, syncedAt, [questionId+gradedAt]",
       writtenDrafts: "&id, subjectId, questionId, examSessionId, updatedAt",
+    });
+    this.version(3).stores({
+      cards: "&id, ownerId, deckId, kind, updatedAt, deletedAt, suspendedAt, originDeckId, [originDeckId+originCardId], *tags",
+      decks: "&id, ownerId, order, updatedAt, deletedAt",
+      reviewEvents: "&id, ownerId, cardId, reviewedAt, [cardId+reviewedAt], syncedAt",
+      schedules: "&cardId, due, state, updatedAt",
+      outbox: "++seq, &operationId, table, recordId, status, createdAt",
+      settings: "&key, ownerId, updatedAt",
+      writtenAttempts: "&id, subjectId, questionId, gradedAt, updatedAt, syncedAt, [questionId+gradedAt]",
+      writtenDrafts: "&id, subjectId, questionId, examSessionId, updatedAt",
+    }).upgrade(async (transaction) => {
+      await transaction.table("cards").toCollection().modify((card: Partial<StudyCard>) => {
+        card.suspendedAt ??= null;
+        card.originDeckId ??= null;
+        card.originVersion ??= null;
+        card.originCardId ??= null;
+      });
+      await transaction.table("decks").toCollection().modify((deck: Partial<Deck>) => {
+        deck.newCardsPerDay ??= DEFAULT_NEW_CARDS_PER_DAY;
+        deck.reviewsPerDay ??= DEFAULT_REVIEWS_PER_DAY;
+        deck.desiredRetention ??= DEFAULT_DESIRED_RETENTION;
+      });
     });
   }
 }

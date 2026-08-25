@@ -58,6 +58,10 @@ async function cardPayload(card: StudyCard, ownerId: string): Promise<Record<str
     image: await uploadCardImage(card, ownerId),
     image_alt: card.imageAlt,
     version: card.version,
+    suspended_at: card.suspendedAt,
+    origin_deck_id: card.originDeckId,
+    origin_version: card.originVersion,
+    origin_card_id: card.originCardId,
     created_at: card.createdAt,
     updated_at: card.updatedAt,
     deleted_at: card.deletedAt,
@@ -74,6 +78,10 @@ function remoteToCard(row: Record<string, unknown>): StudyCard {
     explanation: String(row.explanation ?? ""), field: String(row.field ?? ""), source: String(row.source ?? ""),
     tags: Array.isArray(row.tags) ? row.tags.map(String) : [], image: row.image == null ? null : String(row.image),
     imageAlt: String(row.image_alt ?? ""), version: Number(row.version ?? 1),
+    suspendedAt: row.suspended_at == null ? null : String(row.suspended_at),
+    originDeckId: row.origin_deck_id == null ? null : String(row.origin_deck_id),
+    originVersion: row.origin_version == null ? null : Number(row.origin_version),
+    originCardId: row.origin_card_id == null ? null : String(row.origin_card_id),
     createdAt: String(row.created_at), updatedAt: String(row.updated_at),
     deletedAt: row.deleted_at == null ? null : String(row.deleted_at),
   };
@@ -128,7 +136,9 @@ async function pushItem(item: OutboxRecord, user: User): Promise<void> {
   if (item.table === "decks") {
     payload = {
       id: payload.id, owner_id: user.id, name: payload.name, description: payload.description,
-      sort_order: payload.order, version: payload.version, created_at: payload.createdAt,
+      sort_order: payload.order, new_cards_per_day: payload.newCardsPerDay,
+      reviews_per_day: payload.reviewsPerDay, desired_retention: payload.desiredRetention,
+      version: payload.version, created_at: payload.createdAt,
       updated_at: payload.updatedAt, deleted_at: payload.deletedAt,
     };
   }
@@ -165,7 +175,9 @@ async function pullSupportingData(user: User): Promise<void> {
 
   await db.decks.bulkPut((decksResult.data ?? []).map((row) => ({
     id: String(row.id), ownerId: user.id, name: String(row.name), description: String(row.description ?? ""),
-    order: Number(row.sort_order ?? 0), version: Number(row.version ?? 1), createdAt: String(row.created_at),
+    order: Number(row.sort_order ?? 0), newCardsPerDay: Number(row.new_cards_per_day ?? 20),
+    reviewsPerDay: Number(row.reviews_per_day ?? 200), desiredRetention: Number(row.desired_retention ?? 0.9),
+    version: Number(row.version ?? 1), createdAt: String(row.created_at),
     updatedAt: String(row.updated_at), deletedAt: row.deleted_at == null ? null : String(row.deleted_at),
   })));
 

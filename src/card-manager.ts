@@ -2,7 +2,13 @@ import { db, nowIso, saveCard, saveDeck, uuid } from "./db";
 import { importBundleSchema } from "./schema";
 import { mirrorCustomCardsToLegacy } from "./migration";
 import { getSyncStatus } from "./sync";
-import type { CardKind, StudyCard } from "./types";
+import {
+  DEFAULT_DESIRED_RETENTION,
+  DEFAULT_NEW_CARDS_PER_DAY,
+  DEFAULT_REVIEWS_PER_DAY,
+  type CardKind,
+  type StudyCard,
+} from "./types";
 
 let modal: HTMLElement | null = null;
 let editingId: string | null = null;
@@ -73,6 +79,7 @@ function makeEmptyCard(): StudyCard {
     id: uuid(), ownerId: null, builtIn: false, kind: "basic", deckId: "deck-personal",
     front: "", back: "", choices: [], correctChoiceIndex: null, explanation: "", field: "",
     source: "自作カード", tags: [], image: null, imageAlt: "", version: 1,
+    suspendedAt: null, originDeckId: null, originVersion: null, originCardId: null,
     createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
   };
 }
@@ -93,7 +100,12 @@ async function ensureModal(): Promise<void> {
 async function ensureDefaultDeck(): Promise<void> {
   if (await db.decks.get("deck-personal")) return;
   const timestamp = nowIso();
-  await saveDeck({ id: "deck-personal", ownerId: null, name: "自作カード", description: "自分で作成したカード", order: 0, version: 1, createdAt: timestamp, updatedAt: timestamp, deletedAt: null }, false);
+  await saveDeck({
+    id: "deck-personal", ownerId: null, name: "自作カード", description: "自分で作成したカード", order: 0,
+    newCardsPerDay: DEFAULT_NEW_CARDS_PER_DAY, reviewsPerDay: DEFAULT_REVIEWS_PER_DAY,
+    desiredRetention: DEFAULT_DESIRED_RETENTION, version: 1,
+    createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
+  }, false);
 }
 
 export async function installCardManager(): Promise<void> {
@@ -284,7 +296,7 @@ async function onClick(event: Event): Promise<void> {
   if (action === "save-card") await onSave(event);
   if (action === "cancel-edit") { editingId = null; $("#studyCardForm").classList.add("hidden"); }
   if (action === "edit" && rowId) { const card = await db.cards.get(rowId); if (card) await editCard(card); }
-  if (action === "duplicate" && rowId) { const card = await db.cards.get(rowId); if (card) await saveCard({ ...card, id: uuid(), front: `${card.front}（コピー）`, version: 1, createdAt: nowIso(), updatedAt: nowIso() }); await mirrorCustomCardsToLegacy(); await renderCards(); }
+  if (action === "duplicate" && rowId) { const card = await db.cards.get(rowId); if (card) await saveCard({ ...card, id: uuid(), front: `${card.front}（コピー）`, suspendedAt: null, originDeckId: null, originVersion: null, originCardId: null, version: 1, createdAt: nowIso(), updatedAt: nowIso() }); await mirrorCustomCardsToLegacy(); await renderCards(); }
   if (action === "delete" && rowId && confirm("このカードを削除しますか？")) { const card = await db.cards.get(rowId); if (card) await saveCard({ ...card, deletedAt: nowIso(), updatedAt: nowIso(), version: card.version + 1 }); await mirrorCustomCardsToLegacy(); await renderCards(); }
   if (action === "new-deck") await createDeck();
   if (action === "account-settings") { closeModal(); window.dispatchEvent(new Event("study:open-account-settings")); }
@@ -295,12 +307,17 @@ async function onClick(event: Event): Promise<void> {
 async function createDeck(): Promise<void> {
   const name = prompt("新しいデッキ名"); if (!name?.trim()) return;
   const timestamp = nowIso();
-  await saveDeck({ id: uuid(), ownerId: null, name: name.trim(), description: "", order: await db.decks.count(), version: 1, createdAt: timestamp, updatedAt: timestamp, deletedAt: null });
+  await saveDeck({
+    id: uuid(), ownerId: null, name: name.trim(), description: "", order: await db.decks.count(),
+    newCardsPerDay: DEFAULT_NEW_CARDS_PER_DAY, reviewsPerDay: DEFAULT_REVIEWS_PER_DAY,
+    desiredRetention: DEFAULT_DESIRED_RETENTION, version: 1,
+    createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
+  });
   await fillDecks();
 }
 
 async function exportData(): Promise<void> {
-  const data = { app: "metabolism-study", schemaVersion: 2, exportedAt: nowIso(), cards: await db.cards.filter((card) => !card.builtIn).toArray(), decks: await db.decks.toArray(), reviewEvents: (await db.reviewEvents.toArray()).map(({ syncedAt: _syncedAt, ownerId: _ownerId, ...event }) => event) };
+  const data = { app: "metabolism-study", schemaVersion: 3, exportedAt: nowIso(), cards: await db.cards.filter((card) => !card.builtIn).toArray(), decks: await db.decks.toArray(), reviewEvents: (await db.reviewEvents.toArray()).map(({ syncedAt: _syncedAt, ownerId: _ownerId, ...event }) => event) };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
   const link = document.createElement("a"); link.href = url; link.download = `基礎医学演習アプリ_バックアップ_${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(url);
 }

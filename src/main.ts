@@ -102,6 +102,7 @@ import {
 import { learningDestination, primaryNavKey } from "./navigation";
 import { syncAccountData, syncSnapshotWithRetry } from "./account-sync";
 import { getAccountEntryChoice, saveAccountEntryChoice } from "./account-choice";
+import { getCardHomeSnapshot } from "./card-home";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -191,6 +192,9 @@ window.STUDY_CORE = {
   refreshCustomCards: mirrorCustomCardsToLegacy,
   saveLegacyProgress: (progress) => queueLegacyStateSave(progress as Record<string, LegacyProgress>),
   openCardManager,
+  cardHome: {
+    snapshot: getCardHomeSnapshot,
+  },
   syncNow,
   account: {
     state: getCachedAccountState,
