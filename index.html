@@ -141,6 +141,7 @@
   .lsHeadTitle{font-size:19px;font-weight:900;line-height:1.5;margin-bottom:9px}
   .lsHeadMeta{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:11px}
   .lsHeadMeta span{border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:3px 9px;font-weight:800}
+  .lessonGroupBar{margin:0 2px 4px}
   .lsIntro{font-size:14.5px;line-height:1.95}
   .lsSect{margin:20px 0 0;scroll-margin-top:178px}
   .lsSectHead{display:flex;align-items:baseline;gap:9px;margin:0 2px 10px}
@@ -1667,7 +1668,10 @@
         <span class="lsLeadSub" id="learningLeadSub">問題を解く前のインプット。要点を読み、授業スライドの図で確かめてから、その回の問題に進みます。</span>
       </div>
     </div>
-    <div class="sectlabel">授業回</div>
+    <div class="lessonGroupBar hidden" id="lessonGroupBar">
+      <button type="button" class="btn ghost small" id="lessonGroupBack">← 学習トップ</button>
+    </div>
+    <div class="sectlabel" id="lessonListLabel">学習の項目</div>
     <div id="lessonList" class="grid"></div>
     <div id="learningEmpty" class="panel emptyLearning hidden">
       <div>
@@ -5197,36 +5201,81 @@
           return x[0]-y[0] || x[1]-y[1];
         });
         return { deck:e.deck, name:(ls&&ls.title)?String(ls.title):e.name, items:e.items,
-                 pages, lesson:ls };
+                 pages, lesson:ls, group:(ls&&ls.group)?String(ls.group):"" };
       })
       .sort((a,b)=>a.deck.localeCompare(b.deck,"en",{numeric:true}));
+  }
+  /* 学習トップは group ごとのフォルダにまとめる（例：授業スライド解説・用語解説）。
+     group を書いていない章（例：最短で60点）はフォルダに入れず単独のカードで並ぶ。
+     group を1つも使っていない科目は、これまでどおり全章がそのまま並ぶ。 */
+  let lessonGroupOpen=null;
+  function lessonTopItems(decks){
+    const groups=[], singles=[], byName=new Map();
+    decks.forEach(d=>{
+      if(!d.group){ singles.push({type:"deck", d}); return; }
+      let g=byName.get(d.group);
+      if(!g){ g={type:"group", name:d.group, decks:[]}; byName.set(d.group,g); groups.push(g); }
+      g.decks.push(d);
+    });
+    return groups.concat(singles);   // フォルダを先に、単独の章をその下に
+  }
+  // 1問が複数の回を根拠に持つことがあるので、フォルダの集計では id で重複を落とす
+  function lessonGroupStats(g){
+    const items=[...new Map(g.decks.flatMap(d=>d.items).map(q=>[q.id,q])).values()];
+    return { stats:catStats(items), pages:g.decks.reduce((n,d)=>n+d.pages.length,0) };
+  }
+  function lessonMetaHTML(s,pages){
+    return `${s.total?`<span>問題 ${s.total}問</span>`:""}${pages?`<span>スライド ${pages}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}`;
+  }
+  function lessonCardHTML(o){
+    return `<button type="button" class="cat cat-field" ${o.attr}
+        style="--accent:${o.accent};--pct:${o.pct}%">
+      <div class="info">
+        <div class="cat-kicker">${esc(o.kicker)}</div>
+        <h3>${esc(o.title)}</h3>
+        <div class="meta">${o.meta}</div>
+        <div class="pbar"><i></i></div>
+      </div>
+      <div class="rt"><span class="badge">${esc(o.badge)}</span><span class="chev">›</span></div>
+    </button>`;
+  }
+  function lessonDeckCardHTML(d,i){
+    const s=catStats(d.items), written=lessonWritten(d.lesson);
+    return lessonCardHTML({ attr:`data-deck="${esc(d.deck)}"`, accent:ACCENTS[i%ACCENTS.length],
+      pct:s.total?Math.round(s.seen/s.total*100):0,
+      kicker:`${lessonKicker(d)}${written?" ・ 要点あり":" ・ 要点は準備中"}`,
+      title:d.name, meta:lessonMetaHTML(s,d.pages.length), badge:written?"読む":"図で確認" });
+  }
+  function lessonGroupCardHTML(g,i){
+    const {stats,pages}=lessonGroupStats(g);
+    return lessonCardHTML({ attr:`data-group="${esc(g.name)}"`, accent:ACCENTS[i%ACCENTS.length],
+      pct:stats.total?Math.round(stats.seen/stats.total*100):0,
+      kicker:`まとめ ・ 全${g.decks.length}章`,
+      title:g.name, meta:lessonMetaHTML(stats,pages), badge:"ひらく" });
   }
   function renderLessonList(){
     const list=$("#lessonList"); if(!list) return;
     const decks=lessonDecks();
-    const empty=$("#learningEmpty");
+    const empty=$("#learningEmpty"), label=$("#lessonListLabel"), bar=$("#lessonGroupBar");
     list.classList.toggle("hidden",decks.length===0);
     if(empty) empty.classList.toggle("hidden",decks.length>0);
+    const items=decks.length?lessonTopItems(decks):[];
+    const open=items.find(x=>x.type==="group" && x.name===lessonGroupOpen) || null;
+    // フォルダを使っていない科目はこれまでどおり「授業回」のまま
+    if(label) label.textContent=open?open.name:(items.some(x=>x.type==="group")?"学習の項目":"授業回");
+    if(bar) bar.classList.toggle("hidden",!open);
     if(!decks.length){ list.innerHTML=""; return; }
-    list.innerHTML=decks.map((d,i)=>{
-      const s=catStats(d.items), pct=s.total?Math.round(s.seen/s.total*100):0;
-      const written=lessonWritten(d.lesson);
-      return `<button type="button" class="cat cat-field" data-deck="${esc(d.deck)}"
-          style="--accent:${ACCENTS[i%ACCENTS.length]};--pct:${pct}%">
-        <div class="info">
-          <div class="cat-kicker">${esc(lessonKicker(d))}${written?" ・ 要点あり":" ・ 要点は準備中"}</div>
-          <h3>${esc(d.name)}</h3>
-          <div class="meta">${s.total?`<span>問題 ${s.total}問</span>`:""}${d.pages.length?`<span>スライド ${d.pages.length}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
-          <div class="pbar"><i></i></div>
-        </div>
-        <div class="rt"><span class="badge">${written?"読む":"図で確認"}</span><span class="chev">›</span></div>
-      </button>`;
-    }).join("");
-    list.querySelectorAll(".cat").forEach(el=>{ el.onclick=()=>openLesson(el.dataset.deck); });
+    list.innerHTML=(open ? open.decks.map(lessonDeckCardHTML)
+                         : items.map((x,i)=>x.type==="group"?lessonGroupCardHTML(x,i):lessonDeckCardHTML(x.d,i))).join("");
+    list.querySelectorAll("[data-deck]").forEach(el=>{ el.onclick=()=>openLesson(el.dataset.deck); });
+    list.querySelectorAll("[data-group]").forEach(el=>{ el.onclick=()=>{
+      lessonGroupOpen=el.dataset.group; renderLessonList(); window.scrollTo({top:0,behavior:"smooth"});
+    }; });
   }
   function openLesson(deck){
     const d=lessonDecks().find(x=>x.deck===String(deck));
     if(!d){ openView("inputView"); return; }
+    lessonGroupOpen=d.group||null;   // 戻ったときに元のフォルダを開いておく
     stopExamTimer(); closeFcLightbox();
     transitionToScreen("lessonView","forward",()=>renderLesson(d));
   }
@@ -6585,6 +6634,7 @@
 
   /* 問題検索 */
   $("#slideBack").onclick=closeSlideView;
+  $("#lessonGroupBack").onclick=()=>{ lessonGroupOpen=null; renderLessonList(); window.scrollTo({top:0,behavior:"smooth"}); };
   $("#lessonBack").onclick=()=>{ closeLessonIndex(false); closeLessonSlides(false); lessonQuickState=null; openView("inputView"); };
   $("#lessonIndexClose").onclick=()=>closeLessonIndex();
   $("#lessonIndexBackdrop").onclick=()=>closeLessonIndex();
