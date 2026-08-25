@@ -5138,6 +5138,8 @@
      要点をまだ書いていない回も、スライドと「この回を解く」だけで章として成立する。 */
   function lessonEntries(){ return Array.isArray(window.LESSONS) ? window.LESSONS : []; }
   function lessonEntry(deck){ return lessonEntries().find(l=>l && String(l.deck)===String(deck)) || null; }
+  // 章の肩書き。授業回は「第3回」、章をまたぐ読み物は lessons.js の label（例：用語編）を使う。
+  function lessonKicker(d){ return (d.lesson&&d.lesson.label) ? String(d.lesson.label) : deckLabel(d.deck); }
   function lessonWritten(ls){ return !!(ls && (ls.intro || (Array.isArray(ls.sections) && ls.sections.length))); }
   // 本文は先に全体をエスケープし、==...== だけを安全な強調spanへ変換する。
   // lessons.js 側から任意のHTMLを注入できないよう、改行をまたぐ記法や入れ子は許可しない。
@@ -5177,6 +5179,13 @@
         (r.pages||[]).forEach(p=>{ const n=Number(p); if(n>0) e.pages.add(lessonPageKey(raw,deck,n)); });
       });
     });
+    /* standalone:true の要点は、特定の授業回ではなく章をまたぐ読み物（例：用語編）なので、
+       問題の slideRefs には現れない。lessons.js 側だけを根拠に章として立てる。 */
+    lessonEntries().forEach(ls=>{
+      const deck=String(ls&&ls.deck||"");
+      if(!ls||!ls.standalone||!deck||m.has(deck)) return;
+      m.set(deck,{deck, name:deck, ids:new Set(), items:[], pages:new Set()});
+    });
     // スライドが1枚も無く要点も無い回は章として成立しないので出さない（例：参考文献だけの回）。
     // lessons.js で hidden:true にした回（出題範囲外）も出さない。
     return [...m.values()]
@@ -5205,9 +5214,9 @@
       return `<button type="button" class="cat cat-field" data-deck="${esc(d.deck)}"
           style="--accent:${ACCENTS[i%ACCENTS.length]};--pct:${pct}%">
         <div class="info">
-          <div class="cat-kicker">${esc(deckLabel(d.deck))}${written?" ・ 要点あり":" ・ 要点は準備中"}</div>
+          <div class="cat-kicker">${esc(lessonKicker(d))}${written?" ・ 要点あり":" ・ 要点は準備中"}</div>
           <h3>${esc(d.name)}</h3>
-          <div class="meta"><span>問題 ${s.total}問</span><span>スライド ${d.pages.length}枚</span>${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
+          <div class="meta">${s.total?`<span>問題 ${s.total}問</span>`:""}${d.pages.length?`<span>スライド ${d.pages.length}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
           <div class="pbar"><i></i></div>
         </div>
         <div class="rt"><span class="badge">${written?"読む":"図で確認"}</span><span class="chev">›</span></div>
@@ -5379,9 +5388,9 @@
     if(!sects.length){ lessonQuickState=null; return; }
     const elements=[...$("#lessonBody").querySelectorAll(".lsSect")];
     lessonQuickState={d,sections:sects,elements,active:-1};
-    $("#lessonIndexChapter").textContent=`${deckLabel(d.deck)} ・ ${d.name}`;
-    $("#lessonIndexActions").innerHTML=`<button type="button" class="liAction" data-lesson-index-action="solve">
-        <span class="liActionIcon">📚</span><span class="liActionBody"><span class="liActionTitle">この回を解く</span><span class="liActionSub">${s.total}問から出題</span></span></button>
+    $("#lessonIndexChapter").textContent=`${lessonKicker(d)} ・ ${d.name}`;
+    $("#lessonIndexActions").innerHTML=`${s.total?`<button type="button" class="liAction" data-lesson-index-action="solve">
+        <span class="liActionIcon">📚</span><span class="liActionBody"><span class="liActionTitle">この回を解く</span><span class="liActionSub">${s.total}問から出題</span></span></button>`:""}
       ${d.pages.length?`<button type="button" class="liAction" data-lesson-index-action="slides">
         <span class="liActionIcon">📘</span><span class="liActionBody"><span class="liActionTitle">スライドをすべて見る</span><span class="liActionSub">${d.pages.length}ページ</span></span></button>`:""}`;
     $("#lessonIndexList").innerHTML=sects.map((sc,i)=>`<button type="button" class="liItem" data-section="${i+1}">
@@ -5405,9 +5414,9 @@
     const figs=(pages)=>lessonFigsHTML(d.deck, d.name, pages);
 
     const head=`<div class="homeSection"><div class="panel lsHead">
-        <div class="lsHeadKicker">${esc(deckLabel(d.deck))} ・ 学習</div>
+        <div class="lsHeadKicker">${esc(lessonKicker(d))} ・ 学習</div>
         <div class="lsHeadTitle">${esc(d.name)}</div>
-        <div class="lsHeadMeta"><span>問題 ${s.total}問</span><span>スライド ${d.pages.length}枚</span>${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
+        <div class="lsHeadMeta">${s.total?`<span>問題 ${s.total}問</span>`:""}${d.pages.length?`<span>スライド ${d.pages.length}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
         ${ls.intro?`<div class="lsIntro">${esc(String(ls.intro))}</div>`:""}
       </div></div>`;
     const keyFigs=figs(ls.keySlides);
@@ -5429,7 +5438,7 @@
         <span class="lsSolveBody"><span class="lsSolveTitle">この回のスライドをすべて見る</span>
           <span class="lsSolveSub">解説の根拠になった ${d.pages.length}ページ</span></span>
         <span class="lsSolveChev">›</span></button></div>`:"";
-    const solve=`<div class="lsSolve"><button type="button" class="lsSolveBtn" id="lessonSolveBtn">
+    const solve=!s.total?"":`<div class="lsSolve"><button type="button" class="lsSolveBtn" id="lessonSolveBtn">
         <span class="lsSolveIcon">📚</span>
         <span class="lsSolveBody"><span class="lsSolveTitle">この回を解く（${s.total}問）</span>
           <span class="lsSolveSub">${s.seen?`学習済 ${s.seen}/${s.total}問 ・ 正答率 ${s.acc}%`:"まだ解いていません"}</span></span>

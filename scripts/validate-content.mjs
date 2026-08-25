@@ -189,7 +189,10 @@ for (const subject of subjects) {
       if (!deck) { errors.push(`[${label}] 学習 ${index + 1}件目: deck がありません`); continue; }
       if (seenDecks.has(deck)) errors.push(`[${label}] 学習 deck ${deck} が重複しています`);
       seenDecks.add(deck);
-      if (!decks.has(deck)) errors.push(`[${label}] 学習 deck ${deck}: この deck を持つ問題（slideRefs）がありません`);
+      // standalone:true は授業回ではない読み物の章（例：用語編）なので、対応する問題が無くてよい。
+      if (!decks.has(deck) && !lesson.standalone) {
+        errors.push(`[${label}] 学習 deck ${deck}: この deck を持つ問題（slideRefs）がありません`);
+      }
       const pages = [...(lesson.keySlides || [])];
       for (const [sectionIndex, section] of (lesson.sections || []).entries()) {
         pages.push(...(section?.slides || []));
