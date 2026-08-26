@@ -53,6 +53,7 @@ let sharedDecks: SharedDeckRow[] = [];
 let sharedCards: SharedCardRow[] = [];
 let studyIndex = 0;
 let studyRevealed = false;
+let publishInFlight = false;
 
 function esc(value: unknown): string {
   return String(value ?? "")
@@ -159,7 +160,7 @@ async function renderDeckDetail(deckId: string): Promise<string> {
         <div class="memoryDeckActions">
           ${deck.originSharedDeckId
             ? `<span class="memoryOrigin">公開デッキから追加したコピー</span>`
-            : `<button type="button" class="btn ghost small" data-memory-action="publish-deck">自分のデッキを公開する</button>`}
+            : `<button type="button" class="btn ghost small" data-memory-action="publish-deck" ${publishInFlight ? "disabled" : ""}>${publishInFlight ? "公開処理中…" : "自分のデッキを公開する"}</button>`}
           <button type="button" class="btn danger small" data-memory-action="delete-deck">削除</button>
         </div>
       </div>
@@ -221,6 +222,7 @@ async function loadSharedDecks(): Promise<void> {
 }
 
 async function loadSharedCards(deckId: string): Promise<void> {
+  sharedCards = [];
   if (!supabase) return;
   const { data, error } = await supabase
     .from("shared_memory_cards")
@@ -316,7 +318,7 @@ async function saveCardForm(event: Event): Promise<void> {
 }
 
 async function publishSelectedDeck(): Promise<void> {
-  if (!selectedDeckId || !activeSubject) return;
+  if (!selectedDeckId || !activeSubject || publishInFlight) return;
   if (!supabase) {
     setMessage("共有機能の接続設定がありません。自分のデッキはそのまま利用できます。", "error");
     return repaint();
@@ -332,28 +334,28 @@ async function publishSelectedDeck(): Promise<void> {
     setMessage("公開するにはカードを1枚以上追加してください。", "error");
     return repaint();
   }
+  publishInFlight = true;
   setMessage("公開処理中です…");
   await repaint();
-  const { data: existing } = await supabase.from("shared_memory_decks").select("version").eq("id", deck.id).maybeSingle();
-  const version = Number(existing?.version ?? 0) + 1;
-  const base = {
-    id: deck.id, owner_id: auth.user.id, subject_id: activeSubject.id,
-    title: deck.name, description: deck.description, version, card_count: cards.length,
-    status: "draft", updated_at: nowIso(), deleted_at: null,
-  };
-  const first = await supabase.from("shared_memory_decks").upsert(base);
-  if (first.error) throw first.error;
-  const removed = await supabase.from("shared_memory_cards").delete().eq("shared_deck_id", deck.id);
-  if (removed.error) throw removed.error;
-  const inserted = await supabase.from("shared_memory_cards").insert(cards.map((card, position) => ({
-    id: `${deck.id}:${card.id}`, shared_deck_id: deck.id, owner_id: auth.user!.id,
-    origin_card_id: card.id, front: card.front, back: card.back,
-    explanation: card.explanation, tags: card.tags, position,
-  })));
-  if (inserted.error) throw inserted.error;
-  const published = await supabase.from("shared_memory_decks").update({ status: "published", published_at: nowIso() }).eq("id", deck.id);
-  if (published.error) throw published.error;
-  setMessage(`「${deck.name}」をみんなのデッキへ公開しました。`, "success");
+  try {
+    const { data: version, error } = await supabase.rpc("publish_memory_deck", {
+      p_deck_id: deck.id,
+      p_subject_id: activeSubject.id,
+      p_title: deck.name,
+      p_description: deck.description,
+      p_cards: cards.map((card) => ({
+        origin_card_id: card.id,
+        front: card.front,
+        back: card.back,
+        explanation: card.explanation,
+        tags: card.tags,
+      })),
+    });
+    if (error) throw error;
+    setMessage(`「${deck.name}」をみんなのデッキへ公開しました（v${Number(version)}）。`, "success");
+  } finally {
+    publishInFlight = false;
+  }
   await repaint();
 }
 
@@ -366,26 +368,32 @@ async function importSelectedSharedDeck(): Promise<void> {
     setMessage("この公開デッキはすでに自分のデッキへ追加されています。", "error");
     return repaint();
   }
+  if (sharedCards.length !== shared.card_count) {
+    setMessage("公開デッキのカードを完全に取得できませんでした。もう一度開き直してください。", "error");
+    return repaint();
+  }
   const timestamp = nowIso();
   const localDeckId = uuid();
-  await saveDeck({
-    id: localDeckId, ownerId: null, system: "memory", subjectId: activeSubject.id,
-    originSharedDeckId: shared.id, originVersion: shared.version,
-    name: shared.title, description: shared.description, order: await db.decks.count(),
-    newCardsPerDay: DEFAULT_NEW_CARDS_PER_DAY, reviewsPerDay: DEFAULT_REVIEWS_PER_DAY,
-    desiredRetention: DEFAULT_DESIRED_RETENTION, version: 1,
-    createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
-  });
-  for (const row of sharedCards) {
-    await saveCard({
-      id: uuid(), ownerId: null, builtIn: false, kind: "basic", deckId: localDeckId,
-      front: row.front, back: row.back, choices: [], correctChoiceIndex: null,
-      explanation: row.explanation, field: activeSubject.name, source: `みんなのデッキ: ${shared.title}`,
-      tags: row.tags, image: null, imageAlt: "", version: 1, suspendedAt: null,
-      originDeckId: shared.id, originVersion: shared.version, originCardId: row.origin_card_id,
+  await db.transaction("rw", db.decks, db.cards, db.outbox, async () => {
+    await saveDeck({
+      id: localDeckId, ownerId: null, system: "memory", subjectId: activeSubject!.id,
+      originSharedDeckId: shared.id, originVersion: shared.version,
+      name: shared.title, description: shared.description, order: await db.decks.count(),
+      newCardsPerDay: DEFAULT_NEW_CARDS_PER_DAY, reviewsPerDay: DEFAULT_REVIEWS_PER_DAY,
+      desiredRetention: DEFAULT_DESIRED_RETENTION, version: 1,
       createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
     });
-  }
+    for (const row of sharedCards) {
+      await saveCard({
+        id: uuid(), ownerId: null, builtIn: false, kind: "basic", deckId: localDeckId,
+        front: row.front, back: row.back, choices: [], correctChoiceIndex: null,
+        explanation: row.explanation, field: activeSubject!.name, source: `みんなのデッキ: ${shared.title}`,
+        tags: row.tags, image: null, imageAlt: "", version: 1, suspendedAt: null,
+        originDeckId: shared.id, originVersion: shared.version, originCardId: row.origin_card_id,
+        createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
+      });
+    }
+  });
   activeTab = "mine";
   selectedSharedDeckId = null;
   selectedDeckId = localDeckId;
@@ -426,8 +434,14 @@ async function handleAction(target: HTMLElement): Promise<void> {
     return;
   }
   if (action === "open-shared" && target.dataset.sharedId) {
-    selectedSharedDeckId = target.dataset.sharedId;
-    try { await loadSharedCards(selectedSharedDeckId); } catch (error) { setMessage(`カードを取得できません: ${error instanceof Error ? error.message : String(error)}`, "error"); }
+    const sharedDeckId = target.dataset.sharedId;
+    try {
+      await loadSharedCards(sharedDeckId);
+      selectedSharedDeckId = sharedDeckId;
+    } catch (error) {
+      selectedSharedDeckId = null;
+      setMessage(`カードを取得できません: ${error instanceof Error ? error.message : String(error)}`, "error");
+    }
   }
   if (action === "back-public") selectedSharedDeckId = null;
   if (action === "import-shared") { await importSelectedSharedDeck(); return; }

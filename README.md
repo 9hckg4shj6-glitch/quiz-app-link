@@ -44,7 +44,7 @@ APP_USER="study" APP_PASSWORD="任意のパスワード" node server.js
 
 各科目ホームの「暗記カード」から、科目別の自分のデッキとカードを作成できます。これは代謝・生化学の教材カードとは別機能です。ログインすると自作デッキを同じ科目の「みんなのデッキ」へ公開でき、利用者は個人領域へコピーして取り込みます。共有版には復習履歴を含めません。
 
-公開・取り込みを有効にするには、既存マイグレーションに続けて `supabase/migrations/011_memory_cards.sql` をSupabase SQL Editorで適用します。未適用でも個人デッキとカードは端末内で利用できます。
+公開・取り込みを有効にするには、既存マイグレーションに続けて `supabase/migrations/011_memory_cards.sql` と `012_atomic_memory_deck_publish.sql` をSupabase SQL Editorで番号順に適用します。未適用でも個人デッキとカードは端末内で利用できます。
 
 ## Googleアカウントと同期
 
