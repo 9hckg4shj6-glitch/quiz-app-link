@@ -5606,7 +5606,7 @@
         <div class="lsHeadKicker">${esc(lessonKicker(d))} ・ 学習</div>
         <div class="lsHeadTitle">${esc(d.name)}</div>
         <div class="lsHeadMeta">${s.total?`<span>問題 ${s.total}問</span>`:""}${d.pages.length?`<span>スライド ${d.pages.length}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
-        ${ls.intro?`<div class="lsIntro">${esc(String(ls.intro))}</div>`:""}
+        ${ls.intro?`<div class="lsIntro">${lessonBodyHTML(ls.intro)}</div>`:""}
       </div></div>`;
     const keyFigs=figs(ls.keySlides);
     const quick=sects.length?`<div class="lessonQuickNav"><button type="button" class="lessonQuickBtn" id="lessonQuickBtn"
