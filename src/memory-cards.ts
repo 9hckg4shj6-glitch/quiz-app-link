@@ -86,7 +86,7 @@ function shell(content: string): string {
     <div class="memoryCardsShell">
       <div class="memoryCardsHero">
         <div>
-          <span class="memoryCardsEyebrow">${esc(subject.emoji || "🧠")} ${esc(subject.name)}</span>
+          <span class="memoryCardsEyebrow">${esc(subject.emoji || "▧")} ${esc(subject.name)}</span>
           <h2>暗記カード</h2>
           <p>自分専用のデッキを作り、必要なものだけ科目別に共有できます。</p>
         </div>

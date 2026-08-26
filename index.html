@@ -1556,7 +1556,7 @@
       <div class="menuPanel hidden" id="menuPanel">
         <button type="button" id="menuSubjects" data-menu-action="subjects"><span class="mi">⌘</span>科目をえらぶ</button>
         <button type="button" id="menuBrowse" data-menu-action="browse"><span class="mi">▤</span>カード一覧</button>
-        <a href="#memoryCardsView" data-menu-view="memoryCardsView"><span class="mi">🧠</span>暗記カード</a>
+        <a href="#memoryCardsView" data-menu-view="memoryCardsView"><span class="mi">▧</span>暗記カード</a>
         <a href="#statsView" data-menu-view="statsView"><span class="mi">⌁</span>学習状況</a>
         <a href="#rankView" data-menu-view="rankView"><span class="mi">♜</span>ランキング</a>
         <a href="#communityView" data-menu-view="communityView"><span class="mi">◌</span>コミュニティ</a>
@@ -3072,7 +3072,7 @@
       {icon:"↻",name:"復習",accent:"#c5525a",
         sub:reviewN?`今日 ${reviewN}件 ・ 苦手 ${weakN}問`:`苦手 ${weakN}問 ・ 見直し ${bmN}問`,
         go:()=>openView("reviewView")},
-      {icon:"🧠",name:"暗記カード",accent:"#b45309",sub:"自分のデッキと、科目別のみんなのデッキ",go:()=>openView("memoryCardsView")},
+      {icon:"▧",name:"暗記カード",accent:"#b45309",sub:"自分のデッキと、科目別のみんなのデッキ",go:()=>openView("memoryCardsView")},
       {icon:"⌕",name:"問題検索",accent:"#8a6f2a",sub:"キーワードから目的の問題をすばやく探す",wide:true,go:openSearch}
     ];
     grid.innerHTML=items.map((it,i)=>`<button type="button" class="hubBtn primaryHub${it.wide?" searchHub":""}" data-i="${i}" style="--hub-accent:${it.accent}">
