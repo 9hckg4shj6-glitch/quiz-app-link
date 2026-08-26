@@ -73,19 +73,38 @@ alter table public.decks enable row level security;
 alter table public.review_events enable row level security;
 alter table public.settings enable row level security;
 
+-- SQL Editorはスクリプト全体を1トランザクションで実行する。再実行で
+-- 「policy already exists」が出ると全部ロールバックされ、テーブルが1つも残らない。
+drop policy if exists "cards_owner_all" on public.cards;
 create policy "cards_owner_all" on public.cards for all to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+drop policy if exists "decks_owner_all" on public.decks;
 create policy "decks_owner_all" on public.decks for all to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+drop policy if exists "reviews_owner_all" on public.review_events;
 create policy "reviews_owner_all" on public.review_events for all to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+drop policy if exists "settings_owner_all" on public.settings;
 create policy "settings_owner_all" on public.settings for all to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
 
-insert into storage.buckets (id, name, public)
-values ('card-media', 'card-media', false)
-on conflict (id) do update set public = false;
+-- storageの所有者はプロジェクトによって異なり、SQL Editorから触れないことがある。
+-- カード画像は任意機能なので、ここで失敗しても同期用テーブルは残す。
+do $$
+begin
+  insert into storage.buckets (id, name, public)
+  values ('card-media', 'card-media', false)
+  on conflict (id) do update set public = false;
 
-create policy "card_media_select" on storage.objects for select to authenticated using (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "card_media_insert" on storage.objects for insert to authenticated with check (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "card_media_update" on storage.objects for update to authenticated using (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text) with check (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "card_media_delete" on storage.objects for delete to authenticated using (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text);
+  drop policy if exists "card_media_select" on storage.objects;
+  create policy "card_media_select" on storage.objects for select to authenticated using (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text);
+  drop policy if exists "card_media_insert" on storage.objects;
+  create policy "card_media_insert" on storage.objects for insert to authenticated with check (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text);
+  drop policy if exists "card_media_update" on storage.objects;
+  create policy "card_media_update" on storage.objects for update to authenticated using (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text) with check (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text);
+  drop policy if exists "card_media_delete" on storage.objects;
+  create policy "card_media_delete" on storage.objects for delete to authenticated using (bucket_id = 'card-media' and (storage.foldername(name))[1] = auth.uid()::text);
+exception
+  when insufficient_privilege or undefined_table then
+    raise notice 'storageの設定はスキップしました（権限不足）。カード画像以外の機能には影響しません。';
+end
+$$;
 
 create or replace function public.delete_my_account()
 returns void

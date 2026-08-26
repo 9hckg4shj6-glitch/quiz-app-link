@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "validate:content": "node scripts/validate-content.mjs",
+    "db:bundle": "node scripts/bundle-migrations.mjs",
     "build": "npm run validate:content && tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",

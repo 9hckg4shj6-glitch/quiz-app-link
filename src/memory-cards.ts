@@ -318,14 +318,14 @@ async function saveCardForm(event: Event): Promise<void> {
 }
 
 /** Supabase側のエラーを、次に何をすればよいか分かる日本語へ変換する。 */
-function shareErrorMessage(error: unknown): string {
+export function shareErrorMessage(error: unknown): string {
   const detail = error as { code?: string; message?: string } | null;
   const code = detail?.code ?? "";
   const raw = detail?.message?.trim() || String(error);
   // RPCのraise exceptionは日本語の検証メッセージなのでそのまま見せる。
   if (code === "P0001") return raw;
   if (code === "PGRST202" || code === "PGRST205" || code === "42883" || code === "42P01" || /schema cache|does not exist/i.test(raw)) {
-    return "共有機能のデータベース設定が未適用です。README「全科目共通の暗記カード」の手順で 011_memory_cards.sql と 012_atomic_memory_deck_publish.sql を適用してください。";
+    return "共有用のテーブルがまだ作られていません（マイグレーション未適用）。Supabase SQL Editorで supabase/apply-all.generated.sql を実行してください。";
   }
   if (code === "PGRST301" || code === "401" || /jwt|expired|not authenticated/i.test(raw)) {
     return "ログインの有効期限が切れました。「設定・データ」から再度ログインしてください。";
@@ -336,7 +336,7 @@ function shareErrorMessage(error: unknown): string {
 }
 
 /** DB側の制約と同じ条件を先に確認し、公開失敗をSQLエラーではなく日本語で返す。 */
-function publishBlockReason(deck: Deck, cards: StudyCard[]): string | null {
+export function publishBlockReason(deck: Deck, cards: StudyCard[]): string | null {
   const title = deck.name.trim();
   if (!title || title.length > 80) return "デッキ名は1〜80文字にしてください。";
   if ((deck.description ?? "").length > 500) return "デッキの説明は500文字以内にしてください。";

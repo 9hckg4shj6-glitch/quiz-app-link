@@ -12,3 +12,4 @@ playwright-report/
 # このリポジトリは公開されているため、教科書の図版を含む資料は絶対にコミットしない。
 # 解説を作るときの参照用にローカルにだけ置く。索引は materials/*/INDEX.md
 materials/
+supabase/apply-all.generated.sql

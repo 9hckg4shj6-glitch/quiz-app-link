@@ -37,14 +37,14 @@ APP_USER="study" APP_PASSWORD="任意のパスワード" node server.js
 - 「カード管理・同期」からカード作成、編集、複製、削除、デッキ作成、JSONバックアップができます。
 - Supabase未設定でも全ローカル機能を利用できます。
 - PWAは新しい配信を検出するとService Workerを自動更新し、古いキャッシュを表示し続けないようにします。長時間開いたままの場合も1時間ごとに更新を確認します。
-- 複数端末同期を有効にする場合は `.env.example` を `.env` にコピーして値を設定し、`supabase/migrations/001_initial.sql` から番号順にマイグレーションを適用します。
+- 複数端末同期を有効にする場合は `.env.example` を `.env` にコピーして値を設定し、`npm run db:bundle` で生成した `supabase/apply-all.generated.sql` の全文をSupabase SQL Editorへ貼り付けて1回実行します。SQL Editorはスクリプト全体を1トランザクションで実行するため、分割して貼ると途中で失敗したときに何も残りません。各マイグレーションは再実行しても壊れないので、適用済みかどうかが分からない場合もそのまま流してかまいません。
 - Googleログイン、Row Level Security、オフライン送信待ちキューを使用します。
 
 ### 全科目共通の暗記カード
 
 各科目ホームの「暗記カード」から、科目別の自分のデッキとカードを作成できます。これは代謝・生化学の教材カードとは別機能です。ログインすると自作デッキを同じ科目の「みんなのデッキ」へ公開でき、利用者は個人領域へコピーして取り込みます。共有版には復習履歴を含めません。
 
-公開・取り込みを有効にするには、既存マイグレーションに続けて `supabase/migrations/011_memory_cards.sql` と `012_atomic_memory_deck_publish.sql` をSupabase SQL Editorで番号順に適用します。未適用でも個人デッキとカードは端末内で利用できます。
+公開・取り込みを有効にするには、`npm run db:bundle` で生成した `supabase/apply-all.generated.sql` をSupabase SQL Editorで実行します（`011_memory_cards.sql` は `001_initial.sql` の `decks` テーブルに依存するため、番号順に一括で流す必要があります）。未適用でも個人デッキとカードは端末内で利用できます。未適用のまま公開しようとすると「共有用のテーブルがまだ作られていません」と表示されます。
 
 ## Googleアカウントと同期
 
@@ -54,7 +54,7 @@ APP_USER="study" APP_PASSWORD="任意のパスワード" node server.js
 
 本番への導入順序:
 
-1. Supabase SQL Editorで既存のマイグレーションに続けて `supabase/migrations/009_account_auth.sql` から `013_account_identity_unification.sql` までを番号順に適用する。
+1. `npm run db:bundle` で `supabase/apply-all.generated.sql` を生成し、Supabase SQL Editorへ全文を貼り付けて1回実行する。
 2. Supabase AuthのSite URLを `https://9hckg4shj6-glitch.github.io/quiz-app-link/` にし、Redirect URLsへ同URLと `http://localhost:5173/` を登録する。
 3. Google OAuthクライアントを作り、Google側の承認済みリダイレクトURIへ `https://<project-ref>.supabase.co/auth/v1/callback` を登録して、Client IDとSecretをSupabaseのGoogle providerへ保存する。
 4. Supabase AuthのManual Linkingを有効にする。
