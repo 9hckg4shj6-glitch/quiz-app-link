@@ -65,6 +65,10 @@ export async function migrateLegacyStorage(): Promise<void> {
   await saveDeck({
     id: DEFAULT_DECK_ID,
     ownerId: null,
+    system: "legacy",
+    subjectId: "metabolism",
+    originSharedDeckId: null,
+    originVersion: null,
     name: "自作カード",
     description: "この端末で作成・取り込みしたカード",
     order: 0,
@@ -95,7 +99,8 @@ export async function migrateLegacyStorage(): Promise<void> {
 }
 
 export async function mirrorCustomCardsToLegacy(): Promise<void> {
-  const cards = await db.cards.filter((card) => !card.builtIn && !card.deletedAt).toArray();
+  const legacyDeckIds = new Set((await db.decks.filter((deck) => deck.system !== "memory").toArray()).map((deck) => deck.id));
+  const cards = await db.cards.filter((card) => !card.builtIn && !card.deletedAt && legacyDeckIds.has(card.deckId)).toArray();
   const questions = cards.filter((card) => card.kind === "multiple-choice").map((card) => ({
     id: card.id,
     year: "自作",

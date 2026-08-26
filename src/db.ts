@@ -71,6 +71,23 @@ export class StudyDatabase extends Dexie {
         deck.desiredRetention ??= DEFAULT_DESIRED_RETENTION;
       });
     });
+    this.version(4).stores({
+      cards: "&id, ownerId, deckId, kind, updatedAt, deletedAt, suspendedAt, originDeckId, [originDeckId+originCardId], *tags",
+      decks: "&id, ownerId, system, subjectId, [system+subjectId], order, updatedAt, deletedAt, originSharedDeckId",
+      reviewEvents: "&id, ownerId, cardId, reviewedAt, [cardId+reviewedAt], syncedAt",
+      schedules: "&cardId, due, state, updatedAt",
+      outbox: "++seq, &operationId, table, recordId, status, createdAt",
+      settings: "&key, ownerId, updatedAt",
+      writtenAttempts: "&id, subjectId, questionId, gradedAt, updatedAt, syncedAt, [questionId+gradedAt]",
+      writtenDrafts: "&id, subjectId, questionId, examSessionId, updatedAt",
+    }).upgrade(async (transaction) => {
+      await transaction.table("decks").toCollection().modify((deck: Partial<Deck>) => {
+        deck.system ??= "legacy";
+        deck.subjectId ??= "metabolism";
+        deck.originSharedDeckId ??= null;
+        deck.originVersion ??= null;
+      });
+    });
   }
 }
 

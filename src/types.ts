@@ -268,6 +268,13 @@ export interface StudyCard {
 export interface Deck {
   id: string;
   ownerId: string | null;
+  /** 既存の代謝カードと、全科目共通の暗記カードを混在させない。 */
+  system: "legacy" | "memory";
+  /** 暗記カードでは必須。既存カードは metabolism として移行する。 */
+  subjectId: string | null;
+  /** 「みんなのデッキ」から取り込んだ場合の公開元。 */
+  originSharedDeckId: string | null;
+  originVersion: number | null;
   name: string;
   description: string;
   order: number;

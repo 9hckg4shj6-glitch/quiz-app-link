@@ -27,7 +27,7 @@ describe("StudyDatabase", () => {
     expect((await database.cards.get("card-1"))?.back).toBe("裏");
   });
 
-  it("v2のカードとデッキへv3の既定値を補完する", async () => {
+  it("v2のカードとデッキへ最新の既定値を補完する", async () => {
     const legacy = new Dexie("metabolism-study-v2");
     legacy.version(2).stores({
       cards: "&id, ownerId, deckId, kind, updatedAt, deletedAt, *tags",
@@ -57,6 +57,9 @@ describe("StudyDatabase", () => {
     const deck = await database.decks.get("legacy-deck");
 
     expect(card).toMatchObject({ suspendedAt: null, originDeckId: null, originVersion: null, originCardId: null });
-    expect(deck).toMatchObject({ newCardsPerDay: 20, reviewsPerDay: 200, desiredRetention: 0.9 });
+    expect(deck).toMatchObject({
+      newCardsPerDay: 20, reviewsPerDay: 200, desiredRetention: 0.9,
+      system: "legacy", subjectId: "metabolism", originSharedDeckId: null, originVersion: null,
+    });
   });
 });

@@ -24,6 +24,9 @@ declare global {
       cardHome: {
         snapshot: () => Promise<CardHomeSnapshot>;
       };
+      memoryCards: {
+        render: (root: HTMLElement, subject: { id: string; name: string; emoji?: string }) => Promise<void>;
+      };
       syncNow: () => Promise<SyncStatus>;
       account: {
         state: () => AccountState;

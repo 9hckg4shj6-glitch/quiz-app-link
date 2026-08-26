@@ -48,6 +48,10 @@ export const cardSchema = z.object({
 
 export const deckSchema = z.object({
   id: z.string().min(1),
+  system: z.enum(["legacy", "memory"]).default("legacy"),
+  subjectId: z.string().nullable().default("metabolism"),
+  originSharedDeckId: z.string().nullable().default(null),
+  originVersion: z.number().int().positive().nullable().default(null),
   name: z.string(),
   description: z.string(),
   order: z.number(),
@@ -58,7 +62,7 @@ export const deckSchema = z.object({
 
 export const importBundleSchema = z.object({
   app: z.literal("metabolism-study"),
-  schemaVersion: z.union([z.literal(2), z.literal(3)]),
+  schemaVersion: z.union([z.literal(2), z.literal(3), z.literal(4)]),
   exportedAt: z.string().datetime(),
   cards: z.array(cardSchema),
   decks: z.array(deckSchema),

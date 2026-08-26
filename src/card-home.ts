@@ -53,27 +53,29 @@ function summarizeDeck(
 export async function getCardHomeSnapshot(now = new Date()): Promise<CardHomeSnapshot> {
   const [allCards, allDecks, allSchedules] = await Promise.all([
     db.cards.filter((card) => !card.builtIn && !card.deletedAt).toArray(),
-    db.decks.filter((deck) => !deck.deletedAt).sortBy("order"),
+    db.decks.filter((deck) => !deck.deletedAt && deck.system !== "memory").sortBy("order"),
     db.schedules.toArray(),
   ]);
   const schedules = new Map(allSchedules.map((schedule) => [schedule.cardId, schedule]));
   const cardsByDeck = new Map<string, StudyCard[]>();
-  for (const card of allCards) {
+  const legacyDeckIds = new Set(allDecks.map((deck) => deck.id));
+  const legacyCards = allCards.filter((card) => legacyDeckIds.has(card.deckId));
+  for (const card of legacyCards) {
     const cards = cardsByDeck.get(card.deckId) ?? [];
     cards.push(card);
     cardsByDeck.set(card.deckId, cards);
   }
 
   const decks = allDecks.map((deck) => summarizeDeck(deck, cardsByDeck.get(deck.id) ?? [], schedules, now.getTime()));
-  const active = allCards.filter((card) => !card.suspendedAt);
+  const active = legacyCards.filter((card) => !card.suspendedAt);
   const learned = active.filter((card) => schedules.has(card.id));
   return {
-    totalCards: allCards.length,
+    totalCards: legacyCards.length,
     activeCards: active.length,
     newCards: active.length - learned.length,
     dueCards: learned.filter((card) => new Date(schedules.get(card.id)!.due).getTime() <= now.getTime()).length,
     learnedCards: learned.length,
-    suspendedCards: allCards.length - active.length,
+    suspendedCards: legacyCards.length - active.length,
     decks,
   };
 }

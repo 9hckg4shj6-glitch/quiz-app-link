@@ -102,6 +102,7 @@ async function ensureDefaultDeck(): Promise<void> {
   const timestamp = nowIso();
   await saveDeck({
     id: "deck-personal", ownerId: null, name: "自作カード", description: "自分で作成したカード", order: 0,
+    system: "legacy", subjectId: "metabolism", originSharedDeckId: null, originVersion: null,
     newCardsPerDay: DEFAULT_NEW_CARDS_PER_DAY, reviewsPerDay: DEFAULT_REVIEWS_PER_DAY,
     desiredRetention: DEFAULT_DESIRED_RETENTION, version: 1,
     createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
@@ -144,7 +145,8 @@ function closeModal(): void {
 async function renderCards(): Promise<void> {
   const list = $("#studyCardList");
   list.replaceChildren();
-  const cards = await db.cards.filter((card) => !card.builtIn && !card.deletedAt).sortBy("updatedAt");
+  const legacyDeckIds = new Set((await db.decks.filter((deck) => deck.system !== "memory").toArray()).map((deck) => deck.id));
+  const cards = await db.cards.filter((card) => !card.builtIn && !card.deletedAt && legacyDeckIds.has(card.deckId)).sortBy("updatedAt");
   cards.reverse();
   if (!cards.length) {
     const empty = document.createElement("div"); empty.className = "study-empty"; empty.textContent = "自作カードはまだありません。最初の1枚を作成しましょう。"; list.append(empty); return;
@@ -166,7 +168,7 @@ async function renderCards(): Promise<void> {
 async function fillDecks(selected?: string): Promise<void> {
   const select = $("#studyDeck") as HTMLSelectElement;
   select.replaceChildren();
-  const decks = await db.decks.filter((deck) => !deck.deletedAt).sortBy("order");
+  const decks = await db.decks.filter((deck) => !deck.deletedAt && deck.system !== "memory").sortBy("order");
   for (const deck of decks) {
     const option = document.createElement("option"); option.value = deck.id; option.textContent = deck.name; select.append(option);
   }
@@ -309,6 +311,7 @@ async function createDeck(): Promise<void> {
   const timestamp = nowIso();
   await saveDeck({
     id: uuid(), ownerId: null, name: name.trim(), description: "", order: await db.decks.count(),
+    system: "legacy", subjectId: "metabolism", originSharedDeckId: null, originVersion: null,
     newCardsPerDay: DEFAULT_NEW_CARDS_PER_DAY, reviewsPerDay: DEFAULT_REVIEWS_PER_DAY,
     desiredRetention: DEFAULT_DESIRED_RETENTION, version: 1,
     createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
@@ -317,7 +320,7 @@ async function createDeck(): Promise<void> {
 }
 
 async function exportData(): Promise<void> {
-  const data = { app: "metabolism-study", schemaVersion: 3, exportedAt: nowIso(), cards: await db.cards.filter((card) => !card.builtIn).toArray(), decks: await db.decks.toArray(), reviewEvents: (await db.reviewEvents.toArray()).map(({ syncedAt: _syncedAt, ownerId: _ownerId, ...event }) => event) };
+  const data = { app: "metabolism-study", schemaVersion: 4, exportedAt: nowIso(), cards: await db.cards.filter((card) => !card.builtIn).toArray(), decks: await db.decks.toArray(), reviewEvents: (await db.reviewEvents.toArray()).map(({ syncedAt: _syncedAt, ownerId: _ownerId, ...event }) => event) };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
   const link = document.createElement("a"); link.href = url; link.download = `基礎医学演習アプリ_バックアップ_${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(url);
 }

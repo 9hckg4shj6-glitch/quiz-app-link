@@ -136,6 +136,8 @@ async function pushItem(item: OutboxRecord, user: User): Promise<void> {
   if (item.table === "decks") {
     payload = {
       id: payload.id, owner_id: user.id, name: payload.name, description: payload.description,
+      card_system: payload.system, subject_id: payload.subjectId,
+      origin_shared_deck_id: payload.originSharedDeckId, origin_version: payload.originVersion,
       sort_order: payload.order, new_cards_per_day: payload.newCardsPerDay,
       reviews_per_day: payload.reviewsPerDay, desired_retention: payload.desiredRetention,
       version: payload.version, created_at: payload.createdAt,
@@ -175,6 +177,10 @@ async function pullSupportingData(user: User): Promise<void> {
 
   await db.decks.bulkPut((decksResult.data ?? []).map((row) => ({
     id: String(row.id), ownerId: user.id, name: String(row.name), description: String(row.description ?? ""),
+    system: row.card_system === "memory" ? "memory" as const : "legacy" as const,
+    subjectId: row.subject_id == null ? "metabolism" : String(row.subject_id),
+    originSharedDeckId: row.origin_shared_deck_id == null ? null : String(row.origin_shared_deck_id),
+    originVersion: row.origin_version == null ? null : Number(row.origin_version),
     order: Number(row.sort_order ?? 0), newCardsPerDay: Number(row.new_cards_per_day ?? 20),
     reviewsPerDay: Number(row.reviews_per_day ?? 200), desiredRetention: Number(row.desired_retention ?? 0.9),
     version: Number(row.version ?? 1), createdAt: String(row.created_at),

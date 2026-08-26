@@ -30,6 +30,7 @@ describe("account local data isolation", () => {
     ]);
     await db.decks.put({
       id: "deck-personal", ownerId: "old-user", name: "自作", description: "", order: 0, version: 1,
+      system: "legacy", subjectId: "metabolism", originSharedDeckId: null, originVersion: null,
       newCardsPerDay: 20, reviewsPerDay: 200, desiredRetention: 0.9,
       createdAt: "2026-08-01T00:00:00.000Z", updatedAt: "2026-08-01T00:00:00.000Z", deletedAt: null,
     });

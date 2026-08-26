@@ -71,6 +71,7 @@ describe("importBundleSchema", () => {
     });
     expect(parsed.decks[0]).toMatchObject({
       newCardsPerDay: 20, reviewsPerDay: 200, desiredRetention: 0.9,
+      system: "legacy", subjectId: "metabolism", originSharedDeckId: null, originVersion: null,
     });
   });
 });

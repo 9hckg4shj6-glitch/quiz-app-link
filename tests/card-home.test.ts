@@ -9,6 +9,7 @@ const NOW = "2026-08-26T09:00:00.000Z";
 function deck(id: string, order: number): Deck {
   return {
     id, ownerId: null, name: id, description: "", order,
+    system: "legacy", subjectId: "metabolism", originSharedDeckId: null, originVersion: null,
     newCardsPerDay: 20, reviewsPerDay: 200, desiredRetention: 0.9,
     version: 1, createdAt: NOW, updatedAt: NOW, deletedAt: null,
   };
@@ -30,12 +31,17 @@ beforeEach(async () => {
 
 describe("getCardHomeSnapshot", () => {
   it("デッキ順に新規・復習・休止カードを集計する", async () => {
-    await db.decks.bulkPut([deck("deck-b", 2), deck("deck-a", 1)]);
+    await db.decks.bulkPut([
+      deck("deck-b", 2),
+      deck("deck-a", 1),
+      { ...deck("memory-deck", 3), system: "memory", subjectId: "immunology2" },
+    ]);
     await db.cards.bulkPut([
       card("new", "deck-a"),
       card("due", "deck-a"),
       card("future", "deck-b"),
       card("suspended", "deck-b", NOW),
+      card("memory-card", "memory-deck"),
     ]);
     await db.schedules.bulkPut([
       {
