@@ -317,14 +317,44 @@ async function saveCardForm(event: Event): Promise<void> {
   await repaint();
 }
 
+/** Supabase側のエラーを、次に何をすればよいか分かる日本語へ変換する。 */
+function shareErrorMessage(error: unknown): string {
+  const detail = error as { code?: string; message?: string } | null;
+  const code = detail?.code ?? "";
+  const raw = detail?.message?.trim() || String(error);
+  // RPCのraise exceptionは日本語の検証メッセージなのでそのまま見せる。
+  if (code === "P0001") return raw;
+  if (code === "PGRST202" || code === "PGRST205" || code === "42883" || code === "42P01" || /schema cache|does not exist/i.test(raw)) {
+    return "共有機能のデータベース設定が未適用です。README「全科目共通の暗記カード」の手順で 011_memory_cards.sql と 012_atomic_memory_deck_publish.sql を適用してください。";
+  }
+  if (code === "PGRST301" || code === "401" || /jwt|expired|not authenticated/i.test(raw)) {
+    return "ログインの有効期限が切れました。「設定・データ」から再度ログインしてください。";
+  }
+  if (code === "42501") return "この操作の権限がありません。ログイン中のアカウントを確認してください。";
+  if (/failed to fetch|networkerror/i.test(raw)) return "通信できませんでした。接続を確認してもう一度お試しください。";
+  return raw || "原因不明のエラーが発生しました。";
+}
+
+/** DB側の制約と同じ条件を先に確認し、公開失敗をSQLエラーではなく日本語で返す。 */
+function publishBlockReason(deck: Deck, cards: StudyCard[]): string | null {
+  const title = deck.name.trim();
+  if (!title || title.length > 80) return "デッキ名は1〜80文字にしてください。";
+  if ((deck.description ?? "").length > 500) return "デッキの説明は500文字以内にしてください。";
+  if (cards.length > 5000) return "公開できるカードは5000枚までです。";
+  const index = cards.findIndex((card) => !card.front?.trim() || card.front.length > 2000
+    || !card.back?.trim() || card.back.length > 4000 || (card.explanation ?? "").length > 4000);
+  return index < 0 ? null
+    : `${index + 1}枚目のカードを公開できません。表は1〜2000字、裏は1〜4000字、補足は4000字以内で、空欄にできません。`;
+}
+
 async function publishSelectedDeck(): Promise<void> {
   if (!selectedDeckId || !activeSubject || publishInFlight) return;
   if (!supabase) {
     setMessage("共有機能の接続設定がありません。自分のデッキはそのまま利用できます。", "error");
     return repaint();
   }
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) {
+  const { data: auth, error: authError } = await supabase.auth.getUser();
+  if (authError || !auth.user) {
     setMessage("デッキを公開するには「設定・データ」からログインしてください。", "error");
     return repaint();
   }
@@ -334,25 +364,33 @@ async function publishSelectedDeck(): Promise<void> {
     setMessage("公開するにはカードを1枚以上追加してください。", "error");
     return repaint();
   }
+  const blocked = publishBlockReason(deck, cards);
+  if (blocked) {
+    setMessage(blocked, "error");
+    return repaint();
+  }
   publishInFlight = true;
   setMessage("公開処理中です…");
   await repaint();
   try {
+    // 引数がundefinedだとPostgRESTが関数を解決できないため、必ず既定値を入れて送る。
     const { data: version, error } = await supabase.rpc("publish_memory_deck", {
       p_deck_id: deck.id,
       p_subject_id: activeSubject.id,
-      p_title: deck.name,
-      p_description: deck.description,
+      p_title: deck.name.trim(),
+      p_description: deck.description ?? "",
       p_cards: cards.map((card) => ({
         origin_card_id: card.id,
         front: card.front,
         back: card.back,
-        explanation: card.explanation,
-        tags: card.tags,
+        explanation: card.explanation ?? "",
+        tags: card.tags ?? [],
       })),
     });
     if (error) throw error;
     setMessage(`「${deck.name}」をみんなのデッキへ公開しました（v${Number(version)}）。`, "success");
+  } catch (error) {
+    setMessage(`公開できませんでした: ${shareErrorMessage(error)}`, "error");
   } finally {
     publishInFlight = false;
   }
@@ -407,7 +445,7 @@ async function handleAction(target: HTMLElement): Promise<void> {
   if (action === "tab-mine") { activeTab = "mine"; selectedSharedDeckId = null; editor = null; }
   if (action === "tab-public") {
     activeTab = "public"; selectedDeckId = null; editor = null;
-    try { await loadSharedDecks(); } catch (error) { setMessage(`共有デッキを取得できません: ${error instanceof Error ? error.message : String(error)}`, "error"); }
+    try { await loadSharedDecks(); } catch (error) { setMessage(`共有デッキを取得できません: ${shareErrorMessage(error)}`, "error"); }
   }
   if (action === "new-deck") { activeTab = "mine"; selectedDeckId = null; editor = { kind: "deck" }; }
   if (action === "cancel-editor") editor = null;
@@ -430,7 +468,7 @@ async function handleAction(target: HTMLElement): Promise<void> {
   }
   if (action === "publish-deck") {
     if (!confirm(`「${(await db.decks.get(selectedDeckId || ""))?.name || "このデッキ"}」を同じ科目のみんなのデッキへ公開しますか？`)) return;
-    try { await publishSelectedDeck(); } catch (error) { setMessage(`公開できませんでした: ${error instanceof Error ? error.message : String(error)}`, "error"); await repaint(); }
+    try { await publishSelectedDeck(); } catch (error) { setMessage(`公開できませんでした: ${shareErrorMessage(error)}`, "error"); await repaint(); }
     return;
   }
   if (action === "open-shared" && target.dataset.sharedId) {
@@ -440,11 +478,14 @@ async function handleAction(target: HTMLElement): Promise<void> {
       selectedSharedDeckId = sharedDeckId;
     } catch (error) {
       selectedSharedDeckId = null;
-      setMessage(`カードを取得できません: ${error instanceof Error ? error.message : String(error)}`, "error");
+      setMessage(`カードを取得できません: ${shareErrorMessage(error)}`, "error");
     }
   }
   if (action === "back-public") selectedSharedDeckId = null;
-  if (action === "import-shared") { await importSelectedSharedDeck(); return; }
+  if (action === "import-shared") {
+    try { await importSelectedSharedDeck(); } catch (error) { setMessage(`自分のデッキへ追加できませんでした: ${shareErrorMessage(error)}`, "error"); await repaint(); }
+    return;
+  }
   if (action === "study-deck" && rootNode) { rootNode.dataset.studyMode = "true"; studyIndex = 0; studyRevealed = false; }
   if (action === "stop-study" && rootNode) rootNode.dataset.studyMode = "false";
   if (action === "reveal-card") studyRevealed = !studyRevealed;

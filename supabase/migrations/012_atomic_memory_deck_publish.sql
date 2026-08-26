@@ -124,3 +124,6 @@ $$;
 
 revoke all on function public.publish_memory_deck(text, text, text, text, jsonb) from public;
 grant execute on function public.publish_memory_deck(text, text, text, text, jsonb) to authenticated;
+
+-- 適用直後にPostgRESTのスキーマキャッシュを更新し、RPCが「関数が見つからない」で失敗しないようにする。
+notify pgrst, 'reload schema';
