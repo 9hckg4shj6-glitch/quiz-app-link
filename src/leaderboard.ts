@@ -1,12 +1,16 @@
 import { getDeviceId } from "./db";
 import { supabase } from "./backend";
+import {
+  cleanPublicName,
+  getLeaderboardOptIn,
+  getPublicName,
+  savePublicName,
+  setLeaderboardOptInLocal,
+} from "./account-profile";
 
-// 公開ランキング（グローバル1本）。端末ごとの device_id で識別し、名前は表示ラベル。
-// アクセスはすべて security definer の RPC 経由（supabase/migrations/002_leaderboard.sql）。
+// ゲストは端末ID、ログイン中はGoogleアカウントで識別する公開ランキング。
+// アカウント利用時の名前・参加状態は全端末で共通になる。
 
-const NAME_KEY = "lb_name_v1";
-const OPTIN_KEY = "lb_optin_v1";
-const MAX_NAME = 24;
 
 export interface RankRow {
   rank: number;
@@ -27,25 +31,15 @@ export function leaderboardEnabled(): boolean {
 }
 
 export function getSavedName(): string {
-  try {
-    return localStorage.getItem(NAME_KEY) ?? "";
-  } catch {
-    return "";
-  }
+  return getPublicName();
 }
 
 export function hasJoined(): boolean {
-  try {
-    return localStorage.getItem(OPTIN_KEY) === "1" && getSavedName().length > 0;
-  } catch {
-    return false;
-  }
+  return getLeaderboardOptIn() && getSavedName().length > 0;
 }
 
 export function cleanName(raw: string): string {
-  // 制御文字を除去してトリム、24文字まで。漢字・かなはそのまま許可。
-  // eslint-disable-next-line no-control-regex
-  return raw.replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, MAX_NAME);
+  return cleanPublicName(raw);
 }
 
 // ランキングは科目ごとに分かれている。呼び出し側から現在の科目idを渡す。
@@ -56,18 +50,14 @@ function normSubject(subject?: string | null): string {
 }
 
 // 名前を保存して参加登録し、現在の解答数を送信する。
-export async function joinLeaderboard(rawName: string, solved: number, subject?: string): Promise<{ ok: boolean; error?: string }> {
+export async function joinLeaderboard(rawName: string, solved: number, subject?: string, deviceSolved = solved): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "ランキングは現在利用できません" };
   const name = cleanName(rawName);
   if (name.length < 1) return { ok: false, error: "名前を入力してください" };
   try {
-    localStorage.setItem(NAME_KEY, name);
-    localStorage.setItem(OPTIN_KEY, "1");
-  } catch {
-    /* localStorage 不可でも送信は試みる */
-  }
-  try {
-    await sendScore(name, solved, subject);
+    await savePublicName(name);
+    setLeaderboardOptInLocal(true);
+    await sendScore(name, solved, subject, deviceSolved);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
@@ -84,30 +74,40 @@ function isMissingFunction(error: { code?: string; message?: string } | null): b
 }
 async function rpcWithSubjectFallback(
   fn: string,
+  argsWithDeviceCount: Record<string, unknown>,
   argsWithSubject: Record<string, unknown>,
   argsWithoutSubject: Record<string, unknown>,
 ): Promise<unknown> {
   if (!supabase) return null;
-  const first = await supabase.rpc(fn, argsWithSubject);
+  const first = await supabase.rpc(fn, argsWithDeviceCount);
   if (!first.error) return first.data;
   if (!isMissingFunction(first.error)) throw first.error;
-  const second = await supabase.rpc(fn, argsWithoutSubject);
-  if (second.error) throw second.error;
-  return second.data;
+  const second = await supabase.rpc(fn, argsWithSubject);
+  if (!second.error) return second.data;
+  if (!isMissingFunction(second.error)) throw second.error;
+  const third = await supabase.rpc(fn, argsWithoutSubject);
+  if (third.error) throw third.error;
+  return third.data;
 }
 
-async function sendScore(name: string, solved: number, subject?: string): Promise<void> {
+async function sendScore(name: string, solved: number, subject?: string, deviceSolved = solved): Promise<void> {
   if (!supabase) return;
   const deviceId = await getDeviceId();
   const base = { p_device_id: deviceId, p_name: name, p_solved: Math.max(0, Math.floor(solved)) };
-  await rpcWithSubjectFallback("publish_score", { ...base, p_subject: normSubject(subject) }, base);
+  const withSubject = { ...base, p_subject: normSubject(subject) };
+  await rpcWithSubjectFallback(
+    "publish_score",
+    { ...withSubject, p_device_solved: Math.max(0, Math.floor(deviceSolved)) },
+    withSubject,
+    base,
+  );
 }
 
 let lastPublish = 0;
 let lastSubject: string | undefined;
 
 // 演習中に随時呼ぶ。参加済みかつオンラインのときだけ、最短30秒間隔で送信する。
-export async function publishScore(solved: number, force = false, subject?: string): Promise<void> {
+export async function publishScore(solved: number, force = false, subject?: string, deviceSolved = solved): Promise<void> {
   if (!supabase || !hasJoined()) return;
   if (typeof navigator !== "undefined" && !navigator.onLine) return;
   const now = Date.now();
@@ -115,7 +115,7 @@ export async function publishScore(solved: number, force = false, subject?: stri
   if (!force && subject === lastSubject && now - lastPublish < 30_000) return;
   lastPublish = now; lastSubject = subject;
   try {
-    await sendScore(getSavedName(), solved, subject);
+    await sendScore(getSavedName(), solved, subject, deviceSolved);
   } catch {
     lastPublish = 0; // 失敗時は次回すぐ再試行できるように
   }
@@ -127,6 +127,7 @@ export async function fetchLeaderboard(subject?: string): Promise<LeaderboardVie
   const p_subject = normSubject(subject);
   const data = await rpcWithSubjectFallback(
     "get_leaderboard",
+    { p_device_id: deviceId, p_subject },
     { p_device_id: deviceId, p_subject },
     { p_device_id: deviceId },
   );
@@ -144,6 +145,7 @@ export async function fetchLeaderboard(subject?: string): Promise<LeaderboardVie
     const mr = await rpcWithSubjectFallback(
       "get_my_rank",
       { p_device_id: deviceId, p_subject },
+      { p_device_id: deviceId, p_subject },
       { p_device_id: deviceId },
     ).catch(() => null);
     const row = Array.isArray(mr) ? (mr[0] as Record<string, unknown> | undefined) : null;
@@ -153,11 +155,7 @@ export async function fetchLeaderboard(subject?: string): Promise<LeaderboardVie
 }
 
 export async function leaveLeaderboard(): Promise<void> {
-  try {
-    localStorage.removeItem(OPTIN_KEY);
-  } catch {
-    /* noop */
-  }
+  setLeaderboardOptInLocal(false);
   if (!supabase) return;
   const deviceId = await getDeviceId();
   await supabase.rpc("remove_score", { p_device_id: deviceId });

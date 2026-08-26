@@ -1,14 +1,12 @@
 import { getDeviceId } from "./db";
-import { getSavedName as getRankName } from "./leaderboard";
 import { supabase } from "./backend";
+import { cleanPublicName, getPublicName, savePublicName, setPublicNameLocal } from "./account-profile";
 
 // コミュニティ（掲示板）。全公開・誰でも掲示板を作成できる。
-// 識別は端末ごとの device_id。アクセスはすべて security definer の RPC 経由
-// （supabase/migrations/003_community.sql）。
+// ゲストは端末ID、ログイン中はGoogleアカウントで識別する。
+// 表示名はランキングと同じアカウントプロフィールを使用する。
 
-const NAME_KEY = "cm_name_v1";
 const ADMIN_KEY = "cm_admin_v1";
-const MAX_NAME = 24;
 
 export interface BoardRow {
   id: string;
@@ -45,29 +43,17 @@ function rpcError(error: { code?: string; message?: string }): Error {
 }
 
 export function cleanName(raw: string): string {
-  // eslint-disable-next-line no-control-regex
-  return raw.replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, MAX_NAME);
+  return cleanPublicName(raw);
 }
 
-// コミュニティ名。未設定ならランキング登録名を初期値として使う（変更は独立して保存）。
+// コミュニティとランキングは同じ公開名を使う。
 export function getName(): string {
-  try {
-    const own = localStorage.getItem(NAME_KEY);
-    if (own && own.length > 0) return own;
-  } catch {
-    /* noop */
-  }
-  return getRankName();
+  return getPublicName();
 }
 
 export function setName(raw: string): string {
-  const name = cleanName(raw);
-  if (name.length < 1) return "";
-  try {
-    localStorage.setItem(NAME_KEY, name);
-  } catch {
-    /* noop */
-  }
+  const name = setPublicNameLocal(raw);
+  if (name) void savePublicName(name).catch(() => undefined);
   return name;
 }
 
@@ -208,6 +194,9 @@ export async function createBoard(title: string, description: string): Promise<{
   if (!supabase) return { ok: false, error: "コミュニティは現在利用できません" };
   const name = getName();
   if (!name) return { ok: false, error: "名前を登録してください" };
+  try { await savePublicName(name); } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
   const deviceId = await getDeviceId();
   const { data, error } = await supabase.rpc("create_board", {
     p_device_id: deviceId,
@@ -246,6 +235,9 @@ export async function createPost(boardId: string, body: string): Promise<{ ok: b
   if (!supabase) return { ok: false, error: "コミュニティは現在利用できません" };
   const name = getName();
   if (!name) return { ok: false, error: "名前を登録してください" };
+  try { await savePublicName(name); } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
   const deviceId = await getDeviceId();
   const { error } = await supabase.rpc("create_post", {
     p_device_id: deviceId,
@@ -264,7 +256,7 @@ export async function deleteMyPost(postId: string): Promise<void> {
   if (error) throw error;
 }
 
-// 通報は端末ごとに1回だけ数える（同一端末の連打で他人の投稿を隠せないようにするため）
+// ゲストは端末ごと、ログイン中はアカウントごとに1回だけ数える。
 export async function reportPost(postId: string): Promise<void> {
   if (!supabase) return;
   const deviceId = await getDeviceId();

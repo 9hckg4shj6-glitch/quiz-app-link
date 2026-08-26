@@ -41,6 +41,7 @@ declare global {
         signOut: () => Promise<void>;
         deleteAccount: () => Promise<void>;
         bindCurrent: () => Promise<AccountState>;
+        syncIdentity: (fallbackName?: string) => Promise<{ ok: boolean; error?: string }>;
         resolveSwitch: (action: "replace" | "cancel") => Promise<AccountState>;
       };
       undoLastReview: (cardId: string) => Promise<StoredSchedule | null>;
@@ -53,8 +54,8 @@ declare global {
         enabled: () => boolean;
         hasJoined: () => boolean;
         savedName: () => string;
-        join: (rawName: string, solved: number) => Promise<{ ok: boolean; error?: string }>;
-        publish: (solved: number, force?: boolean) => Promise<void>;
+        join: (rawName: string, solved: number, subject?: string, deviceSolved?: number) => Promise<{ ok: boolean; error?: string }>;
+        publish: (solved: number, force?: boolean, subject?: string, deviceSolved?: number) => Promise<void>;
         fetch: () => Promise<LeaderboardView | null>;
         leave: () => Promise<void>;
       };
@@ -136,6 +137,7 @@ declare global {
             claimLegacyCode: (code: string) => Promise<{ ok: boolean; payload?: SyncPayload; missing?: boolean; error?: string }>;
             mergeLegacyPayload: (payload: SyncPayload) => void;
             importLegacyWritten: (code: string) => Promise<{ ok: boolean; error?: string }>;
+            syncIdentity?: () => Promise<{ ok: boolean; error?: string }>;
             syncSnapshot: () => Promise<{ ok: boolean; error?: string }>;
             syncWritten: () => Promise<{ ok: boolean; error?: string }>;
             syncCards: () => Promise<{ error?: string | null }>;

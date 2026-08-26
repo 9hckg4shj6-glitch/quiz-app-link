@@ -45,6 +45,7 @@ describe("account sync orchestration", () => {
       claimLegacyCode: vi.fn().mockResolvedValue({ ok: true, payload: { progress: { old: 1 } } }),
       mergeLegacyPayload: vi.fn(),
       importLegacyWritten: vi.fn().mockResolvedValue({ ok: true }),
+      syncIdentity: vi.fn().mockResolvedValue({ ok: true }),
       syncSnapshot: vi.fn().mockResolvedValue({ ok: true }),
       syncWritten: vi.fn().mockResolvedValue({ ok: true }),
       syncCards: vi.fn().mockResolvedValue({ error: null }),
@@ -66,6 +67,7 @@ describe("account sync orchestration", () => {
       legacyError: "旧コードの取得エラー",
     });
     expect(ops.syncSnapshot).toHaveBeenCalledTimes(1);
+    expect(ops.syncIdentity).toHaveBeenCalledTimes(1);
     expect(ops.syncWritten).toHaveBeenCalledTimes(1);
     expect(ops.syncCards).toHaveBeenCalledTimes(1);
     expect(ops.unlinkLegacyCode).not.toHaveBeenCalled();
@@ -126,5 +128,18 @@ describe("account sync orchestration", () => {
     });
     expect(ops.completeLegacyMigration).not.toHaveBeenCalled();
     expect(ops.unlinkLegacyCode).not.toHaveBeenCalled();
+  });
+
+  it("公開名のアカウント統合に失敗した場合は後続同期を止める", async () => {
+    const ops = operations({
+      syncIdentity: vi.fn().mockResolvedValue({ ok: false, error: "プロフィール同期失敗" }),
+    });
+
+    await expect(syncAccountData("", ops)).resolves.toMatchObject({
+      ok: false,
+      error: "プロフィール同期失敗",
+    });
+    expect(ops.syncSnapshot).not.toHaveBeenCalled();
+    expect(ops.syncCards).not.toHaveBeenCalled();
   });
 });

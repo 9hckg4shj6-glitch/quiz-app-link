@@ -19,6 +19,7 @@ export interface AccountSyncOperations {
   claimLegacyCode: (code: string) => Promise<LegacyClaimResult>;
   mergeLegacyPayload: (payload: SyncPayload) => void;
   importLegacyWritten: (code: string) => Promise<SyncStepResult>;
+  syncIdentity?: () => Promise<SyncStepResult>;
   syncSnapshot: () => Promise<SyncStepResult>;
   syncWritten: () => Promise<SyncStepResult>;
   syncCards: () => Promise<{ error?: string | null }>;
@@ -96,6 +97,16 @@ export async function syncAccountData(
     } catch (error) {
       legacyPending = true;
       legacyError = errorMessage(error, "旧同期コードを取り込めませんでした");
+    }
+  }
+
+  if (operations.syncIdentity) {
+    const identity = await operations.syncIdentity();
+    if (!identity.ok) {
+      return {
+        ok: false, migratedLegacy: false, legacyPending,
+        error: identity.error ?? "アカウント名と公開情報を同期できませんでした", legacyError,
+      };
     }
   }
 

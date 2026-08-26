@@ -48,13 +48,13 @@ APP_USER="study" APP_PASSWORD="任意のパスワード" node server.js
 
 ## Googleアカウントと同期
 
-「設定・データ」→「アカウントと同期」からログインできます。ゲスト利用は継続でき、初回ログイン時は端末内データをアカウントへ統合します。ログイン後は学習進捗、XP・実績、FSRS、採点済み答案、自作カード・デッキ・画像が同期されます。ランキングとコミュニティは従来どおり端末ID単位です。
+「設定・データ」→「アカウントと同期」からログインできます。ゲスト利用は継続でき、初回ログイン時は端末内データをアカウントへ統合します。同じGoogleアカウントでログインした端末では、全科目の学習進捗、解答数、XP・実績、FSRS、採点済み答案、自作カード・デッキ・画像、ランキング参加状態、ランキングと掲示板の表示名が同じアカウントへ統合されます。
 
 この機能の導入後に各端末で初めてアプリを開くと、「Googleでログイン／ゲストで進む」を一度だけ確認します。選択は `account_entry_choice_v1` として端末へ保存され、どちらを選んでも次回以降は表示しません。ログイン状態の変更はいつでも設定画面から行えます。
 
 本番への導入順序:
 
-1. Supabase SQL Editorで既存のマイグレーションに続けて `supabase/migrations/009_account_auth.sql`、`010_card_learning_settings.sql` を番号順に適用する。
+1. Supabase SQL Editorで既存のマイグレーションに続けて `supabase/migrations/009_account_auth.sql` から `013_account_identity_unification.sql` までを番号順に適用する。
 2. Supabase AuthのSite URLを `https://9hckg4shj6-glitch.github.io/quiz-app-link/` にし、Redirect URLsへ同URLと `http://localhost:5173/` を登録する。
 3. Google OAuthクライアントを作り、Google側の承認済みリダイレクトURIへ `https://<project-ref>.supabase.co/auth/v1/callback` を登録して、Client IDとSecretをSupabaseのGoogle providerへ保存する。
 4. Supabase AuthのManual Linkingを有効にする。
@@ -65,12 +65,12 @@ Google Client Secretはフロントエンド、`.env`、GitHubへ保存しませ
 
 ## 公開ランキング（解いた問題数）
 
-ホームの「🏆 ランキング」から、名前を登録すると「解いた問題数」がグローバルな公開ランキングに掲載されます。端末ごとに発行される `deviceId` で本人を識別し、名前は表示ラベルです（メール等の個人情報は公開しません）。演習中は随時、上限付き（30秒間隔）でスコアを送信します。
+ホームの「🏆 ランキング」から、名前を登録すると「解いた問題数」がグローバルな公開ランキングに掲載されます。ゲストは端末単位、ログイン中はGoogleアカウント単位で本人を識別します。同じアカウントの各端末で解いた回数は、端末別カウンターの増分を合算して二重計上を防ぎます。公開されるのは表示名と解答数だけで、メール等の個人情報は公開しません。
 
 有効化には Supabase が必要です（未設定でもアプリはローカル専用で動作し、ランキングは「準備中」と表示されます）。手順:
 
 1. Supabase プロジェクトを用意する（既存の同期用と同じでよい）。
-2. `supabase/migrations/002_leaderboard.sql` を SQL Editor で実行する（`leaderboard` テーブルと4つの `security definer` 関数を作成）。認証は不要で、匿名（anon）ロールから関数のみ実行できます。
+2. `supabase/migrations/002_leaderboard.sql`、`007_leaderboard_subject.sql`、`013_account_identity_unification.sql` を番号順に SQL Editor で実行する。ゲストは端末単位、ログイン中は認証済みアカウント単位で関数を利用します。
 3. GitHub リポジトリの Settings → Secrets and variables → Actions に `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` を登録する（anonキーはRLS前提の公開可能キー）。
 4. `main` へマージ／pushすると、CIがSecretsをビルドへ注入して配信します。
 
@@ -80,26 +80,26 @@ Google Client Secretはフロントエンド、`.env`、GitHubへ保存しませ
 
 既存利用者との互換性のため、**同期コード**（`ABCDE-FGHIJ` の10文字）も折りたたみ表示で残しています。コードが保存された端末で初回ログインすると、コード・端末・既存アカウントの記録を統合し、保存確認後にコードを移行済みの読み取り専用状態にします。
 
-- 統合は `mergeProgress` / `mergeMeta`（問題ごとに最大値・和集合）で行い、**pull → 統合 → push** の順に動くため、どちらの端末の記録も失われません。
+- 統合は `mergeProgress` / `mergeMeta`（解答回数は端末別 G-Counter、その他は最大値・和集合）で行い、**pull → 統合 → push** の順に動くため、どちらの端末の記録も失われません。
 - コード同期の対象は学習記録（`progress`）、実績・XP・アクティビティ（`meta`）、採点済み答案です。アカウント同期では自作カードも対象です。
 - 学習のたび（最短1分間隔）、起動時、オンライン復帰時、アプリに戻ったときに自動同期します。
 - 移行前のコードは認証を使わず、コードを知っている端末だけが読み書きできます。**コードは学習記録への鍵**なので他人に教えないでください。
 - 従来の手動バックアップ（コピー／ファイル）は「手動でのバックアップ」に折りたたんで残しています。
 
-有効化には `supabase/migrations/006_sync.sql`、`008_written_attempts.sql`、`009_account_auth.sql` を番号順に実行します。未適用の間は「準備中」と表示され、端末保存と手動バックアップは引き続き使えます。
+有効化には `supabase/migrations/006_sync.sql`、`008_written_attempts.sql`、`009_account_auth.sql`、`013_account_identity_unification.sql` を番号順に実行します。未適用の間は「準備中」と表示され、端末保存と手動バックアップは引き続き使えます。
 
 ## コミュニティ（掲示板）
 
-ホームの「💬 コミュニティ」から、誰でも掲示板を作成して書き込めます。全公開で、閲覧・投稿に認証は不要です。識別は端末ごとの `deviceId`、表示名は `localStorage` に保存します（ランキングに登録済みならその名前が初期値になり、変更しても互いに影響しません）。
+ホームの「💬 コミュニティ」から、誰でも掲示板を作成して書き込めます。全公開で、閲覧・投稿に認証は不要です。ゲストは端末単位、ログイン中はGoogleアカウント単位で所有者を識別します。ログイン中の表示名はランキングと掲示板で共通になり、同じアカウントの全端末へ同期されます。
 
-有効化には `supabase/migrations/003_community.sql`、続けて `supabase/migrations/004_report_dedupe.sql` を SQL Editor で実行します（`boards` / `posts` / `app_secrets` / `reports` テーブルと RPC 群を作成）。未適用の間、アプリは「準備中」と表示して安全に動作します。
+有効化には `supabase/migrations/003_community.sql`、`004_report_dedupe.sql`、`005_community_smooth.sql`、`013_account_identity_unification.sql` を番号順に SQL Editor で実行します（`boards` / `posts` / `app_secrets` / `reports` テーブルと RPC 群を作成）。未適用の間、アプリは「準備中」と表示して安全に動作します。
 
 荒らし対策として次をサーバ側に実装しています。
 
-- レート制限: 投稿は1分3件・1時間20件、掲示板作成は5分1件・1日5件まで
+- レート制限: 投稿は1分10件・1時間200件、掲示板作成は1分5件・1日30件まで
 - 文字数制限: 名前24文字、タイトル40文字、説明200文字、本文1000文字
 - 制御文字の除去（改行・タブは保持）と、表示時のHTMLエスケープ
-- 通報は端末ごとに1回のみ有効で、異なる3端末から通報された掲示板・書き込みは一覧から自動的に非表示（同一端末の連打では隠せない）
+- 通報はゲストでは端末ごと、ログイン中はアカウントごとに1回のみ有効で、異なる3利用者から通報された掲示板・書き込みは一覧から自動的に非表示
 - 投稿者は自分の書き込み・掲示板を削除可能（ソフト削除）
 
 ### 管理者削除

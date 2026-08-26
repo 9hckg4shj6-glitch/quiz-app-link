@@ -1,7 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { assessAccountBinding, clearLocalDataOwner, getLocalDataOwner } from "./account-auth";
 import { supabase } from "./backend";
-import { db, nowIso, saveCard, saveSetting, uuid } from "./db";
+import { db, nowIso, saveCard, saveDeck, saveSetting, uuid } from "./db";
 import { rebuildScheduleFromEvents } from "./fsrs";
 import type { OutboxRecord, StudyCard, SyncStatus } from "./types";
 
@@ -101,6 +101,11 @@ async function hydrateRemoteImage(card: StudyCard): Promise<StudyCard> {
 }
 
 async function attachOwner(userId: string): Promise<void> {
+  // カードより先にデッキを送れるよう、所有者付与とoutbox追加もデッキから行う。
+  const decks = await db.decks.filter((item) => !item.ownerId).toArray();
+  for (const deck of decks) {
+    await saveDeck({ ...deck, ownerId: userId, updatedAt: nowIso() });
+  }
   const cards = await db.cards.filter((item) => !item.builtIn && !item.ownerId).toArray();
   for (const card of cards) {
     const next = { ...card, ownerId: userId, updatedAt: nowIso() };
@@ -222,6 +227,8 @@ export async function syncNow(): Promise<SyncStatus> {
   try {
     await attachOwner(user.id);
     const pending = await db.outbox.where("status").anyOf("pending", "failed").sortBy("createdAt");
+    const priority: Record<OutboxRecord["table"], number> = { decks: 0, cards: 1, review_events: 2, settings: 3 };
+    pending.sort((a, b) => priority[a.table] - priority[b.table] || a.createdAt.localeCompare(b.createdAt));
     for (const item of pending) {
       if (item.seq == null) continue;
       await db.outbox.update(item.seq, { status: "syncing", attempts: item.attempts + 1, lastError: null });

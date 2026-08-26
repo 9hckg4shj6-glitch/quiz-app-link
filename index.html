@@ -2163,6 +2163,8 @@
   const SECTION_OPEN_KEY = "quizSectionOpen_v1";
   const LIMIT_KEY   = "quizSessionLimit_v1";   // 1回の出題数（0=すべて）
   const SUBJECT_KEY = "quizSubject_v1";        // 最後に選んでいた科目のid
+  const DEVICE_SOLVED_PREFIX = "quizDeviceSolved_v1:"; // ランキング加算用。同期データには混ぜない
+  const PROGRESS_DEVICE_KEY = "quizProgressDevice_v1"; // 問題別カウンターの端末成分ID
   const MASTER_HITS = 2;      // 苦手を「克服」して外すのに必要な連続正解数
   const WEAK_WRONGS = 2;      // 「苦手問題」に分類する累計誤答数
   const SHUFFLE_CHOICES = true;
@@ -2549,6 +2551,30 @@
     if(!progress[id]) progress[id]={seen:0,correct:0,wrong:0,streak:0,weak:false,bookmarked:false};
     syncWeak(progress[id]);
     return progress[id];
+  }
+  function progressDeviceId(){
+    try{
+      let id=localStorage.getItem(PROGRESS_DEVICE_KEY);
+      if(!id){ id=(window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2)); localStorage.setItem(PROGRESS_DEVICE_KEY,id); }
+      return id;
+    }catch(e){ return "device"; }
+  }
+  function counterSum(map,key){ return Object.values(map||{}).reduce((n,row)=>n+Math.max(0,Number(row&&row[key])||0),0); }
+  // G-Counter方式。既存値は共通baseline、以後の増分は端末別に保持するため再同期で二重計上しない。
+  function recordAnswerCounters(r,questionId,isCorrect){
+    const isQuestion=DATA.some(q=>q.id===questionId);
+    if(!isQuestion){ r.seen=(r.seen||0)+1; return; }
+    const map=(r._deviceCounts&&typeof r._deviceCounts==="object")?r._deviceCounts:{};
+    r._legacySeen=Math.max(0,Number(r._legacySeen!=null?r._legacySeen:(r.seen||0)-counterSum(map,"seen"))||0);
+    r._legacyCorrect=Math.max(0,Number(r._legacyCorrect!=null?r._legacyCorrect:(r.correct||0)-counterSum(map,"correct"))||0);
+    r._legacyWrong=Math.max(0,Number(r._legacyWrong!=null?r._legacyWrong:(r.wrong||0)-counterSum(map,"wrong"))||0);
+    const id=progressDeviceId(), own=Object.assign({seen:0,correct:0,wrong:0},map[id]||{});
+    own.seen++; if(isCorrect===true) own.correct++; else if(isCorrect===false) own.wrong++;
+    map[id]=own; r._deviceCounts=map;
+    r.seen=r._legacySeen+counterSum(map,"seen");
+    r.correct=r._legacyCorrect+counterSum(map,"correct");
+    r.wrong=r._legacyWrong+counterSum(map,"wrong");
+    recordDeviceSolved(questionId);
   }
   function isBookmarked(id){ const r=progress[id]; return !!(r && r.bookmarked); }
   function toggleBookmark(id){
@@ -3096,8 +3122,17 @@
   function LB(){ return (window.STUDY_CORE && window.STUDY_CORE.leaderboard) || null; }
   // 「やった問題の数」＝延べ解答回数。同じ問題を複数回解いた分もすべて数える（seenの合計）。
   function solvedCount(){ let n=0; DATA.forEach(q=>{ const r=progress[q.id]; if(r&&r.seen>0) n+=r.seen; }); return n; }
+  function deviceSolvedCount(subjectId){
+    try{ return Math.max(0,parseInt(localStorage.getItem(DEVICE_SOLVED_PREFIX+(subjectId||currentSubjectId||"metabolism"))||"0",10)||0); }
+    catch(e){ return 0; }
+  }
+  function recordDeviceSolved(questionId){
+    if(!DATA.some(q=>q.id===questionId)) return;
+    const key=DEVICE_SOLVED_PREFIX+(currentSubjectId||"metabolism");
+    try{ localStorage.setItem(key,String(deviceSolvedCount(currentSubjectId)+1)); }catch(e){}
+  }
   function medal(rank){ return rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":String(rank); }
-  function maybePublishRank(force){ const lb=LB(); if(lb&&lb.hasJoined()){ try{ lb.publish(solvedCount(), !!force, currentSubjectId); }catch(e){} } }
+  function maybePublishRank(force){ const lb=LB(); if(lb&&lb.hasJoined()){ try{ lb.publish(solvedCount(), !!force, currentSubjectId, deviceSolvedCount(currentSubjectId)); }catch(e){} } }
   let rankTimer=null;
   function startRankTimer(){ stopRankTimer(); rankTimer=setInterval(()=>{
     const v=$("#rankView"); if(!v||v.classList.contains("hidden")) return;
@@ -3118,7 +3153,7 @@
     // 名前を入れていなくてもランキングは閲覧できる。参加は任意（下のCTAから）。
     const typed=$("#rankNameInput")?$("#rankNameInput").value:null;
     if(!box.querySelector(".rankListPanel")) box.innerHTML=`<div class="rankLoading">読み込み中…</div>`;
-    if(doPublish && joined){ try{ await lb.publish(solved, true, currentSubjectId); }catch(e){} }
+    if(doPublish && joined){ try{ await lb.publish(solved, true, currentSubjectId, deviceSolvedCount(currentSubjectId)); }catch(e){} }
     let view=null;
     try{ view=await lb.fetch(currentSubjectId); }
     catch(e){
@@ -3162,7 +3197,7 @@
       const doJoin=async()=>{
         const nm=inp.value; if(!nm.trim()){ toast("名前を入力してください"); return; }
         const btn=$("#rankJoinBtn"); btn.disabled=true; btn.textContent="登録中…";
-        const res=await lb.join(nm, solvedCount(), currentSubjectId);
+        const res=await lb.join(nm, solvedCount(), currentSubjectId, deviceSolvedCount(currentSubjectId));
         if(res.ok){ toast("🏆 ランキングに参加しました"); renderRank(false); }
         else { toast(res.error||"参加に失敗しました"); btn.disabled=false; btn.textContent="参加する"; }
       };
@@ -3172,7 +3207,7 @@
     }
     $("#rankRename").onclick=()=>{
       const nm=prompt("新しい名前（24文字まで）", lb.savedName());
-      if(nm&&nm.trim()){ lb.join(nm, solvedCount(), currentSubjectId).then(res=>{ if(res.ok){ toast("名前を変更しました"); renderRank(false); } else toast(res.error||"変更に失敗しました"); }); }
+      if(nm&&nm.trim()){ lb.join(nm, solvedCount(), currentSubjectId, deviceSolvedCount(currentSubjectId)).then(res=>{ if(res.ok){ toast("名前を変更しました"); renderRank(false); } else toast(res.error||"変更に失敗しました"); }); }
     };
     $("#rankLeave").onclick=async()=>{
       if(confirm("ランキングから抜けますか？あなたの掲載が削除されます。")){
@@ -3803,9 +3838,9 @@
       const correctPos=cur.choices.map((c,k)=>c.correct?k:-1).filter(k=>k>=0);
       const isCorrect = picks.length>0 && sameSet(picks,correctPos);
       const chosenLabel = picks.length? picks.map(k=>cur.choices[k].text).join(" ／ ") : "（未回答）";
-      const r=rec(cur.q.id); r.seen++;
-      if(isCorrect){ r.correct++; r.streak++; correct++; run++; maxRun=Math.max(maxRun,run); }
-      else { r.wrong++; r.streak=0; r.lastWrong=t; run=0; s.wrongList.push({q:cur.q, chosen: chosenLabel}); }
+      const r=rec(cur.q.id); recordAnswerCounters(r,cur.q.id,isCorrect);
+      if(isCorrect){ r.streak++; correct++; run++; maxRun=Math.max(maxRun,run); }
+      else { r.streak=0; r.lastWrong=t; run=0; s.wrongList.push({q:cur.q, chosen: chosenLabel}); }
       syncWeak(r); scheduleSRS(r, isCorrect?3:1, cur.q.id);
     });
     s.correct=correct; s.maxStreak=maxRun;
@@ -3845,15 +3880,15 @@
       const isCorrect=picks.length>0&&sameSet(picks,correctPos);
       const chosenLabel=picks.length?picks.map(i=>cur.choices[i].text).join(" ／ "):"（未回答）";
       const correctText=cur.choices.filter(c=>c.correct).map(c=>c.text).join(" ／ ");
-      const r=rec(cur.q.id); r.seen++;
+      const r=rec(cur.q.id); recordAnswerCounters(r,cur.q.id,isCorrect);
       cur.revealed=true; cur.graded=true;
       cur.batchReview={picks:picks.slice(),isCorrect,chosenLabel,correctText};
       if(isCorrect){
-        r.correct++; r.streak++; correct++; run++; maxRun=Math.max(maxRun,run);
+        r.streak++; correct++; run++; maxRun=Math.max(maxRun,run);
         gained+=Math.round(XP_CORRECT*comboMult(run));
         scheduleSRS(r,3,cur.q.id);
       } else {
-        r.wrong++; r.streak=0; r.lastWrong=t; run=0; gained+=XP_WRONG;
+        r.streak=0; r.lastWrong=t; run=0; gained+=XP_WRONG;
         s.wrongList.push({q:cur.q,chosen:chosenLabel});
         r.miss=r.miss||{};
         picks.forEach(i=>{ const c=cur.choices[i]; if(c&&!c.correct) r.miss[c.idx]=(r.miss[c.idx]||0)+1; });
@@ -3910,9 +3945,9 @@
     const max=writtenPoints(q), ids=[...s.cw.selected], earned=rubricPoints(q,ids);
     s.cw.finalized=true;
     const full=earned>=max;
-    const r=rec(q.id); r.seen++;
-    if(full){ r.correct++; r.streak++; }
-    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); s.wrongList.push({q, chosen:`${earned} / ${max}点`}); }
+    const r=rec(q.id); recordAnswerCounters(r,q.id,full);
+    if(full){ r.streak++; }
+    else { r.streak=0; r.lastWrong=todayStr(); s.wrongList.push({q, chosen:`${earned} / ${max}点`}); }
     syncWeak(r);
     // 既存の本番モード（選択問題）と同じ扱いにそろえる。個別の手ごたえボタンは出さない（§9.3）
     scheduleSRS(r, full?3:(earned>0?2:1), q.id);
@@ -4105,11 +4140,21 @@
       const an=a.noteAt||"", bn=b.noteAt||"";
       const noteWin=((a.note||"")&&(b.note||"")) ? (bn>an?b:a) : ((a.note||"")?a:b);
       const miss={}; [a.miss,b.miss].forEach(mm=>{ if(mm) Object.keys(mm).forEach(k=>{ miss[k]=Math.max(miss[k]||0, mm[k]||0); }); });
-      out[id]={ seen:Math.max(a.seen||0,b.seen||0), correct:Math.max(a.correct||0,b.correct||0), wrong:Math.max(a.wrong||0,b.wrong||0),
+      const deviceCounts={};
+      const mergeDeviceCounts=src=>{ Object.keys(src||{}).forEach(device=>{ const old=deviceCounts[device]||{}, row=src[device]||{}; deviceCounts[device]={seen:Math.max(old.seen||0,row.seen||0),correct:Math.max(old.correct||0,row.correct||0),wrong:Math.max(old.wrong||0,row.wrong||0)}; }); };
+      mergeDeviceCounts(a._deviceCounts); mergeDeviceCounts(b._deviceCounts);
+      const legacySeen=Math.max(a._legacySeen!=null?a._legacySeen:(a.seen||0),b._legacySeen!=null?b._legacySeen:(b.seen||0));
+      const legacyCorrect=Math.max(a._legacyCorrect!=null?a._legacyCorrect:(a.correct||0),b._legacyCorrect!=null?b._legacyCorrect:(b.correct||0));
+      const legacyWrong=Math.max(a._legacyWrong!=null?a._legacyWrong:(a.wrong||0),b._legacyWrong!=null?b._legacyWrong:(b.wrong||0));
+      const hasDeviceCounts=Object.keys(deviceCounts).length>0;
+      out[id]={ seen:hasDeviceCounts?legacySeen+counterSum(deviceCounts,"seen"):Math.max(a.seen||0,b.seen||0),
+        correct:hasDeviceCounts?legacyCorrect+counterSum(deviceCounts,"correct"):Math.max(a.correct||0,b.correct||0),
+        wrong:hasDeviceCounts?legacyWrong+counterSum(deviceCounts,"wrong"):Math.max(a.wrong||0,b.wrong||0),
         streak:Math.max(a.streak||0,b.streak||0), weak:!!(a.weak||b.weak), bookmarked:!!(a.bookmarked||b.bookmarked),
         reps:Math.max(a.reps||0,b.reps||0), interval:Math.max(a.interval||0,b.interval||0), ease:Math.max(a.ease||2.5,b.ease||2.5),
         due:later(a.due,b.due), lastReviewed:later(a.lastReviewed,b.lastReviewed), lastWrong:later(a.lastWrong,b.lastWrong),
         note:noteWin.note||"", noteAt:noteWin.noteAt||"", miss:Object.keys(miss).length?miss:undefined };
+      if(hasDeviceCounts){ out[id]._legacySeen=legacySeen; out[id]._legacyCorrect=legacyCorrect; out[id]._legacyWrong=legacyWrong; out[id]._deviceCounts=deviceCounts; }
       if(!out[id].note){ delete out[id].note; delete out[id].noteAt; }
       if(!out[id].miss) delete out[id].miss;
     });
@@ -4194,6 +4239,7 @@
         claimLegacyCode:code=>ds.claimCode(code),
         mergeLegacyPayload:payload=>mergeRemote(payload),
         importLegacyWritten:code=>ds.importWrittenFromCode(code),
+        syncIdentity:()=>ac.syncIdentity(state.displayName||""),
         syncSnapshot:()=>syncAccountSnapshot(ds),
         syncWritten:()=>ds.syncAccountWritten(state.userId),
         syncCards:()=>window.STUDY_CORE.syncNow(),
@@ -4329,7 +4375,7 @@
         <p class="syncLead">この端末には別アカウントの学習記録があります。記録が混ざらないよう同期を停止しています。</p>
         <div class="bkBtns"><button type="button" class="bkReplace" id="accountReplace">端末の学習記録を消して切り替える</button><button type="button" class="bkBtn" id="accountCancelSwitch">新しいログインを取り消す</button></div>`;
       $("#accountReplace").onclick=async()=>{
-        if(!confirm("この端末の非公開学習データを消し、現在ログイン中のアカウントの記録へ置き換えますか？\nランキングとコミュニティの端末情報は残ります。")) return;
+        if(!confirm("この端末の非公開学習データを消し、現在ログイン中のアカウントの記録へ置き換えますか？\nランキングとコミュニティも、ログイン中のアカウントの情報へ統一されます。")) return;
         progress={}; meta={}; saveProgress(); saveMeta();
         const wa=WA(); if(wa) await wa.deleteAll();
         await ac.resolveSwitch("replace");
@@ -4366,7 +4412,7 @@
     const googleLogo=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.46h5.52a4.78 4.78 0 0 1-2.05 3.05l-.02.12 2.98 2.31.2.02c1.83-1.69 2.97-4.18 2.97-7.16Z"/><path fill="#34A853" d="M12 22c2.69 0 4.94-.88 6.59-2.4l-3.16-2.45c-.85.58-1.98.99-3.43.99-2.59 0-4.79-1.75-5.58-4.17l-.12.01-3.1 2.4-.04.12A9.96 9.96 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.42 13.97A6.1 6.1 0 0 1 6.1 12c0-.69.12-1.35.31-1.97v-.13L3.28 7.46l-.1.05A10 10 0 0 0 2 12c0 1.61.38 3.13 1.16 4.49l3.26-2.52Z"/><path fill="#EA4335" d="M12 5.86c1.87 0 3.13.81 3.85 1.48l2.8-2.74C16.93 3 14.69 2 12 2a9.96 9.96 0 0 0-8.84 5.51l3.25 2.52C7.21 7.61 9.41 5.86 12 5.86Z"/></svg>`;
     const social=state.socialEnabled?`<div class="authProviders"><button type="button" class="authProvider google" id="authGoogle"><span>${googleLogo}</span>Googleでログイン</button></div>`:`<p class="syncNote">Googleログインは管理者設定の完了後に利用できます。</p>`;
     box.innerHTML=`<div class="bkLabel">👤 アカウントと同期</div>
-      <p class="syncLead">ログインすると、学習記録・答案・自作カードを安全にバックアップし、複数端末で利用できます。ログインせず端末内だけで学習することもできます。</p>
+      <p class="syncLead">同じGoogleアカウントでログインすると、全科目の学習記録・答案・カード・デッキ・ランキング・掲示板名を統合し、どの端末でも同じ状態で利用できます。ログインせず端末内だけで学習することもできます。</p>
       ${social}
       ${state.localOwnerId?`<div class="syncNote">ログアウト中です。端末の記録を同期するには、以前のアカウントでログインしてください。</div>`:`<div id="legacySyncArea"></div>`}`;
     const start=async provider=>{ try{ await ac.signIn(provider); }catch(e){ toast(syncErrText(e.message)); } };
@@ -4551,7 +4597,7 @@
   function gradeFlash(rating){
     const s=flashSession; if(!s||flashAnimating) return;
     flashAnimating=true;
-    const c=s.deck[s.i], r=rec(c.id); r.seen=(r.seen||0)+1;
+    const c=s.deck[s.i], r=rec(c.id); recordAnswerCounters(r,c.id,null);
     const known=rating>=3;
     scheduleSRS(r,rating,c.id);
     if(known){ s.ok++; addXP(XP_CORRECT); } else { s.ng++; s.ngList.push(c); addXP(XP_WRONG); }
@@ -6226,14 +6272,14 @@
     const q=cw.q, max=writtenPoints(q), ids=[...cw.selected], earned=rubricPoints(q,ids);
     cw.finalized=true;
     const full = earned>=max;
-    const r=rec(q.id); r.seen++;
+    const r=rec(q.id); recordAnswerCounters(r,q.id,full);
     let gainXP, mult=1;
     if(full){
-      r.correct++; r.streak++; s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak);
+      r.streak++; s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak);
       mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult);
     } else {
       // 部分点でもコンボは終了し、誤答ノートへ入れる（§8.1・§8.3）
-      r.wrong++; r.streak=0; r.lastWrong=todayStr(); s.streak=0;
+      r.streak=0; r.lastWrong=todayStr(); s.streak=0;
       s.wrongList.push({q, chosen:`${earned} / ${max}点`});
       const ratio=max>0?earned/max:0;
       gainXP=Math.round(XP_WRONG + ratio*(XP_CORRECT-XP_WRONG));
@@ -6519,10 +6565,10 @@
         };
       } else { b.disabled=true; }
     });
-    const r=rec(q.id); r.seen++;
+    const r=rec(q.id); recordAnswerCounters(r,q.id,isCorrect);
     let lvup=0, gainXP=0, mult=1;
-    if(isCorrect){ r.correct++; r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
-    else { r.wrong++; r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0;
+    if(isCorrect){ r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
+    else { r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0;
       s.wrongList.push({q,chosen:picks.map(i=>cur.choices[i].text).join(" ／ ")});
       r.miss=r.miss||{};   // どの誤答を選んだかを記録（誤答分析用）
       picks.forEach(i=>{ const c=cur.choices[i]; if(!c.correct) r.miss[c.idx]=(r.miss[c.idx]||0)+1; });
