@@ -27,6 +27,10 @@ declare global {
       memoryCards: {
         render: (root: HTMLElement, subject: { id: string; name: string; emoji?: string }) => Promise<void>;
       };
+      pdfShelf: {
+        render: (root: HTMLElement, subjects: Array<{ id: string; name: string; emoji?: string }>) => Promise<void>;
+        enabled: () => boolean;
+      };
       syncNow: () => Promise<SyncStatus>;
       account: {
         state: () => AccountState;

@@ -104,6 +104,7 @@ import { syncAccountData, syncSnapshotWithRetry } from "./account-sync";
 import { getAccountEntryChoice, saveAccountEntryChoice } from "./account-choice";
 import { getCardHomeSnapshot } from "./card-home";
 import { renderMemoryCards } from "./memory-cards";
+import { pdfShelfEnabled, renderPdfShelf } from "./pdf-shelf";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -198,6 +199,10 @@ window.STUDY_CORE = {
   },
   memoryCards: {
     render: renderMemoryCards,
+  },
+  pdfShelf: {
+    render: renderPdfShelf,
+    enabled: pdfShelfEnabled,
   },
   syncNow,
   account: {
