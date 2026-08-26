@@ -77,56 +77,6 @@ body.study-modal-open{overflow:hidden}
 .memoryStudyCard small{color:#b45309;font-weight:900;letter-spacing:.12em}.memoryStudyCard strong{font-size:clamp(22px,5vw,34px);line-height:1.45}.memoryStudyCard p{max-width:650px;margin:0;color:var(--muted);line-height:1.7}.memoryStudyCard span{color:var(--muted);font-size:12px}
 @media(max-width:640px){.memoryCardsHero{align-items:stretch;flex-direction:column}.memoryDeckGrid{grid-template-columns:1fr}.memoryDeckDetailHead,.memoryDeckTitle{align-items:flex-start;flex-direction:column}.memoryDeckActions{width:100%}.memoryDeckActions .btn{flex:1}.memoryDeckActionRow{align-items:stretch;flex-direction:column}.memoryEditor,.memoryDeckDetail,.memoryStudy{padding:15px}}
 
-/* PDFの溜まり場。科目をまたいで資料PDFを持ち寄る画面。 */
-.pdfShelfShell{display:grid;gap:18px}
-.pdfShelfHero{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:24px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,#3f7d58 12%,var(--card)),var(--card));box-shadow:var(--shadow)}
-.pdfShelfHero h2{margin:4px 0 6px;font-size:clamp(26px,5vw,40px);letter-spacing:-.04em}
-.pdfShelfHero p{margin:0;color:var(--muted);line-height:1.7}
-.pdfShelfEyebrow{color:#2f6b47;font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
-.pdfShelfQuota{display:grid;gap:5px;min-width:170px;padding:14px;border-radius:15px;background:color-mix(in srgb,#3f7d58 9%,var(--card));text-align:right}
-.pdfShelfQuota b{font-size:26px;letter-spacing:-.03em}
-.pdfShelfQuota span,.pdfShelfQuota small{color:var(--muted);font-size:12px}
-.pdfShelfQuota i{height:6px;border-radius:99px;background:color-mix(in srgb,#3f7d58 22%,var(--line))}
-.pdfShelfQuota i::after{content:"";display:block;width:var(--pdf-fill,0%);height:100%;border-radius:99px;background:#3f7d58}
-.pdfShelfNotice{padding:14px 16px;border:1px solid color-mix(in srgb,var(--bad) 26%,var(--line));border-radius:15px;background:color-mix(in srgb,var(--bad) 6%,var(--card))}
-.pdfShelfNotice b{font-size:13px}
-.pdfShelfNotice p{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
-.pdfShelfMessage{padding:12px 15px;border-radius:12px;background:color-mix(in srgb,var(--brand) 9%,var(--card));border:1px solid color-mix(in srgb,var(--brand) 28%,var(--line));font-size:13px;font-weight:750}
-.pdfShelfMessage.error{background:color-mix(in srgb,var(--bad) 9%,var(--card));border-color:color-mix(in srgb,var(--bad) 32%,var(--line));color:var(--bad)}
-.pdfShelfMessage.success{background:color-mix(in srgb,#16a34a 9%,var(--card));border-color:color-mix(in srgb,#16a34a 32%,var(--line));color:#15803d}
-.pdfShelfBar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.pdfShelfTabs{display:flex;gap:6px;flex-wrap:wrap;padding:5px;border:1px solid var(--line);border-radius:15px;background:var(--card)}
-.pdfShelfTabs button{border:0;border-radius:11px;padding:9px 13px;background:transparent;color:var(--muted);font:800 13px/1.2 inherit;cursor:pointer}
-.pdfShelfTabs button.active{background:color-mix(in srgb,#3f7d58 15%,var(--card));color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,#3f7d58 30%,var(--line))}
-.pdfShelfSearch{display:flex;gap:8px}
-.pdfShelfSearch input{min-width:200px;border:1px solid var(--line);border-radius:12px;padding:10px 13px;background:var(--card);color:var(--text);font:inherit}
-.pdfShelfActions{display:flex}
-.pdfShelfForm{display:grid;gap:14px;padding:22px;border:1px solid var(--line);border-radius:20px;background:var(--card);box-shadow:var(--shadow)}
-.pdfShelfFormHead{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.pdfShelfFormHead h3{margin:0}
-.pdfShelfForm label{display:grid;gap:7px;font-size:13px;font-weight:850}
-.pdfShelfForm input,.pdfShelfForm textarea,.pdfShelfForm select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:12px 13px;background:var(--bg);color:var(--text);font:inherit;resize:vertical}
-.pdfShelfForm input:focus,.pdfShelfForm textarea:focus,.pdfShelfForm select:focus{outline:3px solid color-mix(in srgb,#3f7d58 25%,transparent);border-color:#3f7d58}
-.pdfShelfFormRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.pdfShelfPicked:not(:empty){padding:9px 12px;border-radius:11px;background:color-mix(in srgb,#3f7d58 9%,var(--card));color:var(--muted);font-size:12px;font-weight:750}
-.pdfShelfList{display:grid;gap:12px}
-.pdfShelfItem{display:grid;gap:10px;padding:18px;border:1px solid var(--line);border-radius:17px;background:var(--card);box-shadow:0 10px 30px rgba(29,45,68,.07)}
-.pdfShelfItemHead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:13px}
-.pdfShelfIcon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:color-mix(in srgb,#3f7d58 15%,var(--card));color:#2f6b47;font-size:11px;font-weight:900}
-.pdfShelfItemBody{display:grid;gap:4px;min-width:0}
-.pdfShelfItemBody strong,.pdfShelfItemBody small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pdfShelfItemBody small{color:var(--muted);font-size:12px}
-.pdfShelfDesc{margin:0;color:var(--muted);font-size:13px;line-height:1.7;white-space:pre-wrap}
-.pdfShelfTags{display:flex;gap:6px;flex-wrap:wrap}
-.pdfShelfTags span{padding:4px 9px;border-radius:99px;background:color-mix(in srgb,#3f7d58 10%,var(--card));color:#2f6b47;font-size:11px;font-weight:800}
-.pdfShelfItemFoot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px}
-.pdfShelfLicense{padding:3px 9px;border-radius:99px;border:1px solid var(--line)}
-.pdfShelfLink{margin-left:auto;border:0;background:transparent;color:var(--muted);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer}
-.pdfShelfLink:hover{color:var(--bad)}
-.pdfShelfEmpty{display:grid;justify-items:center;gap:8px;padding:48px 22px;border:1px dashed color-mix(in srgb,#3f7d58 38%,var(--line));border-radius:20px;background:color-mix(in srgb,#3f7d58 5%,var(--card));text-align:center}
-.pdfShelfEmpty>span{font-size:38px}.pdfShelfEmpty h3,.pdfShelfEmpty p{margin:0}.pdfShelfEmpty p{color:var(--muted);line-height:1.7}.pdfShelfEmpty.compact{padding:22px}
-@media(max-width:640px){.pdfShelfHero{align-items:stretch;flex-direction:column}.pdfShelfQuota{text-align:left}.pdfShelfFormRow{grid-template-columns:1fr}.pdfShelfSearch{width:100%}.pdfShelfSearch input{flex:1;min-width:0}.pdfShelfForm{padding:15px}.pdfShelfItemHead{grid-template-columns:auto minmax(0,1fr)}.pdfShelfItemHead .btn{grid-column:1/-1}}
-
 body{
   background:
     radial-gradient(900px 460px at 50% -180px,color-mix(in srgb,var(--brand) 14%,transparent),transparent 72%),

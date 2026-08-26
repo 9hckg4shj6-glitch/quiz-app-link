@@ -1807,15 +1807,6 @@
     <div id="memoryCardsRoot" class="homeSection"></div>
   </section>
 
-  <!-- ===== VIEW: PDFの溜まり場（全科目共通） ===== -->
-  <section id="pdfShelfView" class="hidden">
-    <div class="reviewTop">
-      <button class="btn ghost small" type="button" onclick="renderHome('back')">← ホーム</button>
-      <span class="pill">PDFの溜まり場</span>
-    </div>
-    <div id="pdfShelfRoot" class="homeSection"></div>
-  </section>
-
   <!-- 代謝・生化学の教材カード。全科目共通の暗記カードとは別機能。 -->
   <section id="cardsView" class="hidden">
     <div class="reviewTop">
@@ -2919,7 +2910,7 @@
   }
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
-  const VIEWS=["inputView","practiceView","memoryCardsView","pdfShelfView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
+  const VIEWS=["inputView","practiceView","memoryCardsView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
   const SCREEN_IDS=["home","quiz","result","search","flash","browse","qbrowse","subjectPicker","slideView","lessonView"].concat(VIEWS);
   let currentScreenId=null;
   let historyNavigation=false;
@@ -3054,7 +3045,6 @@
       if(id==="reviewView"){ refreshPendingExam(); }
       if(id==="cardsView"){ renderCardHome(); }
       if(id==="memoryCardsView"){ renderMemoryCardsView(); }
-      if(id==="pdfShelfView"){ renderPdfShelfView(); }
     });
   }
   function renderMemoryCardsView(){
@@ -3063,14 +3053,6 @@
     if(!api){ root.innerHTML='<div class="panel">暗記カードを読み込んでいます…</div>'; return; }
     api.render(root,{id:subject.id,name:subject.name,emoji:subject.emoji}).catch(error=>{
       root.innerHTML=`<div class="panel"><b>暗記カードを表示できませんでした</b><p>${esc(error&&error.message?error.message:String(error))}</p></div>`;
-    });
-  }
-  function renderPdfShelfView(){
-    const root=$("#pdfShelfRoot"), api=window.STUDY_CORE&&window.STUDY_CORE.pdfShelf;
-    if(!root) return;
-    if(!api){ root.innerHTML='<div class="panel">PDFの溜まり場を読み込んでいます…</div>'; return; }
-    api.render(root, SUBJECTS.map(s=>({id:s.id,name:s.name,emoji:s.emoji}))).catch(error=>{
-      root.innerHTML=`<div class="panel"><b>PDFの溜まり場を表示できませんでした</b><p>${esc(error&&error.message?error.message:String(error))}</p></div>`;
     });
   }
   function renderHub(){
@@ -3091,8 +3073,7 @@
         sub:reviewN?`今日 ${reviewN}件 ・ 苦手 ${weakN}問`:`苦手 ${weakN}問 ・ 見直し ${bmN}問`,
         go:()=>openView("reviewView")},
       {icon:"▧",name:"暗記カード",accent:"#b45309",sub:"自分のデッキと、科目別のみんなのデッキ",go:()=>openView("memoryCardsView")},
-      {icon:"⌕",name:"問題検索",accent:"#8a6f2a",sub:"キーワードから目的の問題をすばやく探す",wide:true,go:openSearch},
-      {icon:"▤",name:"PDFの溜まり場",accent:"#3f7d58",sub:"みんなの資料PDFを持ち寄ってダウンロード",wide:true,go:()=>openView("pdfShelfView")}
+      {icon:"⌕",name:"問題検索",accent:"#8a6f2a",sub:"キーワードから目的の問題をすばやく探す",wide:true,go:openSearch}
     ];
     grid.innerHTML=items.map((it,i)=>`<button type="button" class="hubBtn primaryHub${it.wide?" searchHub":""}" data-i="${i}" style="--hub-accent:${it.accent}">
       <span class="hubIcon">${it.icon}</span>
