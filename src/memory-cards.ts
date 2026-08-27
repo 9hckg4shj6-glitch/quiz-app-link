@@ -42,6 +42,8 @@ type EditorState =
   | null;
 
 let rootNode: HTMLElement | null = null;
+let studyFlipIn = false;
+const FLIP_HALF_MS = 150;
 let activeSubject: MemoryCardSubject | null = null;
 let activeTab: "mine" | "public" = "mine";
 let selectedDeckId: string | null = null;
@@ -192,10 +194,10 @@ function renderCardForm(deck: Deck, card: StudyCard | null): string {
 
 function renderStudy(deck: Deck, cards: StudyCard[]): string {
   const card = cards[studyIndex];
-  return `
+  const html = `
     <div class="memoryStudy">
       <div class="memoryDeckDetailHead"><button type="button" class="btn ghost small" data-memory-action="stop-study">← ${esc(deck.name)}</button><span>${studyIndex + 1} / ${cards.length}</span></div>
-      <button type="button" class="memoryStudyCard ${studyRevealed ? "revealed" : ""}" data-memory-action="reveal-card">
+      <button type="button" class="memoryStudyCard ${studyRevealed ? "revealed" : ""} ${studyFlipIn ? "flipIn" : ""}" data-memory-action="reveal-card">
         <small>${studyRevealed ? "答え" : "質問"}</small>
         <strong>${esc(studyRevealed ? card.back : card.front)}</strong>
         ${studyRevealed && card.explanation ? `<p>${esc(card.explanation)}</p>` : ""}
@@ -203,6 +205,8 @@ function renderStudy(deck: Deck, cards: StudyCard[]): string {
       </button>
       <div class="memoryStudyControls"><button type="button" class="btn ghost" data-memory-action="previous-card" ${studyIndex === 0 ? "disabled" : ""}>← 前へ</button><button type="button" class="btn primary" data-memory-action="next-card">${studyIndex === cards.length - 1 ? "終了" : "次へ →"}</button></div>
     </div>`;
+  studyFlipIn = false;
+  return html;
 }
 
 async function loadSharedDecks(): Promise<void> {
@@ -488,7 +492,15 @@ async function handleAction(target: HTMLElement): Promise<void> {
   }
   if (action === "study-deck" && rootNode) { rootNode.dataset.studyMode = "true"; studyIndex = 0; studyRevealed = false; }
   if (action === "stop-study" && rootNode) rootNode.dataset.studyMode = "false";
-  if (action === "reveal-card") studyRevealed = !studyRevealed;
+  if (action === "reveal-card") {
+    studyRevealed = !studyRevealed;
+    const card = target.closest<HTMLElement>(".memoryStudyCard");
+    if (card && !window.matchMedia("(prefers-reduced-motion:reduce)").matches) {
+      card.classList.add("flipOut");
+      await new Promise((resolve) => setTimeout(resolve, FLIP_HALF_MS));
+      studyFlipIn = true;
+    }
+  }
   if (action === "previous-card") { studyIndex = Math.max(0, studyIndex - 1); studyRevealed = false; }
   if (action === "next-card" && selectedDeckId) {
     const cards = await cardsFor(selectedDeckId);
