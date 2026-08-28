@@ -2591,12 +2591,14 @@
   function saveLastCount(v){ try{ localStorage.setItem(LIMIT_KEY, String(v)); }catch(e){} }
   function clampCount(v,total){ v=Math.floor(v); if(isNaN(v)||v<1) v=1; if(v>total) v=total; return v; }
   function openCountModal(g, mode){
+    // 「この回を解く」など決まった範囲を繰り返し解く導線では、まだ解いていない問題を既定で先に出す
+    const unseenFirst = mode==="playlist" && g.items.some(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); });
     pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN,
-      unmasteredOnly:false, unseenFirst:false, gradingMode:"immediate"};
-    $("#countKicker").textContent=(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
+      unmasteredOnly:false, unseenFirst, gradingMode:"immediate"};
+    $("#countKicker").textContent=g.kicker||(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
-    // 年度別・分野別・予想問題・直前スペシャルでは「その範囲の未定着だけ」を選べる
-    const scopeable=(mode==="year"||mode==="prediction"||mode==="special"||mode==="field");
+    // 年度別・分野別・予想問題・直前スペシャル・講義回では「その範囲の未定着だけ」を選べる
+    const scopeable=(mode==="year"||mode==="prediction"||mode==="special"||mode==="field"||mode==="playlist");
     $("#countScope").classList.toggle("hidden", !scopeable);
     $("#countUnseen").classList.toggle("hidden", !scopeable);
     updateCountScope();
@@ -5512,7 +5514,7 @@
   function startLessonRound(d){
     if(!d.items.length){ toast("この回の問題が見つかりません"); return; }
     if(d.items.length<2){ startQuiz(d.items, `${deckLabel(d.deck)} ${d.name}`, {mode:"playlist", key:"__lesson_"+d.deck}); return; }
-    openCountModal({items:d.items, label:`${deckLabel(d.deck)} ${d.name}`, key:"__lesson_"+d.deck}, "playlist");
+    openCountModal({items:d.items, label:`${deckLabel(d.deck)} ${d.name}`, key:"__lesson_"+d.deck, kicker:"この回を解く"}, "playlist");
   }
   function setLessonActiveSection(index){
     const st=lessonQuickState; if(!st || st.active===index) return;
