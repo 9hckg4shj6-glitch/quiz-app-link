@@ -718,6 +718,14 @@
   .qbPageBtn:disabled{opacity:.38;cursor:default}
   .qbPageBtn.qbNav{font-weight:800}
   .qbInfo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  /* 行から直接「見直したい問題」に入れる。開閉ボタンの入れ子にできないので横に並べる */
+  .qbRow{display:flex;align-items:center}
+  .qbRow .brHead{flex:1;min-width:0;padding-right:2px}
+  .qbBm{flex:0 0 auto;width:44px;height:44px;margin-right:6px;border:none;background:transparent;cursor:pointer;
+    border-radius:12px;color:var(--muted);font-size:19px;line-height:1;font-family:inherit;transition:.12s}
+  .qbBm:hover{background:var(--card2);color:var(--gold)}
+  .qbBm.on{color:var(--gold)}
+  .qbBm:active{transform:scale(.9)}
 
   /* ===== ホームのハブ（カテゴリボタン） ===== */
   .hubGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:4px}
@@ -4914,13 +4922,18 @@
       const fig=q.image?`<span class="brFig">🖼 図</span>`:"";
       const field=q.field?`<span class="brField">${esc(q.field)}</span>`:"";
       const r=progress[q.id], status=(r&&r.seen)?(r.correct>=r.wrong?'<span class="srOk">学習済</span>':'<span class="srNg">要復習</span>'):"";
+      const bm=isBookmarked(q.id);
       return `<div class="brItem qbItem" data-i="${i}">
-        <button type="button" class="brHead">
-          <span class="qbNum">${qbNum(q.id)}</span>
-          <span class="brFront">${qUnderlineHTML(q)}</span>
-          <span class="brMeta">${field}${fig}${status}</span>
-          <span class="brChev">›</span>
-        </button>
+        <div class="qbRow">
+          <button type="button" class="brHead">
+            <span class="qbNum">${qbNum(q.id)}</span>
+            <span class="brFront">${qUnderlineHTML(q)}</span>
+            <span class="brMeta">${field}${fig}${status}</span>
+            <span class="brChev">›</span>
+          </button>
+          <button type="button" class="qbBm${bm?" on":""}" aria-pressed="${bm?"true":"false"}"
+            aria-label="見直したい問題に${bm?"保存済み":"保存"}" title="見直したい問題">${bm?"★":"☆"}</button>
+        </div>
         <div class="brBack qbBack hidden">${qDetailHTML(q)}<div class="brActions"><button type="button" class="qbPractice">▶ この問題を解く</button></div></div>
       </div>`;
     }).join("");
@@ -4929,6 +4942,15 @@
       const q=slice[+el.dataset.i], back=el.querySelector(".qbBack");
       el.querySelector(".brHead").onclick=()=>{ const open=back.classList.contains("hidden"); back.classList.toggle("hidden",!open); el.classList.toggle("open",open); };
       const pb=el.querySelector(".qbPractice"); if(pb) pb.onclick=(e)=>{ e.stopPropagation(); startQuiz([q], g.label); };
+      const bm=el.querySelector(".qbBm");
+      if(bm) bm.onclick=(e)=>{
+        e.stopPropagation();
+        const on=toggleBookmark(q.id);   // 一覧は問題単位の画面なので、大問でもこの1問だけを対象にする
+        bm.classList.toggle("on",on); bm.textContent=on?"★":"☆";
+        bm.setAttribute("aria-pressed",on?"true":"false");
+        bm.setAttribute("aria-label",`見直したい問題に${on?"保存済み":"保存"}`);
+        toast(on?"🔖 見直したい問題に保存しました":"保存を解除しました");
+      };
       back.querySelectorAll(".fcImgWrap").forEach(w=>{ w.onclick=(e)=>{ const img=w.querySelector("img"); if(img){ e.stopPropagation(); openFcLightbox(img.getAttribute("src"),img.getAttribute("alt")); } }; });
       wireMoreExpl(back);
     });
