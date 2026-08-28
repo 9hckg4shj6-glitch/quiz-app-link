@@ -2885,7 +2885,7 @@
     const bookmark=kind==="bookmark";
     const items=(bookmark?bookmarkItems():weakItems()).slice().sort((a,b)=>qbNum(a.id)-qbNum(b.id));
     qbrowseState={group:{key:bookmark?"__bookmark__":"__weak__",label:bookmark?"見直したい問題":"苦手問題",items,mode:"playlist"},
-      page:0,selected:new Set(),perPage:1,origin:"reviewView"};
+      page:0,selected:new Set(),origin:"reviewView"};
     transitionToScreen("qbrowse","forward",renderQBrowse);
   }
 
@@ -4921,8 +4921,8 @@
   function closeBrowse(){ $("#browse").classList.add("hidden"); renderHome(); }
 
   /* ---------- 問題一覧（年度別ブラウズ） ---------- */
-  // perPage=1 は復習画面から開く「見直したい問題／苦手問題」の一覧、origin は戻り先
-  let qbrowseState={group:null,page:0,selected:new Set(),perPage:10,origin:"home"};
+  // origin は戻り先（"home"＝問題一覧タブ / "reviewView"＝復習画面の見直し・苦手の一覧）
+  let qbrowseState={group:null,page:0,selected:new Set(),origin:"home"};
   const QB_PAGE=10;
   const QB_EXAM_ICONS=["📄","📝","🗓"];
   const QB_PRED_ICONS=["🔮","📗","📘","📙"];
@@ -5054,7 +5054,7 @@
     $("#qbrowseResultsWrap").classList.remove("hidden");
     const g=qbrowseState.group;
     const items=g.items.slice().sort((a,b)=>qbNum(a.id)-qbNum(b.id));
-    const per=qbrowseState.perPage||QB_PAGE, single=per===1;
+    const per=QB_PAGE;
     if(!items.length){
       $("#qbrowseInfo").innerHTML="";
       $("#qbrowseList").innerHTML=g.key==="__bookmark__"
@@ -5070,7 +5070,7 @@
     if(qbrowseState.page>=pages) qbrowseState.page=pages-1;
     if(qbrowseState.page<0) qbrowseState.page=0;
     const page=qbrowseState.page, slice=items.slice(page*per,(page+1)*per);
-    $("#qbrowseInfo").innerHTML=`<span class="srCount">${single?`${page+1}問目 / 全${items.length}問`:`全${items.length}問 ・ ${page+1}/${pages}ページ`}</span>`+
+    $("#qbrowseInfo").innerHTML=`<span class="srCount">全${items.length}問 ・ ${page+1}/${pages}ページ</span>`+
       `<button type="button" class="btn small" id="qbPracticeGroup">▶ まとめて演習</button>`;
     $("#qbPracticeGroup").onclick=()=>openCountModal({items:items.slice(), label:g.label, key:g.key, kicker:"まとめて演習"}, g.mode||"playlist");
     $("#qbrowseList").innerHTML=slice.map((q,i)=>{
@@ -5079,7 +5079,7 @@
       const r=progress[q.id], status=(r&&r.seen)?(r.correct>=r.wrong?'<span class="srOk">学習済</span>':'<span class="srNg">要復習</span>'):"";
       const bm=isBookmarked(q.id);
       const sel=qbrowseState.selected.has(q.id);
-      return `<div class="brItem qbItem${single?" open":""}" data-i="${i}">
+      return `<div class="brItem qbItem" data-i="${i}">
         <div class="qbRow">
           <button type="button" class="qbSel${sel?" on":""}" aria-pressed="${sel?"true":"false"}"
             aria-label="この問題を選ぶ"><span class="qbSelBox"></span></button>
@@ -5092,7 +5092,7 @@
           <button type="button" class="qbBm${bm?" on":""}" aria-pressed="${bm?"true":"false"}"
             aria-label="見直したい問題に${bm?"保存済み":"保存"}" title="見直したい問題">${bm?"★":"☆"}</button>
         </div>
-        <div class="brBack qbBack${single?"":" hidden"}">${qDetailHTML(q)}<div class="brActions"><button type="button" class="qbPractice">▶ この問題を解く</button></div></div>
+        <div class="brBack qbBack hidden">${qDetailHTML(q)}<div class="brActions"><button type="button" class="qbPractice">▶ この問題を解く</button></div></div>
       </div>`;
     }).join("");
     $("#qbrowsePager").innerHTML=qbPagerHTML(page,pages);
@@ -5143,7 +5143,7 @@
   }
   function openQBrowse(){
     stopExamTimer(); closeFcLightbox();
-    qbrowseState={group:null,page:0,selected:new Set(),perPage:QB_PAGE,origin:"home"};
+    qbrowseState={group:null,page:0,selected:new Set(),origin:"home"};
     transitionToScreen("qbrowse","tab",renderQBrowse);
   }
   function closeQBrowse(){ $("#qbrowse").classList.add("hidden"); renderHome(); }
