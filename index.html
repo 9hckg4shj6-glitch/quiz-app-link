@@ -2664,7 +2664,8 @@
     saveLastCount(n===total?0:n);
     const items=orderedPool().slice(0,n);
     const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.order==="unseen";
-    const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key}, batch=pendingSel.gradingMode==="batch";
+    const label=pendingSel.label, batch=pendingSel.gradingMode==="batch";
+    const ref=pendingSel.key?{mode:pendingSel.mode,key:pendingSel.key}:null;
     closeCountModal();
     startQuiz(items,label,ref,{keepOrder,batch});
   }
@@ -4814,11 +4815,11 @@
     const pk=[...pred.keys()].sort((a,b)=>qbKanjiOrder(a)-qbKanjiOrder(b)||a.localeCompare(b,"ja",{numeric:true}));
     const sk=[...spec.keys()].sort().reverse();
     const wk=[...wr.keys()].sort().reverse();
-    return { exam:ek.map(k=>({key:k,label:k,items:exam.get(k)})),
-             pred:pk.map(k=>({key:k,label:k,items:pred.get(k)})),
-             spec:sk.map(k=>({key:k,label:k,items:spec.get(k)})),
+    return { exam:ek.map(k=>({key:k,label:k,items:exam.get(k),mode:"year"})),
+             pred:pk.map(k=>({key:k,label:k,items:pred.get(k),mode:"prediction"})),
+             spec:sk.map(k=>({key:k,label:k,items:spec.get(k),mode:"special"})),
              // 年度キーが本試験と重なるので、記述側は接頭辞で区別する
-             written:wk.map(k=>({key:QB_W_PREFIX+k,label:k+" ・ 記述問題",items:wr.get(k)})) };
+             written:wk.map(k=>({key:QB_W_PREFIX+k,label:k+" ・ 記述問題",items:wr.get(k),mode:"playlist"})) };
   }
   function qbFindGroup(key){
     const g=qbGroups();
@@ -4908,7 +4909,7 @@
     const page=qbrowseState.page, slice=items.slice(page*QB_PAGE,(page+1)*QB_PAGE);
     $("#qbrowseInfo").innerHTML=`<span class="srCount">全${items.length}問 ・ ${page+1}/${pages}ページ</span>`+
       `<button type="button" class="btn small" id="qbPracticeGroup">▶ まとめて演習</button>`;
-    $("#qbPracticeGroup").onclick=()=>startQuiz(items.slice(), g.label);
+    $("#qbPracticeGroup").onclick=()=>openCountModal({items:items.slice(), label:g.label, key:g.key, kicker:"まとめて演習"}, g.mode||"playlist");
     $("#qbrowseList").innerHTML=slice.map((q,i)=>{
       const fig=q.image?`<span class="brFig">🖼 図</span>`:"";
       const field=q.field?`<span class="brField">${esc(q.field)}</span>`:"";
