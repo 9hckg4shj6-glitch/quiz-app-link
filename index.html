@@ -382,15 +382,6 @@
   .qbtn .qs{font-size:10.5px;color:var(--muted)}
   .qbtn.q-weak{border-color:rgba(255,93,108,.5)} .qbtn.q-weak .qi{filter:none}
   .qbtn.q-bookmark{border-color:rgba(255,209,102,.5)}
-  .countScope{display:flex;align-items:center;gap:11px;width:100%;text-align:left;font-family:inherit;cursor:pointer;
-    padding:11px 13px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);color:var(--text);margin-bottom:12px;transition:.15s}
-  .countScope:hover{border-color:var(--good)}
-  .countScope .csDot{flex:0 0 auto;width:20px;height:20px;border-radius:6px;border:2px solid var(--line);background:var(--card);position:relative;transition:.15s}
-  .countScope.on{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--card2))}
-  .countScope.on .csDot{background:var(--good);border-color:var(--good)}
-  .countScope.on .csDot::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900}
-  .csLabel{font-size:13.5px;font-weight:800;line-height:1.35}
-  .csLabel small{font-weight:600;color:var(--muted);font-size:11.5px}
   @media(max-width:460px){ .quick{grid-template-columns:1fr} .qbtn{flex-direction:row;justify-content:center;gap:10px} .qbtn .qs{margin-left:2px} }
   /* ===== 出題数モーダル ===== */
   .countModalBackdrop{position:fixed;inset:0;z-index:210;background:rgba(10,14,24,.55);
@@ -1447,14 +1438,19 @@
     <div class="cmKicker" id="countKicker">演習</div>
     <h3 id="countTitle">範囲</h3>
     <p class="cmSub">この範囲は <b id="countTotal">0</b> 問。<br>何問解きますか？</p>
-    <button type="button" class="countScope hidden" id="countScope" aria-pressed="false">
-      <span class="csDot"></span>
-      <span class="csLabel">未定着の問題だけ出す<small id="countScopeSub"></small></span>
-    </button>
-    <button type="button" class="countScope hidden" id="countUnseen" aria-pressed="false">
-      <span class="csDot"></span>
-      <span class="csLabel">まだ解いていない問題を優先<small id="countUnseenSub"></small></span>
-    </button>
+    <div class="gradingMode hidden" id="countOrder" aria-labelledby="countOrderLabel">
+      <span class="gradingModeLabel" id="countOrderLabel">出題順</span>
+      <div class="gradingChoices">
+        <button type="button" class="gradingChoice on" id="orderRandom" data-order="random" aria-pressed="true">
+          <span class="gradingChoiceTitle">ランダムに演習する</span>
+          <span class="gradingChoiceSub">この範囲から順不同で出題</span>
+        </button>
+        <button type="button" class="gradingChoice" id="orderUnseen" data-order="unseen" aria-pressed="false">
+          <span class="gradingChoiceTitle">まだ解いてない問題を優先</span>
+          <span class="gradingChoiceSub" id="orderUnseenSub">未着手から先に出題</span>
+        </button>
+      </div>
+    </div>
     <div class="countChips" id="countChips">
       <button type="button" class="countChip" data-n="10">10問</button>
       <button type="button" class="countChip" data-n="20">20問</button>
@@ -2592,38 +2588,33 @@
   function clampCount(v,total){ v=Math.floor(v); if(isNaN(v)||v<1) v=1; if(v>total) v=total; return v; }
   function openCountModal(g, mode){
     // 「この回を解く」など決まった範囲を繰り返し解く導線では、まだ解いていない問題を既定で先に出す
-    const unseenFirst = mode==="playlist" && g.items.some(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); });
+    const unseenLeft = g.items.some(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); });
     pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN,
-      unmasteredOnly:false, unseenFirst, gradingMode:"immediate"};
+      order:(mode==="playlist"&&unseenLeft)?"unseen":"random", gradingMode:"immediate"};
     $("#countKicker").textContent=g.kicker||(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
-    // 年度別・分野別・予想問題・直前スペシャル・講義回では「その範囲の未定着だけ」を選べる
-    const scopeable=(mode==="year"||mode==="prediction"||mode==="special"||mode==="field"||mode==="playlist");
-    $("#countScope").classList.toggle("hidden", !scopeable);
-    $("#countUnseen").classList.toggle("hidden", !scopeable);
+    // 復習・試験日モードは出題順に意味があるので、順番を選べるのはそれ以外の範囲だけ
+    const orderable=(mode!=="due"&&mode!=="examday");
+    if(!orderable) pendingSel.order="random";
+    $("#countOrder").classList.toggle("hidden", !orderable);
     updateCountScope();
     $("#countModal").classList.remove("hidden");
     setTimeout(()=>{ const inp=$("#countInput"); inp.focus(); inp.select&&inp.select(); },60);
   }
-  // トグルの状態に応じて、出題プール・件数・チップ・入力欄を更新する
+  // 出題順の選択に応じて、件数・チップ・入力欄を更新する
   function updateCountScope(){
     if(!pendingSel) return;
     const base=pendingSel.baseItems;
-    const un=base.filter(q=>!cardMastered(q.id));
-    const on=pendingSel.unmasteredOnly && un.length>0;
-    pendingSel.items = on ? un : base;
-    pendingSel.total = pendingSel.items.length;
-    const btn=$("#countScope");
-    btn.classList.toggle("on", on);
-    btn.setAttribute("aria-pressed", on?"true":"false");
-    const sub=$("#countScopeSub");
-    if(sub) sub.textContent = un.length ? `　未定着 ${un.length} / ${base.length}問` : `　この範囲はすべて定着済み`;
+    pendingSel.items = base;
+    pendingSel.total = base.length;
     $("#countTotal").textContent=pendingSel.total;
-    // 未着手（まだ解いていない）優先トグルの表示
     const unseenN=base.filter(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); }).length;
-    const ub=$("#countUnseen");
-    if(ub){ ub.classList.toggle("on", !!pendingSel.unseenFirst); ub.setAttribute("aria-pressed", pendingSel.unseenFirst?"true":"false");
-      const us=$("#countUnseenSub"); if(us) us.textContent = unseenN ? `　未着手 ${unseenN} / ${base.length}問` : `　この範囲はすべて着手済み`; }
+    const us=$("#orderUnseenSub");
+    if(us) us.textContent = unseenN ? `未着手 ${unseenN} / ${base.length}問を先に出題` : `この範囲はすべて着手済み`;
+    ["orderRandom","orderUnseen"].forEach(id=>{
+      const btn=$("#"+id), on=btn.dataset.order===pendingSel.order;
+      btn.classList.toggle("on",on); btn.setAttribute("aria-pressed",on?"true":"false");
+    });
     const inp=$("#countInput"); inp.max=pendingSel.total;
     const last=loadLastCount();
     const want=(last>0?Math.min(last,pendingSel.total):(pendingSel.defaultN?Math.min(pendingSel.defaultN,pendingSel.total):pendingSel.total));
@@ -2657,14 +2648,13 @@
     updateGradingOptions();
   }
   function closeCountModal(){ $("#countModal").classList.add("hidden"); pendingSel=null; }
-  // 出題順を一元管理：復習=忘れかけ順／試験日=伸び順／未定着=薄い順／未着手優先=未解答先頭／既定=ランダム
+  // 出題順を一元管理：復習=忘れかけ順／試験日=伸び順／未着手優先=未解答先頭／既定=ランダム
   function orderedPool(){
     if(!pendingSel) return [];
     const it=pendingSel.items;
     if(pendingSel.mode==="due") return sortByUrgency(it);
     if(pendingSel.mode==="examday") return sortByExamGain(it);
-    if(pendingSel.unmasteredOnly) return sortByUnmastered(it);
-    if(pendingSel.unseenFirst) return sortByUnseen(it);
+    if(pendingSel.order==="unseen") return sortByUnseen(it);
     return shuffle(it);
   }
   function startFromCountModal(){
@@ -2673,7 +2663,7 @@
     const n=clampCount(parseInt($("#countInput").value,10), total);
     saveLastCount(n===total?0:n);
     const items=orderedPool().slice(0,n);
-    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.unmasteredOnly || pendingSel.unseenFirst;
+    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.order==="unseen";
     const label=pendingSel.label, ref={mode:pendingSel.mode,key:pendingSel.key}, batch=pendingSel.gradingMode==="batch";
     closeCountModal();
     startQuiz(items,label,ref,{keepOrder,batch});
@@ -3484,14 +3474,6 @@
       <div class="kpi k-done"><div class="v">${o.seenQ}</div><div class="k">学習済</div></div>
       <div class="kpi k-acc"><div class="v">${o.acc}%</div><div class="k">通算正答率</div></div>
       <div class="kpi k-weak"><div class="v">${o.weak}</div><div class="k">苦手</div></div>`;
-  }
-  // 未定着＝定着認定(reps>=2 または interval>=21日)に達していない問題。
-  // 取り組んだ回数の少ない順（未着手→数回）で並べ、同点は毎回ランダム。
-  // これで繰り返しても同じ問題ばかりでなく、手薄なものから回せる。
-  function sortByUnmastered(items){
-    return items.map(q=>{ const r=progress[q.id]||{}; return {q, reps:r.reps||0, seen:r.seen||0, k:Math.random()}; })
-      .sort((a,b)=> a.reps-b.reps || a.seen-b.seen || a.k-b.k)
-      .map(x=>x.q);
   }
   // まだ解いていない問題（seen=0）を先頭に。次に解答回数の少ない順、同点はランダム。
   function sortByUnseen(items){
@@ -6936,20 +6918,13 @@
   $("#countStart").onclick=startFromCountModal;
   $("#gradingImmediate").onclick=()=>selectGradingMode("immediate");
   $("#gradingBatch").onclick=()=>selectGradingMode("batch");
-  $("#countScope").onclick=()=>{
+  ["orderRandom","orderUnseen"].forEach(id=>{ $("#"+id).onclick=()=>{
     if(!pendingSel) return;
-    const un=pendingSel.baseItems.filter(q=>!cardMastered(q.id));
-    if(!un.length){ toast("🎉 この範囲はすべて定着しています"); return; }
-    pendingSel.unmasteredOnly=!pendingSel.unmasteredOnly;
+    pendingSel.order=$("#"+id).dataset.order;
+    const keep=$("#countInput").value;
     updateCountScope();
-  };
-  $("#countUnseen").onclick=()=>{
-    if(!pendingSel) return;
-    const unseenN=pendingSel.baseItems.filter(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); }).length;
-    if(!unseenN){ toast("🎉 この範囲はすべて着手済みです"); return; }
-    pendingSel.unseenFirst=!pendingSel.unseenFirst;   // 件数は変わらないので見た目だけ更新（入力値を保持）
-    const ub=$("#countUnseen"); ub.classList.toggle("on", pendingSel.unseenFirst); ub.setAttribute("aria-pressed", pendingSel.unseenFirst?"true":"false");
-  };
+    $("#countInput").value=keep;   // 件数は変わらないので入力値を保持
+  }; });
   $("#countStartFlash").onclick=()=>{ if(!pendingSel) return; const total=pendingSel.total; const n=clampCount(parseInt($("#countInput").value,10),total); saveLastCount(n===total?0:n); const items=orderedPool().slice(0,n).map(questionToCard); const lbl=pendingSel.label; closeCountModal(); startFlash(items, lbl+"（カード）"); };
   $("#countInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); startFromCountModal(); } };
   $("#countMinus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)-1, pendingSel?pendingSel.total:1); };
