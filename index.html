@@ -744,6 +744,24 @@
   .qbSelClear{border:1px solid var(--line);background:var(--card2);color:var(--muted);padding:10px 12px;font-size:12.5px}
   .qbSelClear:hover{border-color:var(--brand);color:var(--brand)}
   @media(max-width:920px){ .qbSelBar{bottom:calc(var(--nav-height) + env(safe-area-inset-bottom) + 14px)} }
+  .qbPageGap{color:var(--muted);font-weight:900;padding:0 2px}
+
+  /* ===== 弱点分野（分野別の正答率） ===== */
+  .wfHead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .wfStats{display:flex;gap:18px}
+  .wfStats b{display:block;font-size:22px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+  .wfStats span{display:block;margin-top:5px;font-size:11px;font-weight:800;color:var(--muted)}
+  .wfList{display:grid;gap:10px}
+  .wfRow{width:100%;display:flex;flex-direction:column;gap:7px;text-align:left;font-family:inherit;cursor:pointer;color:var(--text);
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;box-shadow:var(--shadow);transition:.14s}
+  .wfRow:hover{border-color:var(--brand);transform:translateY(-1px)} .wfRow:active{transform:scale(.99)}
+  .wfRow.weak{border-color:rgba(255,93,108,.55)}
+  .wfRow.weak .fbBar i{background:var(--bad)}
+  .wfTop{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .wfName{font-size:14.5px;font-weight:900;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wfPct{flex:0 0 auto;font-size:15px;font-weight:900;font-variant-numeric:tabular-nums}
+  .wfRow.weak .wfPct{color:var(--bad)}
+  .wfMeta{font-size:11.5px;font-weight:700;color:var(--muted)}
 
   /* ===== ホームのハブ（カテゴリボタン） ===== */
   .hubGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:4px}
@@ -1888,6 +1906,19 @@
       <span class="pill">復習・苦手</span>
     </div>
 
+    <div class="homeLead">
+      <div class="leadCopy">
+        <div class="leadEyebrow">Review / 復習・苦手</div>
+        <h2>弱点から潰していく</h2>
+        <p>今日の復習、見直したい問題、苦手問題、分野別の正答率。目的を選んで見返しましょう。</p>
+      </div>
+      <div class="leadStats" aria-label="復習の状況">
+        <div class="leadStat"><b id="reviewLeadDue">0</b><span>今日の復習</span></div>
+        <div class="leadStat"><b id="reviewLeadWeak">0</b><span>苦手問題</span></div>
+        <div class="leadStat"><b id="reviewLeadBookmark">0</b><span>見直したい</span></div>
+      </div>
+    </div>
+
     <div class="homeSection" id="reviewDueSection">
       <button type="button" class="dueCard" id="reviewDueCard">
         <span class="dueIcon">↻</span>
@@ -1910,31 +1941,22 @@
       </button>
     </div>
 
-    <div class="homeSection" id="mistakeEntrySection">
-      <button type="button" class="dueCard" id="mistakeEntryCard">
-        <span class="dueIcon">📓</span>
-        <span class="dueBody">
-          <span class="dueTitle">誤答ノート</span>
-          <span class="dueSub" id="mistakeEntrySub">間違えた問題とメモを見返して、弱点を分析します</span>
-        </span>
-        <span class="dueRight"><b class="dueCount" id="mistakeEntryCount">0</b><span class="dueUnit">問</span></span>
-      </button>
-    </div>
-
-    <div class="homeSection" id="bookmarkSection">
-      <div class="sectlabel">見直したい問題</div>
-      <div id="bookmarkList" class="grid"></div>
-    </div>
-
-    <div class="homeSection" id="weakSection">
-      <div class="sectlabel">苦手問題</div>
-      <div id="weakList" class="grid"></div>
-    </div>
+    <div class="homeMainLabel"><b>復習メニュー</b><span>目的を選んで見返す</span></div>
+    <div class="hubGrid" id="reviewHubGrid"></div>
 
     <div class="homeSection" id="playlistSection">
-      <div class="sectlabel">弱点プレイリスト</div>
+      <div class="sectlabel">おすすめプレイリスト</div>
       <div id="playlistList" class="plGrid"></div>
     </div>
+  </section>
+
+  <!-- ===== VIEW: 弱点分野（分野別の正答率） ===== -->
+  <section id="weakFieldView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="weakFieldBack">← 復習・苦手</button>
+      <span class="pill">弱点分野</span>
+    </div>
+    <div class="homeSection" id="weakFieldBody"></div>
   </section>
 
   <!-- ===== VIEW: 誤答ノート ===== -->
@@ -2769,6 +2791,7 @@
     const questions=dueItems(), terms=dueTermItems(), n=questions.length+terms.length;
     $("#dueCount").textContent=n;
     $("#reviewDueCount").textContent=n;
+    { const lead=$("#reviewLeadDue"); if(lead) lead.textContent=n; }
     const sub=$("#dueSub");
     const reviewSub=$("#reviewDueSub");
     if(n>0){
@@ -2800,7 +2823,6 @@
   function plNeverCorrect(){ return DATA.filter(q=>{ const r=progress[q.id]; return r && r.seen>0 && (r.correct||0)===0; }); }
   function plRecentWrong(){ const cut=daysAgoStr(7); return DATA.filter(q=>{ const r=progress[q.id]; return r && r.lastWrong && r.lastWrong>=cut; }); }
   const PLAYLISTS=[
-    {kind:"weakfield",    icon:"📉", name:"弱点分野",         desc:"正答率50%未満の分野を集中特訓", fn:plWeakFields},
     {kind:"nevercorrect", icon:"❌", name:"まだ正解していない", desc:"解いたけれど未正解の問題",       fn:plNeverCorrect},
     {kind:"recentwrong",  icon:"🕐", name:"最近間違えた",       desc:"7日以内に間違えた問題",         fn:plRecentWrong}
   ];
@@ -2812,6 +2834,95 @@
         <span class="plBody"><span class="plName">${esc(p.name)}</span><span class="plDesc">${esc(p.desc)}</span></span>
         <span class="plCount">${n}<small>問</small></span></button>`; }).join("");
     box.querySelectorAll(".plCard").forEach(el=>{ el.onclick=()=>{ const p=PLAYLISTS.find(x=>x.kind===el.dataset.kind); if(!p) return; const items=p.fn(); if(!items.length){ toast("該当する問題はありません"); return; } openCountModal({items,label:p.name,key:"__pl_"+p.kind},"playlist"); }; });
+  }
+
+  /* ---------- 復習・苦手のメニュー（ホームのハブと同じ形） ---------- */
+  function bookmarkItems(){ return DATA.filter(q=>isBookmarked(q.id)); }
+  function weakItems(){ return DATA.filter(q=>syncWeak(rec(q.id))); }
+  // 解答記録のある分野だけを、正答率の低い順に集計する
+  function fieldAccuracy(){
+    const agg={};
+    DATA.forEach(q=>{
+      const f=q.field||"その他", o=agg[f]=agg[f]||{field:f,correct:0,answered:0,seen:0,total:0};
+      o.total++;
+      const r=progress[q.id]; if(!r) return;
+      const a=(r.correct||0)+(r.wrong||0); if(!a) return;
+      o.correct+=(r.correct||0); o.answered+=a; o.seen++;
+    });
+    return Object.values(agg).filter(o=>o.answered>0)
+      .map(o=>({...o, pct:Math.round(o.correct/o.answered*100)}))
+      .sort((a,b)=>a.pct-b.pct || b.answered-a.answered);
+  }
+  function renderReviewHub(){
+    const grid=$("#reviewHubGrid"); if(!grid) return;
+    const bm=bookmarkItems().length, weak=weakItems().length, miss=mistakeItems().length;
+    const fields=fieldAccuracy(), weakFields=fields.filter(f=>f.pct<50).length;
+    const lw=$("#reviewLeadWeak"); if(lw) lw.textContent=weak;
+    const lb=$("#reviewLeadBookmark"); if(lb) lb.textContent=bm;
+    const items=[
+      {icon:"★",name:"見直したい問題",accent:"#b8860b",
+        sub:bm?`★を付けた ${bm}問を1問ずつ確認`:"演習中の「☆ 見直す」で保存できます",
+        go:()=>openReviewList("bookmark")},
+      {icon:"⚠",name:"苦手問題",accent:"#c5525a",
+        sub:weak?`2回以上まちがえた ${weak}問`:"2回まちがえるとここに集まります",
+        go:()=>openReviewList("weak")},
+      {icon:"✎",name:"誤答ノート",accent:"#6d5bd0",
+        sub:miss?`まちがえた ${miss}問とメモを見返す`:"まちがえた問題がここに集まります",
+        go:()=>{ mistakeFilter="all"; openView("mistakesView"); }},
+      {icon:"▤",name:"弱点分野",accent:"#1f8a62",
+        sub:fields.length?`分野別の正答率${weakFields?` ・ 50%未満 ${weakFields}分野`:""}`:"解いた問題から自動で集計します",
+        go:()=>openView("weakFieldView")}
+    ];
+    grid.innerHTML=items.map((it,i)=>`<button type="button" class="hubBtn primaryHub" data-i="${i}" style="--hub-accent:${it.accent}">
+      <span class="hubIcon">${it.icon}</span>
+      <span class="hubBody"><span class="hubName">${esc(it.name)}</span><span class="hubSub">${esc(it.sub)}</span></span>
+      <span class="hubChev">›</span></button>`).join("");
+    grid.querySelectorAll(".hubBtn").forEach(el=>{ el.onclick=items[+el.dataset.i].go; });
+  }
+  // 「見直したい問題」「苦手問題」は問題一覧の画面を 1問=1ページ で使い回す
+  function openReviewList(kind){
+    stopExamTimer(); closeFcLightbox();
+    const bookmark=kind==="bookmark";
+    const items=(bookmark?bookmarkItems():weakItems()).slice().sort((a,b)=>qbNum(a.id)-qbNum(b.id));
+    qbrowseState={group:{key:bookmark?"__bookmark__":"__weak__",label:bookmark?"見直したい問題":"苦手問題",items,mode:"playlist"},
+      page:0,selected:new Set(),perPage:1,origin:"reviewView"};
+    transitionToScreen("qbrowse","forward",renderQBrowse);
+  }
+
+  /* ---------- 弱点分野（演習した問題の分野別正答率） ---------- */
+  function renderWeakFields(){
+    const box=$("#weakFieldBody"); if(!box) return;
+    const rows=fieldAccuracy();
+    if(!rows.length){
+      box.innerHTML=`<div class="panel"><div class="empty">まだ集計できる記録がありません。<br>問題を解くと、分野ごとの正答率がここに出ます。</div></div>`;
+      return;
+    }
+    const answered=rows.reduce((n,o)=>n+o.answered,0), correct=rows.reduce((n,o)=>n+o.correct,0);
+    const weakN=rows.filter(o=>o.pct<50).length;
+    const head=`<div class="panel wfHead">
+      <div class="wfStats">
+        <div><b>${Math.round(correct/answered*100)}%</b><span>全体の正答率</span></div>
+        <div><b>${answered}</b><span>のべ解答</span></div>
+        <div><b>${weakN}</b><span>50%未満の分野</span></div>
+      </div>
+      <button type="button" class="btn small" id="wfPracticeWeak">▶ 弱点分野をまとめて演習</button>
+    </div>`;
+    const list=rows.map(o=>`<button type="button" class="wfRow${o.pct<50?" weak":""}" data-field="${esc(o.field)}">
+      <span class="wfTop"><span class="wfName">${esc(o.field)}</span><span class="wfPct">${o.pct}%</span></span>
+      <span class="fbBar"><i style="width:${o.pct}%"></i></span>
+      <span class="wfMeta">正解 ${o.correct}/${o.answered}回 ・ ${o.seen}/${o.total}問 学習${o.total>o.seen?` ・ 未着手 ${o.total-o.seen}問`:""}</span>
+    </button>`).join("");
+    box.innerHTML=head+`<div class="sectlabel">分野別の正答率（低い順）</div><div class="wfList">${list}</div>`;
+    $("#wfPracticeWeak").onclick=()=>{
+      const items=plWeakFields();
+      if(!items.length){ toast("正答率50%未満の分野はまだありません"); return; }
+      openCountModal({items,label:"弱点分野",key:"__pl_weakfield",kicker:"弱点分野"},"playlist");
+    };
+    box.querySelectorAll(".wfRow").forEach(el=>{ el.onclick=()=>{
+      const f=el.dataset.field, items=DATA.filter(q=>(q.field||"その他")===f);
+      if(!items.length){ toast("この分野の問題がありません"); return; }
+      openCountModal({items,label:f,key:"__wf_"+f,kicker:"分野別演習"},"field");
+    }; });
   }
 
   /* ---------- レベル / XP ---------- */
@@ -2961,7 +3072,7 @@
   }
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
-  const VIEWS=["inputView","practiceView","memoryCardsView","cardsView","reviewView","statsView","rankView","communityView","mistakesView","moreView"];
+  const VIEWS=["inputView","practiceView","memoryCardsView","cardsView","reviewView","weakFieldView","statsView","rankView","communityView","mistakesView","moreView"];
   const SCREEN_IDS=["home","quiz","result","search","flash","browse","qbrowse","subjectPicker","slideView","lessonView"].concat(VIEWS);
   let currentScreenId=null;
   let historyNavigation=false;
@@ -2970,14 +3081,16 @@
     SCREEN_IDS.forEach(id=>{ const el=$("#"+id); if(el) el.classList.add("hidden"); });
   }
   function navKeyForScreen(id){
+    // 復習画面から開いた問題一覧は「復習」タブを点灯させる
+    if(id==="qbrowse" && qbrowseState.origin==="reviewView") return "review";
     const ui=window.STUDY_CORE&&window.STUDY_CORE.ui;
     if(ui&&ui.primaryNavKey) return ui.primaryNavKey(id);
     if(id==="home") return "home";
     if(["inputView","lessonView","memoryCardsView","cardsView","browse","flash"].includes(id)) return "learn";
     if(["practiceView","quiz","result"].includes(id)) return "practice";
-    if(id==="qbrowse") return "questions";
+    if(id==="qbrowse") return qbrowseState.origin==="reviewView" ? "review" : "questions";
     if(id==="search") return "search";
-    if(["reviewView","mistakesView"].includes(id)) return "review";
+    if(["reviewView","mistakesView","weakFieldView"].includes(id)) return "review";
     return null;
   }
   function updatePrimaryNav(id){
@@ -3042,7 +3155,7 @@
     renderSubjectFeatures();
     renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick();
     renderHero(); renderKpis(); renderHeatmap(); renderAch(); renderUpdatesHome();
-    renderExamDay(); renderMistakeEntry();
+    renderExamDay(); renderReviewHub();
   }
   function renderHome(direction){
     stopExamTimer(); closeFcLightbox();
@@ -3093,6 +3206,7 @@
       if(id==="communityView"){ cmState.boardId=null; renderCommunity(); startCmTimer(); }
       if(id==="moreView"){ renderSyncBlock(); }
       if(id==="mistakesView"){ renderMistakes(); }
+      if(id==="weakFieldView"){ renderWeakFields(); }
       if(id==="reviewView"){ refreshPendingExam(); }
       if(id==="cardsView"){ renderCardHome(); }
       if(id==="memoryCardsView"){ renderMemoryCardsView(); }
@@ -3561,7 +3675,7 @@
     if(v.trim()){ r.note=v; r.noteAt=new Date().toISOString(); }
     else { delete r.note; delete r.noteAt; }
     saveProgress();
-    const c=$("#mistakeEntryCount"); if(c) c.textContent=mistakeItems().length;
+    renderReviewHub();
   }
   function mistakeItems(){
     return DATA.filter(q=>{ const r=progress[q.id]; return r && ((r.wrong||0)>0 || (r.note&&r.note.trim())); });
@@ -3575,13 +3689,6 @@
     return bi>=0 ? {text:q.choices[bi], count:bc} : null;
   }
   let mistakeFilter="all";
-  function renderMistakeEntry(){
-    const c=$("#mistakeEntryCount"); if(!c) return;
-    const items=mistakeItems(), notes=items.filter(q=>{ const r=progress[q.id]; return r.note&&r.note.trim(); }).length;
-    c.textContent=items.length;
-    const sub=$("#mistakeEntrySub");
-    if(sub) sub.textContent = items.length ? `間違えた ${items.length}問${notes?` ・ メモ ${notes}件`:""}を見返して分析` : "間違えた問題がここに集まります";
-  }
   function renderMistakes(){
     const box=$("#mistakesBody"); if(!box) return;
     let items=mistakeItems();
@@ -3690,7 +3797,7 @@
     const notice=$("#emptySubjectNotice"); if(notice) notice.classList.toggle("hidden", !empty);
     ["yearSection","predictionSection","specialSection","fieldSection","qbrowseSection","quickSection","examSection","examDaySection"]
       .forEach(id=>{ const el=$("#"+id); if(el && empty) el.classList.add("hidden"); });
-    if(empty){ ["#yearList","#predictionList","#fieldList","#specialList","#weakList","#bookmarkList"]
+    if(empty){ ["#yearList","#predictionList","#fieldList","#specialList"]
       .forEach(sel=>{ const el=$(sel); if(el) el.innerHTML=""; }); return; }
     ["qbrowseSection","quickSection","examSection","examDaySection"]
       .forEach(id=>{ const el=$("#"+id); if(el) el.classList.remove("hidden"); });
@@ -3701,8 +3808,6 @@
     renderGroupList("prediction", "#predictionList");
     renderGroupList("special", "#specialList");
     renderGroupList("field", "#fieldList");
-    renderGroupList("weak", "#weakList");
-    renderGroupList("bookmark", "#bookmarkList");
   }
   function renderGroupList(mode, selector){
     const gs=groups(mode), list=$(selector);
@@ -4816,7 +4921,8 @@
   function closeBrowse(){ $("#browse").classList.add("hidden"); renderHome(); }
 
   /* ---------- 問題一覧（年度別ブラウズ） ---------- */
-  let qbrowseState={group:null,page:0,selected:new Set()};
+  // perPage=1 は復習画面から開く「見直したい問題／苦手問題」の一覧、origin は戻り先
+  let qbrowseState={group:null,page:0,selected:new Set(),perPage:10,origin:"home"};
   const QB_PAGE=10;
   const QB_EXAM_ICONS=["📄","📝","🗓"];
   const QB_PRED_ICONS=["🔮","📗","📘","📙"];
@@ -4860,7 +4966,7 @@
   function renderQBrowse(){
     const g=qbrowseState.group;
     $("#qbrowseTitle").textContent=g?g.label:"問題一覧";
-    $("#qbrowseBackLabel").textContent=g?"← 年度一覧":"← ホーム";
+    $("#qbrowseBackLabel").textContent=qbrowseState.origin==="reviewView"?"← 復習・苦手":g?"← 年度一覧":"← ホーム";
     if(g) renderQBrowseGroup(); else renderQBrowseIndex();
   }
   function qbGroupBtn(g,icon){
@@ -4924,10 +5030,22 @@
   function writtenKindLabel(part){
     return part.kind==="drawing" ? "作図" : part.kind==="numeric" ? "数値" : part.kind==="short-text" ? "短答" : "論述";
   }
+  // ページ数が多いときは現在地の前後と最初・最後だけを出す（1問1ページの一覧で数百ページになるため）
+  function qbPageNumbers(page,pages){
+    if(pages<=9) return Array.from({length:pages},(_,p)=>p);
+    const set=new Set([0,pages-1,page]);
+    for(let d=1;d<=2;d++){ if(page-d>=0)set.add(page-d); if(page+d<pages)set.add(page+d); }
+    return [...set].sort((a,b)=>a-b);
+  }
   function qbPagerHTML(page,pages){
     if(pages<=1) return "";
     let h=`<button type="button" class="qbPageBtn qbNav" data-page="${page-1}" ${page<=0?"disabled":""}>‹ 前へ</button>`;
-    for(let p=0;p<pages;p++){ h+=`<button type="button" class="qbPageBtn${p===page?" active":""}" data-page="${p}">${p+1}</button>`; }
+    let prev=-1;
+    for(const p of qbPageNumbers(page,pages)){
+      if(prev>=0 && p>prev+1) h+=`<span class="qbPageGap">…</span>`;
+      h+=`<button type="button" class="qbPageBtn${p===page?" active":""}" data-page="${p}">${p+1}</button>`;
+      prev=p;
+    }
     h+=`<button type="button" class="qbPageBtn qbNav" data-page="${page+1}" ${page>=pages-1?"disabled":""}>次へ ›</button>`;
     return h;
   }
@@ -4936,11 +5054,23 @@
     $("#qbrowseResultsWrap").classList.remove("hidden");
     const g=qbrowseState.group;
     const items=g.items.slice().sort((a,b)=>qbNum(a.id)-qbNum(b.id));
-    const pages=Math.max(1,Math.ceil(items.length/QB_PAGE));
+    const per=qbrowseState.perPage||QB_PAGE, single=per===1;
+    if(!items.length){
+      $("#qbrowseInfo").innerHTML="";
+      $("#qbrowseList").innerHTML=g.key==="__bookmark__"
+        ?`<div class="empty">🔖 まだ見直したい問題はありません。<br>問題演習や問題一覧の「☆」でいつでも保存できます。</div>`
+        :g.key==="__weak__"
+        ?`<div class="empty">🎉 まだ苦手問題はありません。<br>同じ問題を2回まちがえると、ここに自動で追加されます。</div>`
+        :`<div class="empty">表示できる問題がありません。</div>`;
+      $("#qbrowsePager").innerHTML="";
+      $("#qbSelBar").classList.add("hidden");
+      return;
+    }
+    const pages=Math.max(1,Math.ceil(items.length/per));
     if(qbrowseState.page>=pages) qbrowseState.page=pages-1;
     if(qbrowseState.page<0) qbrowseState.page=0;
-    const page=qbrowseState.page, slice=items.slice(page*QB_PAGE,(page+1)*QB_PAGE);
-    $("#qbrowseInfo").innerHTML=`<span class="srCount">全${items.length}問 ・ ${page+1}/${pages}ページ</span>`+
+    const page=qbrowseState.page, slice=items.slice(page*per,(page+1)*per);
+    $("#qbrowseInfo").innerHTML=`<span class="srCount">${single?`${page+1}問目 / 全${items.length}問`:`全${items.length}問 ・ ${page+1}/${pages}ページ`}</span>`+
       `<button type="button" class="btn small" id="qbPracticeGroup">▶ まとめて演習</button>`;
     $("#qbPracticeGroup").onclick=()=>openCountModal({items:items.slice(), label:g.label, key:g.key, kicker:"まとめて演習"}, g.mode||"playlist");
     $("#qbrowseList").innerHTML=slice.map((q,i)=>{
@@ -4949,7 +5079,7 @@
       const r=progress[q.id], status=(r&&r.seen)?(r.correct>=r.wrong?'<span class="srOk">学習済</span>':'<span class="srNg">要復習</span>'):"";
       const bm=isBookmarked(q.id);
       const sel=qbrowseState.selected.has(q.id);
-      return `<div class="brItem qbItem" data-i="${i}">
+      return `<div class="brItem qbItem${single?" open":""}" data-i="${i}">
         <div class="qbRow">
           <button type="button" class="qbSel${sel?" on":""}" aria-pressed="${sel?"true":"false"}"
             aria-label="この問題を選ぶ"><span class="qbSelBox"></span></button>
@@ -4962,7 +5092,7 @@
           <button type="button" class="qbBm${bm?" on":""}" aria-pressed="${bm?"true":"false"}"
             aria-label="見直したい問題に${bm?"保存済み":"保存"}" title="見直したい問題">${bm?"★":"☆"}</button>
         </div>
-        <div class="brBack qbBack hidden">${qDetailHTML(q)}<div class="brActions"><button type="button" class="qbPractice">▶ この問題を解く</button></div></div>
+        <div class="brBack qbBack${single?"":" hidden"}">${qDetailHTML(q)}<div class="brActions"><button type="button" class="qbPractice">▶ この問題を解く</button></div></div>
       </div>`;
     }).join("");
     $("#qbrowsePager").innerHTML=qbPagerHTML(page,pages);
@@ -5007,12 +5137,13 @@
     $("#qbSelClear").onclick=()=>{ qbrowseState.selected.clear(); renderQBrowseGroup(); };
   }
   function qbBackStep(){
+    if(qbrowseState.origin==="reviewView"){ openView("reviewView"); return; }
     if(qbrowseState.group){ qbrowseState.group=null; qbrowseState.page=0; qbrowseState.selected.clear(); renderQBrowse(); window.scrollTo(0,0); }
     else closeQBrowse();
   }
   function openQBrowse(){
     stopExamTimer(); closeFcLightbox();
-    qbrowseState={group:null,page:0,selected:new Set()};
+    qbrowseState={group:null,page:0,selected:new Set(),perPage:QB_PAGE,origin:"home"};
     transitionToScreen("qbrowse","tab",renderQBrowse);
   }
   function closeQBrowse(){ $("#qbrowse").classList.add("hidden"); renderHome(); }
@@ -6868,8 +6999,8 @@
 
   /* ビュー（各画面）の戻るボタン */
   document.querySelectorAll(".viewBack").forEach(b=>{ b.onclick=renderHome; });
-  $("#mistakeEntryCard").onclick=()=>{ mistakeFilter="all"; openView("mistakesView"); };
   $("#mistakesBack").onclick=()=>openView("reviewView");
+  $("#weakFieldBack").onclick=()=>openView("reviewView");
   /* コミュニティは階層があるため、掲示板を開いていれば一覧へ戻る */
   $("#cmBack").onclick=()=>{
     if(cmState.creating){ cmState.creating=false; renderCommunity(); return; }
