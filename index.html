@@ -726,6 +726,24 @@
   .qbBm:hover{background:var(--card2);color:var(--gold)}
   .qbBm.on{color:var(--gold)}
   .qbBm:active{transform:scale(.9)}
+  /* 行の選択チェックと、1問以上選んだときだけ出る操作バー */
+  .qbSel{flex:0 0 auto;width:38px;height:44px;padding-left:11px;border:none;background:transparent;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;justify-content:center}
+  .qbSelBox{width:21px;height:21px;border-radius:7px;border:2px solid var(--line);background:var(--card);position:relative;transition:.12s}
+  .qbSel:hover .qbSelBox{border-color:var(--brand)}
+  .qbSel.on .qbSelBox{background:var(--brand);border-color:var(--brand)}
+  .qbSel.on .qbSelBox::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:900}
+  .qbRow .qbSel+.brHead{padding-left:8px}
+  .qbSelBar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:83;
+    width:min(560px,calc(100vw - 24px));display:flex;align-items:center;gap:9px;padding:10px 12px;
+    border-radius:18px;border:1px solid var(--line);background:var(--card);box-shadow:0 20px 48px rgba(29,45,68,.24)}
+  .qbSelN{flex:1;min-width:0;font-size:13px;font-weight:900;color:var(--text)}
+  .qbSelBar button{border-radius:12px;font-family:inherit;font-weight:800;cursor:pointer;transition:.12s;white-space:nowrap}
+  .qbSelGo{border:none;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;padding:10px 14px;font-size:13px}
+  .qbSelGo:active{transform:scale(.97)}
+  .qbSelClear{border:1px solid var(--line);background:var(--card2);color:var(--muted);padding:10px 12px;font-size:12.5px}
+  .qbSelClear:hover{border-color:var(--brand);color:var(--brand)}
+  @media(max-width:920px){ .qbSelBar{bottom:calc(var(--nav-height) + env(safe-area-inset-bottom) + 14px)} }
 
   /* ===== ホームのハブ（カテゴリボタン） ===== */
   .hubGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:4px}
@@ -2086,6 +2104,11 @@
       <div id="qbrowseList" class="browseList"></div>
       <div id="qbrowsePager" class="qbPager"></div>
     </div>
+    <div id="qbSelBar" class="qbSelBar hidden">
+      <span class="qbSelN" id="qbSelN">0問を選択中</span>
+      <button type="button" class="qbSelGo" id="qbSelGo">▶ 選択した問題を演習</button>
+      <button type="button" class="qbSelClear" id="qbSelClear">選択解除</button>
+    </div>
   </section>
 
   <!-- ===== FLASHCARD ===== -->
@@ -2597,7 +2620,7 @@
   function openCountModal(g, mode){
     // 「この回を解く」など決まった範囲を繰り返し解く導線では、まだ解いていない問題を既定で先に出す
     const unseenLeft = g.items.some(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); });
-    pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN,
+    pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN, startAll:!!g.startAll,
       order:(mode==="playlist"&&unseenLeft)?"unseen":"random", gradingMode:"immediate"};
     $("#countKicker").textContent=g.kicker||(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
@@ -2625,7 +2648,8 @@
     });
     const inp=$("#countInput"); inp.max=pendingSel.total;
     const last=loadLastCount();
-    const want=(last>0?Math.min(last,pendingSel.total):(pendingSel.defaultN?Math.min(pendingSel.defaultN,pendingSel.total):pendingSel.total));
+    const want=pendingSel.startAll?pendingSel.total   // 一覧で選んだ問題は、選んだ数をそのまま初期値にする
+      :(last>0?Math.min(last,pendingSel.total):(pendingSel.defaultN?Math.min(pendingSel.defaultN,pendingSel.total):pendingSel.total));
     inp.value = pendingSel.total>0 ? Math.max(1,want) : 0;
     $("#countChips").querySelectorAll(".countChip").forEach(c=>{
       const num=(c.dataset.n==="all")?pendingSel.total:parseInt(c.dataset.n,10);
@@ -4792,7 +4816,7 @@
   function closeBrowse(){ $("#browse").classList.add("hidden"); renderHome(); }
 
   /* ---------- 問題一覧（年度別ブラウズ） ---------- */
-  let qbrowseState={group:null,page:0};
+  let qbrowseState={group:null,page:0,selected:new Set()};
   const QB_PAGE=10;
   const QB_EXAM_ICONS=["📄","📝","🗓"];
   const QB_PRED_ICONS=["🔮","📗","📘","📙"];
@@ -4853,6 +4877,7 @@
   }
   function renderQBrowseIndex(){
     $("#qbrowseResultsWrap").classList.add("hidden");
+    $("#qbSelBar").classList.add("hidden");
     const box=$("#qbrowseIndex"); box.classList.remove("hidden");
     const g=qbGroups();
     let html="";
@@ -4875,7 +4900,7 @@
     box.innerHTML=html||`<div class="empty">問題データがありません。</div>`;
     box.querySelectorAll(".brDeck2").forEach(el=>{ el.onclick=()=>{
       const grp=qbFindGroup(el.dataset.key); if(!grp)return;
-      qbrowseState.group=grp; qbrowseState.page=0; renderQBrowse(); window.scrollTo(0,0);
+      qbrowseState.group=grp; qbrowseState.page=0; qbrowseState.selected.clear(); renderQBrowse(); window.scrollTo(0,0);
     }; });
   }
   function qLetter(i){ return "abcde"[i]||String(i+1); }
@@ -4923,8 +4948,11 @@
       const field=q.field?`<span class="brField">${esc(q.field)}</span>`:"";
       const r=progress[q.id], status=(r&&r.seen)?(r.correct>=r.wrong?'<span class="srOk">学習済</span>':'<span class="srNg">要復習</span>'):"";
       const bm=isBookmarked(q.id);
+      const sel=qbrowseState.selected.has(q.id);
       return `<div class="brItem qbItem" data-i="${i}">
         <div class="qbRow">
+          <button type="button" class="qbSel${sel?" on":""}" aria-pressed="${sel?"true":"false"}"
+            aria-label="この問題を選ぶ"><span class="qbSelBox"></span></button>
           <button type="button" class="brHead">
             <span class="qbNum">${qbNum(q.id)}</span>
             <span class="brFront">${qUnderlineHTML(q)}</span>
@@ -4938,10 +4966,19 @@
       </div>`;
     }).join("");
     $("#qbrowsePager").innerHTML=qbPagerHTML(page,pages);
+    updateQbSelBar(items);
     $("#qbrowseList").querySelectorAll(".qbItem").forEach(el=>{
       const q=slice[+el.dataset.i], back=el.querySelector(".qbBack");
       el.querySelector(".brHead").onclick=()=>{ const open=back.classList.contains("hidden"); back.classList.toggle("hidden",!open); el.classList.toggle("open",open); };
       const pb=el.querySelector(".qbPractice"); if(pb) pb.onclick=(e)=>{ e.stopPropagation(); startQuiz([q], g.label); };
+      const sb=el.querySelector(".qbSel");
+      if(sb) sb.onclick=(e)=>{
+        e.stopPropagation();
+        const on=!qbrowseState.selected.has(q.id);
+        if(on) qbrowseState.selected.add(q.id); else qbrowseState.selected.delete(q.id);
+        sb.classList.toggle("on",on); sb.setAttribute("aria-pressed",on?"true":"false");
+        updateQbSelBar(items);
+      };
       const bm=el.querySelector(".qbBm");
       if(bm) bm.onclick=(e)=>{
         e.stopPropagation();
@@ -4956,13 +4993,26 @@
     });
     $("#qbrowsePager").querySelectorAll(".qbPageBtn").forEach(b=>{ if(b.disabled) return; b.onclick=()=>{ qbrowseState.page=+b.dataset.page; renderQBrowseGroup(); window.scrollTo(0,0); }; });
   }
+  // 1問以上選ばれているときだけ操作バーを出す。選択はページをまたいでも保持する。
+  function updateQbSelBar(items){
+    const g=qbrowseState.group, bar=$("#qbSelBar");
+    if(!g||!bar) return;
+    const picked=items.filter(q=>qbrowseState.selected.has(q.id));
+    bar.classList.toggle("hidden", picked.length===0);
+    if(!picked.length) return;
+    $("#qbSelN").textContent=`${picked.length}問を選択中`;
+    $("#qbSelGo").onclick=()=>openCountModal(
+      {items:picked, label:`${g.label} ・ 選択した${picked.length}問`, key:null, kicker:"選択した問題", startAll:true},
+      g.mode||"playlist");
+    $("#qbSelClear").onclick=()=>{ qbrowseState.selected.clear(); renderQBrowseGroup(); };
+  }
   function qbBackStep(){
-    if(qbrowseState.group){ qbrowseState.group=null; qbrowseState.page=0; renderQBrowse(); window.scrollTo(0,0); }
+    if(qbrowseState.group){ qbrowseState.group=null; qbrowseState.page=0; qbrowseState.selected.clear(); renderQBrowse(); window.scrollTo(0,0); }
     else closeQBrowse();
   }
   function openQBrowse(){
     stopExamTimer(); closeFcLightbox();
-    qbrowseState={group:null,page:0};
+    qbrowseState={group:null,page:0,selected:new Set()};
     transitionToScreen("qbrowse","tab",renderQBrowse);
   }
   function closeQBrowse(){ $("#qbrowse").classList.add("hidden"); renderHome(); }
