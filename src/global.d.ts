@@ -15,6 +15,7 @@ declare global {
     MEMORY_DECKS?: Array<{
       id: string;
       subjectId: string;
+      folder?: string;
       title: string;
       description?: string;
       cards: Array<{ id: string; front: string; back: string; explanation?: string; tags?: string[] }>;

@@ -23,6 +23,8 @@ interface SharedDeckRow {
   version: number;
   card_count: number;
   published_at: string;
+  /** 公式デッキをまとめる箱の名前（無い場合は一覧に直接並ぶ）。 */
+  folder?: string;
 }
 
 interface SharedCardRow {
@@ -40,6 +42,7 @@ interface SharedCardRow {
 interface BundledDeck {
   id: string;
   subjectId: string;
+  folder?: string;
   title: string;
   description?: string;
   cards: Array<{ id: string; front: string; back: string; explanation?: string; tags?: string[] }>;
@@ -59,6 +62,7 @@ let activeSubject: MemoryCardSubject | null = null;
 let activeTab: "mine" | "public" = "mine";
 let selectedDeckId: string | null = null;
 let selectedSharedDeckId: string | null = null;
+let openFolder: string | null = null;
 let editor: EditorState = null;
 let message = "";
 let messageKind: "info" | "error" | "success" = "info";
@@ -229,7 +233,7 @@ function bundledDecks(): BundledDeck[] {
 
 async function loadSharedDecks(): Promise<void> {
   sharedDecks = bundledDecks().map((deck) => ({
-    id: deck.id, owner_id: OFFICIAL_OWNER, subject_id: deck.subjectId, title: deck.title,
+    id: deck.id, owner_id: OFFICIAL_OWNER, subject_id: deck.subjectId, title: deck.title, folder: deck.folder,
     description: deck.description ?? "", version: 1, card_count: deck.cards.length, published_at: "",
   }));
   if (!activeSubject || !supabase) return;
@@ -265,6 +269,15 @@ async function loadSharedCards(deckId: string): Promise<void> {
   sharedCards = (data ?? []) as SharedCardRow[];
 }
 
+function sharedDeckTile(deck: SharedDeckRow): string {
+  return `
+    <article class="memoryDeckCard shared">
+      <button type="button" class="memoryDeckOpen" data-memory-action="open-shared" data-shared-id="${esc(deck.id)}">
+        <span class="memoryDeckIcon">${deck.owner_id === OFFICIAL_OWNER ? "📌" : "🌐"}</span><span><strong>${esc(deck.title)}</strong><small>${esc(deck.description || "説明なし")}</small></span><b>${deck.card_count}枚</b>
+      </button>
+    </article>`;
+}
+
 async function renderPublic(): Promise<string> {
   if (!supabase && !bundledDecks().length) {
     return shell(`<div class="memoryCardsEmpty"><span>☁️</span><h3>共有機能は準備中です</h3><p>Supabaseの接続設定後に「みんなのデッキ」を利用できます。自分のデッキは端末内で利用できます。</p></div>`);
@@ -280,12 +293,28 @@ async function renderPublic(): Promise<string> {
         <div class="memoryCardList">${sharedCards.map((card, index) => `<article class="memoryCardRow preview"><span class="memoryCardNumber">${index + 1}</span><span class="memoryCardBody"><strong>${esc(card.front)}</strong><small>${esc(card.back)}</small></span></article>`).join("")}</div>
       </div>`);
   }
-  return shell(sharedDecks.length ? `<div class="memoryDeckGrid">${sharedDecks.map((deck) => `
+  if (!sharedDecks.length) {
+    return shell(`<div class="memoryCardsEmpty"><span>🌱</span><h3>${esc(activeSubject!.name)}の公開デッキはまだありません</h3><p>自分のデッキを作成し、最初の共有者になれます。</p></div>`);
+  }
+  if (openFolder) {
+    const inFolder = sharedDecks.filter((deck) => deck.folder === openFolder);
+    return shell(`
+      <div class="memoryDeckDetailHead"><button type="button" class="btn ghost small" data-memory-action="back-folder">← みんなのデッキ</button><span>🗂️ ${esc(openFolder)}・${inFolder.length}デッキ</span></div>
+      <div class="memoryDeckGrid">${inFolder.map(sharedDeckTile).join("")}</div>`);
+  }
+  const folders = [...new Set(sharedDecks.map((deck) => deck.folder).filter(Boolean))] as string[];
+  const folderTiles = folders.map((folder) => {
+    const inFolder = sharedDecks.filter((deck) => deck.folder === folder);
+    const cards = inFolder.reduce((total, deck) => total + deck.card_count, 0);
+    return `
     <article class="memoryDeckCard shared">
-      <button type="button" class="memoryDeckOpen" data-memory-action="open-shared" data-shared-id="${esc(deck.id)}">
-        <span class="memoryDeckIcon">${deck.owner_id === OFFICIAL_OWNER ? "📌" : "🌐"}</span><span><strong>${esc(deck.title)}</strong><small>${esc(deck.description || "説明なし")}</small></span><b>${deck.card_count}枚</b>
+      <button type="button" class="memoryDeckOpen" data-memory-action="open-folder" data-folder="${esc(folder)}">
+        <span class="memoryDeckIcon">🗂️</span><span><strong>${esc(folder)}</strong><small>${inFolder.length}デッキ・${cards}枚</small></span><b>${inFolder.length}冊</b>
       </button>
-    </article>`).join("")}</div>` : `<div class="memoryCardsEmpty"><span>🌱</span><h3>${esc(activeSubject!.name)}の公開デッキはまだありません</h3><p>自分のデッキを作成し、最初の共有者になれます。</p></div>`);
+    </article>`;
+  });
+  const loose = sharedDecks.filter((deck) => !deck.folder).map(sharedDeckTile);
+  return shell(`<div class="memoryDeckGrid">${folderTiles.concat(loose).join("")}</div>`);
 }
 
 async function repaint(): Promise<void> {
@@ -476,7 +505,7 @@ async function handleAction(target: HTMLElement): Promise<void> {
   message = "";
   if (action === "tab-mine") { activeTab = "mine"; selectedSharedDeckId = null; editor = null; }
   if (action === "tab-public") {
-    activeTab = "public"; selectedDeckId = null; editor = null;
+    activeTab = "public"; selectedDeckId = null; editor = null; openFolder = null;
     try { await loadSharedDecks(); } catch (error) { setMessage(`共有デッキを取得できません: ${shareErrorMessage(error)}`, "error"); }
   }
   if (action === "new-deck") { activeTab = "mine"; selectedDeckId = null; editor = { kind: "deck" }; }
@@ -514,6 +543,8 @@ async function handleAction(target: HTMLElement): Promise<void> {
     }
   }
   if (action === "back-public") selectedSharedDeckId = null;
+  if (action === "open-folder") openFolder = target.dataset.folder || null;
+  if (action === "back-folder") openFolder = null;
   if (action === "import-shared") {
     try { await importSelectedSharedDeck(); } catch (error) { setMessage(`自分のデッキへ追加できませんでした: ${shareErrorMessage(error)}`, "error"); await repaint(); }
     return;
