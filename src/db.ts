@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from "dexie";
 import type {
   Deck,
+  MemoryMark,
   OutboxRecord,
   ReviewEvent,
   SettingRecord,
@@ -27,6 +28,8 @@ export class StudyDatabase extends Dexie {
   writtenAttempts!: EntityTable<WrittenAttempt, "id">;
   /** 入力途中の下書き。ローカル専用で同期・バックアップの対象外 */
   writtenDrafts!: EntityTable<WrittenDraft, "id">;
+  /** 暗記カードの「覚えた／まだ」。端末内だけで持つ（同期しない） */
+  memoryMarks!: EntityTable<MemoryMark, "cardId">;
 
   constructor() {
     super("metabolism-study-v2");
@@ -87,6 +90,17 @@ export class StudyDatabase extends Dexie {
         deck.originSharedDeckId ??= null;
         deck.originVersion ??= null;
       });
+    });
+    this.version(5).stores({
+      cards: "&id, ownerId, deckId, kind, updatedAt, deletedAt, suspendedAt, originDeckId, [originDeckId+originCardId], *tags",
+      decks: "&id, ownerId, system, subjectId, [system+subjectId], order, updatedAt, deletedAt, originSharedDeckId",
+      reviewEvents: "&id, ownerId, cardId, reviewedAt, [cardId+reviewedAt], syncedAt",
+      schedules: "&cardId, due, state, updatedAt",
+      outbox: "++seq, &operationId, table, recordId, status, createdAt",
+      settings: "&key, ownerId, updatedAt",
+      writtenAttempts: "&id, subjectId, questionId, gradedAt, updatedAt, syncedAt, [questionId+gradedAt]",
+      writtenDrafts: "&id, subjectId, questionId, examSessionId, updatedAt",
+      memoryMarks: "&cardId, deckId, status, updatedAt",
     });
   }
 }

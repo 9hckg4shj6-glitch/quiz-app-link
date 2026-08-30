@@ -5,6 +5,7 @@ import {
   DEFAULT_NEW_CARDS_PER_DAY,
   DEFAULT_REVIEWS_PER_DAY,
   type Deck,
+  type MemoryMarkStatus,
   type StudyCard,
 } from "./types";
 
@@ -70,6 +71,11 @@ let sharedDecks: SharedDeckRow[] = [];
 let sharedCards: SharedCardRow[] = [];
 let studyIndex = 0;
 let studyRevealed = false;
+/** カード一覧と「めくる」対象の絞り込み。 */
+type MarkFilter = "all" | "known" | "unsure" | "unmarked";
+let deckFilter: MarkFilter = "all";
+/** めくり始めた時点の並び。途中で分類が変わっても順番がずれないよう固定する。 */
+let studyCardIds: string[] = [];
 let publishInFlight = false;
 
 function esc(value: unknown): string {
@@ -100,6 +106,27 @@ async function cardsFor(deckId: string): Promise<StudyCard[]> {
     .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
 }
 
+async function marksFor(deckId: string): Promise<Map<string, MemoryMarkStatus>> {
+  const marks = await db.memoryMarks.where("deckId").equals(deckId).toArray();
+  return new Map(marks.map((mark) => [mark.cardId, mark.status]));
+}
+
+function markOf(marks: Map<string, MemoryMarkStatus>, cardId: string): MarkFilter {
+  return marks.get(cardId) ?? "unmarked";
+}
+
+function countMarks(cards: StudyCard[], marks: Map<string, MemoryMarkStatus>): Record<MarkFilter, number> {
+  const counts: Record<MarkFilter, number> = { all: cards.length, known: 0, unsure: 0, unmarked: 0 };
+  for (const card of cards) counts[markOf(marks, card.id)] += 1;
+  return counts;
+}
+
+function filterByMark(cards: StudyCard[], marks: Map<string, MemoryMarkStatus>, filter: MarkFilter): StudyCard[] {
+  return filter === "all" ? cards : cards.filter((card) => markOf(marks, card.id) === filter);
+}
+
+const MARK_LABEL: Record<MarkFilter, string> = { all: "すべて", known: "◯ 覚えた", unsure: "△ まだ", unmarked: "未分類" };
+
 function shell(content: string): string {
   const subject = activeSubject!;
   return `
@@ -125,8 +152,12 @@ async function renderMine(): Promise<string> {
   if (editor?.kind === "deck") return renderDeckForm();
   if (selectedDeckId) return renderDeckDetail(selectedDeckId);
   const decks = await memoryDecks();
-  const counts = new Map<string, number>();
-  await Promise.all(decks.map(async (deck) => counts.set(deck.id, (await cardsFor(deck.id)).length)));
+  const counts = new Map<string, { total: number; known: number }>();
+  await Promise.all(decks.map(async (deck) => {
+    const cards = await cardsFor(deck.id);
+    const marks = await marksFor(deck.id);
+    counts.set(deck.id, { total: cards.length, known: countMarks(cards, marks).known });
+  }));
   if (!decks.length) {
     return shell(`
       <div class="memoryCardsEmpty">
@@ -140,8 +171,9 @@ async function renderMine(): Promise<string> {
       <button type="button" class="memoryDeckOpen" data-memory-action="open-deck" data-deck-id="${esc(deck.id)}">
         <span class="memoryDeckIcon">🗂️</span>
         <span><strong>${esc(deck.name)}</strong><small>${esc(deck.description || "説明なし")}</small></span>
-        <b>${counts.get(deck.id) ?? 0}枚</b>
+        <b>${counts.get(deck.id)?.total ?? 0}枚</b>
       </button>
+      ${counts.get(deck.id)?.total ? `<span class="memoryDeckProgress">◯ 覚えた ${counts.get(deck.id)!.known} / ${counts.get(deck.id)!.total}枚</span>` : ""}
       ${deck.originSharedDeckId ? `<span class="memoryOrigin">みんなのデッキから追加</span>` : ""}
     </article>`).join("")}</div>`);
 }
@@ -169,9 +201,19 @@ async function renderDeckDetail(deckId: string): Promise<string> {
     const card = cardEditor.cardId ? cards.find((item) => item.id === cardEditor.cardId) : null;
     return shell(renderCardForm(deck, card ?? null));
   }
-  if (studyIndex >= 0 && studyIndex < cards.length && rootNode?.dataset.studyMode === "true") {
-    return shell(renderStudy(deck, cards));
+  const marks = await marksFor(deckId);
+  if (rootNode?.dataset.studyMode === "true") {
+    const session = studyCardIds
+      .map((id) => cards.find((card) => card.id === id))
+      .filter((card): card is StudyCard => Boolean(card));
+    if (session.length) {
+      studyIndex = Math.min(studyIndex, session.length - 1);
+      return shell(renderStudy(deck, session, marks));
+    }
+    rootNode.dataset.studyMode = "false";
   }
+  const counts = countMarks(cards, marks);
+  const visible = filterByMark(cards, marks, deckFilter);
   return shell(`
     <div class="memoryDeckDetail">
       <div class="memoryDeckDetailHead">
@@ -184,16 +226,24 @@ async function renderDeckDetail(deckId: string): Promise<string> {
         </div>
       </div>
       <div class="memoryDeckTitle"><div><span>MY DECK</span><h3>${esc(deck.name)}</h3><p>${esc(deck.description || "説明なし")}</p></div><strong>${cards.length}枚</strong></div>
+      ${cards.length ? `<div class="memoryProgress">
+        <div class="memoryProgressBar"><span class="known" style="width:${Math.round((counts.known / cards.length) * 100)}%"></span><span class="unsure" style="width:${Math.round((counts.unsure / cards.length) * 100)}%"></span></div>
+        <div class="memoryFilterRow">${(["all", "unsure", "unmarked", "known"] as MarkFilter[]).map((filter) => `
+          <button type="button" class="memoryFilterChip ${deckFilter === filter ? "active" : ""}" data-memory-action="set-filter" data-filter="${filter}">${MARK_LABEL[filter]} ${counts[filter]}</button>`).join("")}
+          <button type="button" class="memoryFilterChip reset" data-memory-action="reset-marks" ${counts.known + counts.unsure ? "" : "disabled"}>分類をリセット</button>
+        </div>
+      </div>` : ""}
       <div class="memoryDeckActionRow">
         <button type="button" class="btn primary" data-memory-action="new-card">＋ カードを作成</button>
-        <button type="button" class="btn ghost" data-memory-action="study-deck" ${cards.length ? "" : "disabled"}>カードをめくる</button>
+        <button type="button" class="btn ghost" data-memory-action="study-deck" ${visible.length ? "" : "disabled"}>${deckFilter === "all" ? "カードをめくる" : `${MARK_LABEL[deckFilter]}をめくる（${visible.length}枚）`}</button>
       </div>
-      ${cards.length ? `<div class="memoryCardList">${cards.map((card, index) => `
+      ${cards.length ? (visible.length ? `<div class="memoryCardList">${visible.map((card, index) => `
         <article class="memoryCardRow">
           <span class="memoryCardNumber">${index + 1}</span>
           <button type="button" class="memoryCardBody" data-memory-action="edit-card" data-card-id="${esc(card.id)}"><strong>${esc(card.front)}</strong><small>${esc(card.back)}</small></button>
+          <span class="memoryMarkBadge ${markOf(marks, card.id)}">${MARK_LABEL[markOf(marks, card.id)]}</span>
           <button type="button" class="memoryCardDelete" aria-label="カードを削除" data-memory-action="delete-card" data-card-id="${esc(card.id)}">✕</button>
-        </article>`).join("")}</div>` : `<div class="memoryCardsEmpty compact"><p>カードはまだありません。</p></div>`}
+        </article>`).join("")}</div>` : `<div class="memoryCardsEmpty compact"><p>「${MARK_LABEL[deckFilter]}」のカードはありません。</p></div>`) : `<div class="memoryCardsEmpty compact"><p>カードはまだありません。</p></div>`}
     </div>`);
 }
 
@@ -209,18 +259,23 @@ function renderCardForm(deck: Deck, card: StudyCard | null): string {
     </form>`;
 }
 
-function renderStudy(deck: Deck, cards: StudyCard[]): string {
+function renderStudy(deck: Deck, cards: StudyCard[], marks: Map<string, MemoryMarkStatus>): string {
   const card = cards[studyIndex];
+  const status = markOf(marks, card.id);
   const html = `
     <div class="memoryStudy">
-      <div class="memoryDeckDetailHead"><button type="button" class="btn ghost small" data-memory-action="stop-study">← ${esc(deck.name)}</button><span>${studyIndex + 1} / ${cards.length}</span></div>
+      <div class="memoryDeckDetailHead"><button type="button" class="btn ghost small" data-memory-action="stop-study">← ${esc(deck.name)}</button><span>${studyIndex + 1} / ${cards.length}<b class="memoryMarkBadge ${status}">${MARK_LABEL[status]}</b></span></div>
       <button type="button" class="memoryStudyCard ${studyRevealed ? "revealed" : ""} ${studyFlipIn ? "flipIn" : ""}" data-memory-action="reveal-card">
         <small>${studyRevealed ? "答え" : "質問"}</small>
         <strong>${esc(studyRevealed ? card.back : card.front)}</strong>
         ${studyRevealed && card.explanation ? `<p>${esc(card.explanation)}</p>` : ""}
         <span>${studyRevealed ? "もう一度押すと質問へ戻ります" : "押して答えを見る"}</span>
       </button>
-      <div class="memoryStudyControls"><button type="button" class="btn ghost" data-memory-action="previous-card" ${studyIndex === 0 ? "disabled" : ""}>← 前へ</button><button type="button" class="btn primary" data-memory-action="next-card">${studyIndex === cards.length - 1 ? "終了" : "次へ →"}</button></div>
+      <div class="memoryStudyMarks">
+        <button type="button" class="memoryMarkBtn unsure ${status === "unsure" ? "active" : ""}" data-memory-action="mark-unsure">△ まだ</button>
+        <button type="button" class="memoryMarkBtn known ${status === "known" ? "active" : ""}" data-memory-action="mark-known">◯ 覚えた</button>
+      </div>
+      <div class="memoryStudyControls"><button type="button" class="btn ghost" data-memory-action="previous-card" ${studyIndex === 0 ? "disabled" : ""}>← 前へ</button><button type="button" class="btn ghost" data-memory-action="next-card">${studyIndex === cards.length - 1 ? "終了" : "次へ →"}</button></div>
     </div>`;
   studyFlipIn = false;
   return html;
@@ -500,6 +555,22 @@ async function importSelectedSharedDeck(): Promise<void> {
   await repaint();
 }
 
+/** 最後の1枚を終えたら、このセッションの分類結果を伝えて一覧へ戻る。 */
+async function advanceStudy(): Promise<void> {
+  if (studyIndex < studyCardIds.length - 1) {
+    studyIndex += 1;
+    studyRevealed = false;
+    return;
+  }
+  const marks = selectedDeckId ? await marksFor(selectedDeckId) : new Map<string, MemoryMarkStatus>();
+  const known = studyCardIds.filter((id) => marks.get(id) === "known").length;
+  const unsure = studyCardIds.filter((id) => marks.get(id) === "unsure").length;
+  if (rootNode) rootNode.dataset.studyMode = "false";
+  studyIndex = 0;
+  studyRevealed = false;
+  setMessage(`めくり終わりました。◯ 覚えた ${known}枚 / △ まだ ${unsure}枚。`, "success");
+}
+
 async function handleAction(target: HTMLElement): Promise<void> {
   const action = target.dataset.memoryAction;
   message = "";
@@ -510,19 +581,27 @@ async function handleAction(target: HTMLElement): Promise<void> {
   }
   if (action === "new-deck") { activeTab = "mine"; selectedDeckId = null; editor = { kind: "deck" }; }
   if (action === "cancel-editor") editor = null;
-  if (action === "open-deck") selectedDeckId = target.dataset.deckId || null;
+  if (action === "open-deck") { selectedDeckId = target.dataset.deckId || null; deckFilter = "all"; }
+  if (action === "set-filter") deckFilter = (target.dataset.filter as MarkFilter) || "all";
+  if (action === "reset-marks" && selectedDeckId && confirm("このデッキの「覚えた／まだ」の分類をすべて消しますか？")) {
+    await db.memoryMarks.where("deckId").equals(selectedDeckId).delete();
+    deckFilter = "all";
+    setMessage("分類をリセットしました。", "success");
+  }
   if (action === "back-decks") { selectedDeckId = null; editor = null; }
   if (action === "new-card") editor = { kind: "card", cardId: null };
   if (action === "edit-card") editor = { kind: "card", cardId: target.dataset.cardId || null };
   if (action === "delete-card" && target.dataset.cardId && confirm("このカードを削除しますか？")) {
     const card = await db.cards.get(target.dataset.cardId);
     if (card) await saveCard({ ...card, deletedAt: nowIso(), updatedAt: nowIso(), version: card.version + 1 });
+    await db.memoryMarks.delete(target.dataset.cardId);
   }
   if (action === "delete-deck" && selectedDeckId && confirm("このデッキと中のカードを削除しますか？")) {
     const deck = await db.decks.get(selectedDeckId);
     if (deck) {
       for (const card of await cardsFor(deck.id)) await saveCard({ ...card, deletedAt: nowIso(), updatedAt: nowIso(), version: card.version + 1 });
       await saveDeck({ ...deck, deletedAt: nowIso(), updatedAt: nowIso(), version: deck.version + 1 });
+      await db.memoryMarks.where("deckId").equals(deck.id).delete();
       selectedDeckId = null;
       setMessage("デッキを削除しました。", "success");
     }
@@ -549,8 +628,23 @@ async function handleAction(target: HTMLElement): Promise<void> {
     try { await importSelectedSharedDeck(); } catch (error) { setMessage(`自分のデッキへ追加できませんでした: ${shareErrorMessage(error)}`, "error"); await repaint(); }
     return;
   }
-  if (action === "study-deck" && rootNode) { rootNode.dataset.studyMode = "true"; studyIndex = 0; studyRevealed = false; }
-  if (action === "stop-study" && rootNode) rootNode.dataset.studyMode = "false";
+  if (action === "study-deck" && rootNode && selectedDeckId) {
+    const cards = await cardsFor(selectedDeckId);
+    studyCardIds = filterByMark(cards, await marksFor(selectedDeckId), deckFilter).map((card) => card.id);
+    if (studyCardIds.length) { rootNode.dataset.studyMode = "true"; studyIndex = 0; studyRevealed = false; }
+  }
+  if (action === "stop-study" && rootNode) { rootNode.dataset.studyMode = "false"; studyRevealed = false; }
+  if ((action === "mark-known" || action === "mark-unsure") && selectedDeckId) {
+    const cardId = studyCardIds[studyIndex];
+    if (cardId) {
+      await db.memoryMarks.put({
+        cardId, deckId: selectedDeckId,
+        status: action === "mark-known" ? "known" : "unsure",
+        updatedAt: nowIso(),
+      });
+      await advanceStudy();
+    }
+  }
   if (action === "reveal-card") {
     studyRevealed = !studyRevealed;
     const card = target.closest<HTMLElement>(".memoryStudyCard");
@@ -561,11 +655,7 @@ async function handleAction(target: HTMLElement): Promise<void> {
     }
   }
   if (action === "previous-card") { studyIndex = Math.max(0, studyIndex - 1); studyRevealed = false; }
-  if (action === "next-card" && selectedDeckId) {
-    const cards = await cardsFor(selectedDeckId);
-    if (studyIndex >= cards.length - 1) { if (rootNode) rootNode.dataset.studyMode = "false"; studyIndex = 0; }
-    else { studyIndex += 1; studyRevealed = false; }
-  }
+  if (action === "next-card") await advanceStudy();
   await repaint();
 }
 
@@ -578,6 +668,8 @@ export async function renderMemoryCards(root: HTMLElement, subject: MemoryCardSu
     selectedSharedDeckId = null;
     editor = null;
     message = "";
+    deckFilter = "all";
+    studyCardIds = [];
     root.dataset.studyMode = "false";
   } else {
     activeSubject = subject;

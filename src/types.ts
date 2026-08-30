@@ -237,6 +237,16 @@ export interface WrittenDraft {
   updatedAt: string;
 }
 
+/** 暗記カードをめくったときの自己申告。ローカル専用で同期しない。 */
+export type MemoryMarkStatus = "known" | "unsure";
+
+export interface MemoryMark {
+  cardId: string;
+  deckId: string;
+  status: MemoryMarkStatus;
+  updatedAt: string;
+}
+
 export interface StudyCard {
   id: string;
   ownerId: string | null;
