@@ -11,6 +11,14 @@ declare global {
     QUIZ_DATA?: Array<Record<string, unknown>>;
     TERM_CARDS?: Array<Record<string, unknown>>;
     __CUSTOM_TERM_CARDS?: Array<Record<string, unknown>>;
+    /** 科目に同梱する公式の暗記デッキ（subjects.js の memoryDecks で読み込む）。 */
+    MEMORY_DECKS?: Array<{
+      id: string;
+      subjectId: string;
+      title: string;
+      description?: string;
+      cards: Array<{ id: string; front: string; back: string; explanation?: string; tags?: string[] }>;
+    }>;
     __legacyAppRefresh?: () => void;
     STUDY_CORE?: {
       ui: {

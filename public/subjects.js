@@ -8,9 +8,11 @@
      2. public/subjects/<id>/terms.js を作る  （window.TERM_CARDS = [...]）
         ※ カードが無い科目は terms を省略してよい
      3. 図があれば public/images/<id>/ に置く
-     4. 「学習」画面を出す科目は public/subjects/<id>/lessons.js を作る
+     4. 暗記カードの公式デッキを出す科目は public/subjects/<id>/memory-deck.js を作る
+        （window.MEMORY_DECKS = [{ id, subjectId, title, description, cards:[{id,front,back,explanation,tags}] }]）
+     5. 「学習」画面を出す科目は public/subjects/<id>/lessons.js を作る
         （window.LESSONS = [...]。授業回は問題の slideRefs から自動で並ぶので省略可）
-     5. この配列に1行足す
+     6. この配列に1行足す
 
    【重要】問題ID・カードIDは必ず科目ごとに一意にすること。
    進捗（localStorage）とFSRSの復習予定（IndexedDB）はIDで紐づいているため、
@@ -103,6 +105,7 @@ window.SUBJECTS = [
     learningMode: "lessons",
     questions: "subjects/plantphysiology/questions.js",
     lessons: "subjects/plantphysiology/lessons.js",   // 「📖 学習」画面の要点テキスト
+    memoryDecks: "subjects/plantphysiology/memory-deck.js",  // 暗記カードの「みんなのデッキ」に出す公式デッキ
     // 2025年度（令和7年度）前期の43問・100点。
     //   選択27問（うち「2つ選べ」3問）＋記述16問（短答9・記述式3・穴埋め3・記述＋記号1）
     // 2024年度（令和6年度）前期の40問・100点。

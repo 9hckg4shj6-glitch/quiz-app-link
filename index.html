@@ -2306,14 +2306,16 @@
   }
   async function fetchSubjectData(sub){
     if(SUBJECT_CACHE[sub.id]) return SUBJECT_CACHE[sub.id];
-    window.QUIZ_DATA=[]; window.TERM_CARDS=[]; window.LESSONS=[];
-    if(sub.questions) await loadScript(sub.questions);
-    if(sub.terms)     await loadScript(sub.terms);
-    if(sub.lessons)   await loadScript(sub.lessons);
+    window.QUIZ_DATA=[]; window.TERM_CARDS=[]; window.LESSONS=[]; window.MEMORY_DECKS=[];
+    if(sub.questions)   await loadScript(sub.questions);
+    if(sub.terms)       await loadScript(sub.terms);
+    if(sub.lessons)     await loadScript(sub.lessons);
+    if(sub.memoryDecks) await loadScript(sub.memoryDecks);
     const data={
       questions: Array.isArray(window.QUIZ_DATA) ? window.QUIZ_DATA : [],
       terms:     Array.isArray(window.TERM_CARDS) ? window.TERM_CARDS : [],
-      lessons:   Array.isArray(window.LESSONS) ? window.LESSONS : []
+      lessons:   Array.isArray(window.LESSONS) ? window.LESSONS : [],
+      memoryDecks: Array.isArray(window.MEMORY_DECKS) ? window.MEMORY_DECKS : []
     };
     SUBJECT_CACHE[sub.id]=data;
     return data;
@@ -2326,6 +2328,7 @@
     window.QUIZ_DATA = data.questions;
     window.TERM_CARDS = data.terms;
     window.LESSONS = data.lessons;
+    window.MEMORY_DECKS = data.memoryDecks;
     currentSubjectId = sub.id;
     saveSubjectId(sub.id);
     document.documentElement.style.setProperty("--subject-accent", sub.accent || "");

@@ -36,6 +36,17 @@ interface SharedCardRow {
   position: number;
 }
 
+/** アプリに同梱する公式デッキ（public/subjects/<id>/memory-deck.js）。Supabase無しでも全員が見られる。 */
+interface BundledDeck {
+  id: string;
+  subjectId: string;
+  title: string;
+  description?: string;
+  cards: Array<{ id: string; front: string; back: string; explanation?: string; tags?: string[] }>;
+}
+
+const OFFICIAL_OWNER = "official";
+
 type EditorState =
   | { kind: "deck" }
   | { kind: "card"; cardId: string | null }
@@ -71,16 +82,18 @@ function setMessage(next: string, kind: typeof messageKind = "info"): void {
   messageKind = kind;
 }
 
+// 全件スキャンだとカードが増えるほど再描画が重くなるため、索引で引く。
 async function memoryDecks(): Promise<Deck[]> {
   if (!activeSubject) return [];
-  return db.decks
-    .filter((deck) => deck.system === "memory" && deck.subjectId === activeSubject!.id && !deck.deletedAt)
-    .sortBy("order");
+  const decks = await db.decks.where("[system+subjectId]").equals(["memory", activeSubject.id]).toArray();
+  return decks.filter((deck) => !deck.deletedAt).sort((a, b) => a.order - b.order);
 }
 
 async function cardsFor(deckId: string): Promise<StudyCard[]> {
-  const cards = await db.cards.filter((card) => card.deckId === deckId && !card.deletedAt).sortBy("createdAt");
-  return cards;
+  const cards = await db.cards.where("deckId").equals(deckId).toArray();
+  return cards
+    .filter((card) => !card.deletedAt)
+    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
 }
 
 function shell(content: string): string {
@@ -209,11 +222,17 @@ function renderStudy(deck: Deck, cards: StudyCard[]): string {
   return html;
 }
 
+function bundledDecks(): BundledDeck[] {
+  if (!activeSubject) return [];
+  return (window.MEMORY_DECKS ?? []).filter((deck) => deck.subjectId === activeSubject!.id);
+}
+
 async function loadSharedDecks(): Promise<void> {
-  if (!activeSubject || !supabase) {
-    sharedDecks = [];
-    return;
-  }
+  sharedDecks = bundledDecks().map((deck) => ({
+    id: deck.id, owner_id: OFFICIAL_OWNER, subject_id: deck.subjectId, title: deck.title,
+    description: deck.description ?? "", version: 1, card_count: deck.cards.length, published_at: "",
+  }));
+  if (!activeSubject || !supabase) return;
   const { data, error } = await supabase
     .from("shared_memory_decks")
     .select("id,owner_id,subject_id,title,description,version,card_count,published_at")
@@ -222,11 +241,20 @@ async function loadSharedDecks(): Promise<void> {
     .is("deleted_at", null)
     .order("published_at", { ascending: false });
   if (error) throw error;
-  sharedDecks = (data ?? []) as SharedDeckRow[];
+  sharedDecks = sharedDecks.concat((data ?? []) as SharedDeckRow[]);
 }
 
 async function loadSharedCards(deckId: string): Promise<void> {
   sharedCards = [];
+  const bundled = bundledDecks().find((deck) => deck.id === deckId);
+  if (bundled) {
+    sharedCards = bundled.cards.map((card, index) => ({
+      id: `${deckId}:${card.id}`, shared_deck_id: deckId, origin_card_id: card.id,
+      front: card.front, back: card.back, explanation: card.explanation ?? "",
+      tags: card.tags ?? [], position: index,
+    }));
+    return;
+  }
   if (!supabase) return;
   const { data, error } = await supabase
     .from("shared_memory_cards")
@@ -238,7 +266,7 @@ async function loadSharedCards(deckId: string): Promise<void> {
 }
 
 async function renderPublic(): Promise<string> {
-  if (!supabase) {
+  if (!supabase && !bundledDecks().length) {
     return shell(`<div class="memoryCardsEmpty"><span>☁️</span><h3>共有機能は準備中です</h3><p>Supabaseの接続設定後に「みんなのデッキ」を利用できます。自分のデッキは端末内で利用できます。</p></div>`);
   }
   if (selectedSharedDeckId) {
@@ -246,7 +274,7 @@ async function renderPublic(): Promise<string> {
     if (!deck) selectedSharedDeckId = null;
     else return shell(`
       <div class="memoryDeckDetail">
-        <div class="memoryDeckDetailHead"><button type="button" class="btn ghost small" data-memory-action="back-public">← みんなのデッキ</button><span>公開版 v${deck.version}</span></div>
+        <div class="memoryDeckDetailHead"><button type="button" class="btn ghost small" data-memory-action="back-public">← みんなのデッキ</button><span>${deck.owner_id === OFFICIAL_OWNER ? "公式デッキ" : `公開版 v${deck.version}`}</span></div>
         <div class="memoryDeckTitle"><div><span>SHARED DECK</span><h3>${esc(deck.title)}</h3><p>${esc(deck.description || "説明なし")}</p></div><strong>${deck.card_count}枚</strong></div>
         <div class="memoryDeckActionRow"><button type="button" class="btn primary" data-memory-action="import-shared">自分のデッキに追加</button></div>
         <div class="memoryCardList">${sharedCards.map((card, index) => `<article class="memoryCardRow preview"><span class="memoryCardNumber">${index + 1}</span><span class="memoryCardBody"><strong>${esc(card.front)}</strong><small>${esc(card.back)}</small></span></article>`).join("")}</div>
@@ -255,7 +283,7 @@ async function renderPublic(): Promise<string> {
   return shell(sharedDecks.length ? `<div class="memoryDeckGrid">${sharedDecks.map((deck) => `
     <article class="memoryDeckCard shared">
       <button type="button" class="memoryDeckOpen" data-memory-action="open-shared" data-shared-id="${esc(deck.id)}">
-        <span class="memoryDeckIcon">🌐</span><span><strong>${esc(deck.title)}</strong><small>${esc(deck.description || "説明なし")}</small></span><b>${deck.card_count}枚</b>
+        <span class="memoryDeckIcon">${deck.owner_id === OFFICIAL_OWNER ? "📌" : "🌐"}</span><span><strong>${esc(deck.title)}</strong><small>${esc(deck.description || "説明なし")}</small></span><b>${deck.card_count}枚</b>
       </button>
     </article>`).join("")}</div>` : `<div class="memoryCardsEmpty"><span>🌱</span><h3>${esc(activeSubject!.name)}の公開デッキはまだありません</h3><p>自分のデッキを作成し、最初の共有者になれます。</p></div>`);
 }
