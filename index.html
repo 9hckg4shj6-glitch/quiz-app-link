@@ -698,7 +698,7 @@
   .qbSectLabel{font-size:12.5px;font-weight:900;color:var(--muted);margin:16px 2px 9px;letter-spacing:.02em}
   .qbSectLabel:first-child{margin-top:2px}
   .qbGroupList{display:grid;gap:10px;margin-bottom:6px}
-  .qbNum{flex:0 0 auto;min-width:28px;height:24px;padding:0 7px;border-radius:8px;background:color-mix(in srgb,var(--brand) 13%,var(--card2));color:var(--brand);font-weight:900;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+  .qbNum{flex:0 0 auto;min-width:28px;height:24px;padding:0 7px;white-space:nowrap;border-radius:8px;background:color-mix(in srgb,var(--brand) 13%,var(--card2));color:var(--brand);font-weight:900;font-size:12.5px;display:flex;align-items:center;justify-content:center}
   .qbBack .qbChoices{list-style:none;margin:0;padding:0;display:grid;gap:7px}
   .qbChoice{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card2)}
   .qbChoice.ok{border-color:var(--good);background:var(--good-bg)}
@@ -1841,7 +1841,7 @@
   <!-- ===== VIEW: カード ===== -->
   <section id="memoryCardsView" class="hidden">
     <div class="reviewTop">
-      <button class="btn ghost small" type="button" onclick="renderHome('back')">← ホーム</button>
+      <button class="btn ghost small viewBack" type="button">← ホーム</button>
       <span class="pill">暗記カード</span>
     </div>
     <div id="memoryCardsRoot" class="homeSection"></div>
@@ -2888,7 +2888,7 @@
   function openReviewList(kind){
     stopExamTimer(); closeFcLightbox();
     const bookmark=kind==="bookmark";
-    const items=(bookmark?bookmarkItems():weakItems()).slice().sort((a,b)=>qbNum(a.id)-qbNum(b.id));
+    const items=qbSortByQNo(bookmark?bookmarkItems():weakItems());
     qbrowseState={group:{key:bookmark?"__bookmark__":"__weak__",label:bookmark?"見直したい問題":"苦手問題",items,mode:"playlist"},
       page:0,selected:new Set(),origin:"reviewView"};
     transitionToScreen("qbrowse","forward",renderQBrowse);
@@ -4947,7 +4947,22 @@
   const QB_SPEC_ICONS=["🔥","⚡"];
   const QB_WRITTEN_ICONS=["✎","🖊"];
   const QB_W_PREFIX="__w__";
-  function qbNum(id){ const m=String(id).match(/\d+/g); return m?parseInt(m[m.length-1],10):0; }
+  // 原本の出題順に並べる。IDの「末尾の数字だけ」で並べると 問7(2)・問13(2)・問14(2) が
+  // どれも 2 になって順序が崩れるので、IDに含まれる数字を上位から順に比べる。
+  //   plantphysiology-r7-q13-02 → [7,13,2] ／ 2024-001 → [2024,1]
+  function qbNumKey(id){ return (String(id).match(/\d+/g)||[]).map(Number); }
+  function qbSortByQNo(list){
+    return list.slice().sort((a,b)=>{
+      const x=qbNumKey(a.id), y=qbNumKey(b.id);
+      for(let i=0;i<Math.max(x.length,y.length);i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d; }
+      return 0;
+    });
+  }
+  // 番号バッジ。category が「問13(2)」のような原本の設問番号ならそれを、無ければID末尾の通し番号を出す
+  function qbNumLabel(q){
+    if(/^問/.test(q.category||"")) return q.category;
+    const k=qbNumKey(q.id); return String(k.length?k[k.length-1]:0);
+  }
   function qbKanjiOrder(label){
     // 「代謝第十三回予想問題」→ 13。模試などは末尾に回す。
     const m=String(label).match(/第([〇一二三四五六七八九十百]+)回/);
@@ -5071,7 +5086,7 @@
     $("#qbrowseIndex").classList.add("hidden");
     $("#qbrowseResultsWrap").classList.remove("hidden");
     const g=qbrowseState.group;
-    const items=g.items.slice().sort((a,b)=>qbNum(a.id)-qbNum(b.id));
+    const items=qbSortByQNo(g.items);
     const per=QB_PAGE;
     if(!items.length){
       $("#qbrowseInfo").innerHTML="";
@@ -5102,7 +5117,7 @@
           <button type="button" class="qbSel${sel?" on":""}" aria-pressed="${sel?"true":"false"}"
             aria-label="この問題を選ぶ"><span class="qbSelBox"></span></button>
           <button type="button" class="brHead">
-            <span class="qbNum">${qbNum(q.id)}</span>
+            <span class="qbNum">${esc(qbNumLabel(q))}</span>
             <span class="brFront">${qUnderlineHTML(q)}</span>
             <span class="brMeta">${field}${fig}${status}</span>
             <span class="brChev">›</span>
@@ -7016,7 +7031,7 @@
     if(confirm(`本番モードを開始します。\n・分野バランスの${EXAM_N}問\n・制限 ${EXAM_MIN}分\n${scoring}\n・途中で正誤や解説は出ません\nよろしいですか？`)) startExam(); };
 
   /* ビュー（各画面）の戻るボタン */
-  document.querySelectorAll(".viewBack").forEach(b=>{ b.onclick=renderHome; });
+  document.querySelectorAll(".viewBack").forEach(b=>{ b.onclick=()=>renderHome("back"); });
   $("#mistakesBack").onclick=()=>openView("reviewView");
   $("#weakFieldBack").onclick=()=>openView("reviewView");
   /* コミュニティは階層があるため、掲示板を開いていれば一覧へ戻る */
