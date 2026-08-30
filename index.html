@@ -2360,6 +2360,8 @@
     if(!currentSubjectId) return;
     let seen=0; DATA.forEach(q=>{ const r=progress[q.id]; if(r&&r.seen>0) seen++; });
     meta.subjectStats=meta.subjectStats||{};
+    const prev=meta.subjectStats[currentSubjectId];
+    if(prev && prev.total===DATA.length && prev.seen===seen) return;   // 変化が無ければ保存しない
     meta.subjectStats[currentSubjectId]={total:DATA.length, seen};
     saveMeta();
   }
@@ -3114,13 +3116,17 @@
   }
   function transitionToScreen(id,direction,prepare){
     const target=$("#"+id); if(!target) return;
-    const change=()=>{
+    // View Transition 中はページ全体がフェードインするので、セクション単体の
+    // 入場アニメーションを重ねない（二重フェードで遷移が重く見えていた）。
+    const change=(animateSection)=>{
       hideAllScreens();
       if(prepare) prepare();
       target.classList.remove("hidden","screen-enter-forward","screen-enter-back","screen-enter-tab");
-      const cls=direction==="back"?"screen-enter-back":direction==="tab"?"screen-enter-tab":"screen-enter-forward";
-      target.classList.add(cls);
-      setTimeout(()=>target.classList.remove(cls),280);
+      if(animateSection){
+        const cls=direction==="back"?"screen-enter-back":direction==="tab"?"screen-enter-tab":"screen-enter-forward";
+        target.classList.add(cls);
+        setTimeout(()=>target.classList.remove(cls),280);
+      }
       currentScreenId=id;
       document.body.classList.toggle("focus-mode",id==="quiz"||id==="flash");
       updatePrimaryNav(id);
@@ -3128,8 +3134,8 @@
       window.scrollTo(0,0);
     };
     const reduce=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if(document.startViewTransition&&!reduce){ document.startViewTransition(change); }
-    else change();
+    if(document.startViewTransition&&!reduce){ document.startViewTransition(()=>change(false)); }
+    else change(true);
   }
   function learningDestination(){
     const sub=currentSubject(), mode=sub&&sub.learningMode;
@@ -3153,20 +3159,30 @@
     document.querySelectorAll('[data-menu-view="cardsView"],[data-menu-action="browse"]')
       .forEach(el=>el.classList.toggle("hidden", hideCards));
   }
-  function refreshData(){
+  /* 画面遷移のたびに全画面を作り直すと、その処理が View Transition の中で走って
+     アニメーションが止まって見える（暗記カード→ホームがもたつく原因）。
+     いま見えている画面に必要な描画だけを行う。 */
+  const SCREEN_RENDER={
+    home:()=>{ renderLead(); renderDue(); },
+    practiceView:()=>{ renderScopeLists(); renderQuick(); renderExamDay(); refreshPendingExam(); },
+    statsView:()=>{ renderHero(); renderKpis(); renderHeatmap(); renderAch(); },
+    reviewView:()=>{ renderDue(); renderPlaylists(); renderReviewHub(); refreshPendingExam(); },
+    moreView:()=>{ renderUpdatesHome(); }
+  };
+  // screenId 省略時はいま開いている画面。遷移中は currentScreenId が古いため呼び出し側が渡す。
+  function refreshData(screenId){
     updateSubjectStats();
     renderSubjectFeatures();
-    renderBadge(); renderLead(); renderDue(); renderScopeLists(); renderPlaylists(); renderQuick();
-    renderHero(); renderKpis(); renderHeatmap(); renderAch(); renderUpdatesHome();
-    renderExamDay(); renderReviewHub();
+    renderBadge();
+    const render=SCREEN_RENDER[screenId||currentScreenId];
+    if(render) render();
   }
   function renderHome(direction){
     stopExamTimer(); closeFcLightbox();
     transitionToScreen("home",direction||"back",()=>{
       syncCmUnread();
-      refreshData(); renderHub();
+      refreshData("home"); renderHub();
       refreshCmUnread(false);
-      refreshPendingExam();
     });
   }
   /* 採点途中で閉じた試験を、ホームから再開できるようにする（§9.2） */
@@ -3202,7 +3218,7 @@
     if(VIEWS.indexOf(id)===-1){ renderHome(); return; }
     stopExamTimer(); closeFcLightbox();
     transitionToScreen(id,"tab",()=>{
-      refreshData();
+      refreshData(id);
       if(id==="inputView"){ renderLessonList(); }
       if(id==="rankView"){ renderRank(true); startRankTimer(); }
       if(id==="statsView"){ renderForgetCurve(); }
@@ -3210,7 +3226,6 @@
       if(id==="moreView"){ renderSyncBlock(); }
       if(id==="mistakesView"){ renderMistakes(); }
       if(id==="weakFieldView"){ renderWeakFields(); }
-      if(id==="reviewView"){ refreshPendingExam(); }
       if(id==="cardsView"){ renderCardHome(); }
       if(id==="memoryCardsView"){ renderMemoryCardsView(); }
     });
