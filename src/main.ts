@@ -302,6 +302,12 @@ window.STUDY_CORE = {
 
 registerSW({
   immediate: true,
+  // 既定では新版が有効になった瞬間にページを再読み込みするため、演習や学習の途中でも
+  // ホーム画面へ戻されてしまう。再読み込みは旧UI側へ委ね、手が空いてから適用する。
+  onNeedReload() {
+    if (window.__studyAppUpdateReady) window.__studyAppUpdateReady();
+    else window.location.reload();
+  },
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
     // 短時間に何度も叩かないよう最低30秒はあける（タブ切り替えのたびに走るため）。

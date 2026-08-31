@@ -3177,13 +3177,17 @@
     const render=SCREEN_RENDER[screenId||currentScreenId];
     if(render) render();
   }
+  // ホームの中身だけを描き直す。画面遷移もスクロール位置のリセットも伴わない。
+  function renderHomeContent(){
+    syncCmUnread();
+    refreshData("home"); renderHub();
+    refreshCmUnread(false);
+  }
   function renderHome(direction){
     stopExamTimer(); closeFcLightbox();
-    transitionToScreen("home",direction||"back",()=>{
-      syncCmUnread();
-      refreshData("home"); renderHub();
-      refreshCmUnread(false);
-    });
+    transitionToScreen("home",direction||"back",renderHomeContent);
+    // 科目えらびから入った直後（"forward"）だけは、再読み込みすると科目えらびへ戻るので見送る
+    if(direction!=="forward") applyAppUpdateIfIdle(true);
   }
   /* 採点途中で閉じた試験を、ホームから再開できるようにする（§9.2） */
   function refreshPendingExam(){
@@ -4443,9 +4447,13 @@
   // （起動直後の自動同期が科目えらびからホームへ飛ばしてしまう不具合の対策）
   function refreshCurrentScreen(){
     if(!$("#subjectPicker").classList.contains("hidden")){ updateSubjectStats(); renderSubjectPicker(); return; }
-    if(!$("#home").classList.contains("hidden")){ renderHome(); return; }
-    // 演習中・カード中などは何もしない（操作の邪魔をしない）
-    if(VIEWS.some(v=>!$("#"+v).classList.contains("hidden"))) refreshData();
+    // ホームにいるときも遷移はやり直さない（読んでいる途中でスクロールが先頭へ飛ぶため）
+    if(!$("#home").classList.contains("hidden")){ renderHomeContent(); return; }
+    // 演習中・カード中などは、いま見えている画面の数字を更新するだけ（操作の邪魔をしない）
+    if(VIEWS.some(v=>!$("#"+v).classList.contains("hidden"))){
+      refreshData();
+      if(currentScreenId==="cardsView") renderCardHome();
+    }
   }
   function renderLegacySyncArea(area,ds){
     if(!area) return;
@@ -7430,13 +7438,33 @@
     if(cell!==""||row.length){ row.push(cell); rows.push(row); } return rows;
   }
 
+  /* ---------- 新しいバージョンの適用タイミング ---------- */
+  /* Service Worker が新版を有効化すると、既定ではその場でページが再読み込みされる。
+     演習や学習の途中でも起きるため「いつのまにかホームに戻された」ように見えていた。
+     利用者がホームにいる／ホームへ戻るまで待ってから適用する。 */
+  let appUpdatePending=false;
+  // ホームにいる／ホームへ戻るときだけ適用する。演習・学習・一覧の途中では保留しておく。
+  function applyAppUpdateIfIdle(goingHome){
+    if(!appUpdatePending) return;
+    if(!goingHome && currentScreenId!=="home") return;
+    appUpdatePending=false;
+    location.reload();
+  }
+  window.__studyAppUpdateReady=()=>{
+    appUpdatePending=true;
+    if(currentScreenId==="home"){ applyAppUpdateIfIdle(); return; }
+    toast("🆕 新しいバージョンがあります。ホームに戻ったときに更新します");
+  };
+
   /* ---------- 起動 ---------- */
   // 科目データは非同期で読むため、DATAが入るまで renderHome() を待つ。
+  /* 同期やカード編集の完了後に呼ばれる。ここで画面を切り替えると、演習・学習の
+     途中の利用者がホームへ引き戻される（自動同期は5分ごと・アプリ復帰時にも走る）。
+     いま開いている画面を更新するだけにとどめる。 */
   window.__legacyAppRefresh=()=>{
     if(!currentSubjectId) return;
     loadProgress(); loadData();
-    if(currentScreenId==="cardsView"){ refreshData(); renderCardHome(); }
-    else renderHome();
+    refreshCurrentScreen();
   };
   (async function boot(){
     const firstLaunch = isFirstEverLaunch();
