@@ -71,6 +71,7 @@ window.SUBJECTS = [
     learningMode: "lessons",
     questions: "subjects/immunology2/questions.js",
     lessons: "subjects/immunology2/lessons.js",   // 「📖 学習」画面の要点テキスト
+    memoryDecks: "subjects/immunology2/memory-deck.js",  // 暗記カードの「みんなのデッキ」に出す公式デッキ
     // 2025年度（令和7年度）後半のマーク85問 ＋ 2024年度（令和6年度）後半のマーク80問・記述6問
     // ＋ 2023年度（令和5年度）後半のマーク80問・記述6問
     // ＋ 2022年度（令和4年度）後半のマーク83問・記述6問

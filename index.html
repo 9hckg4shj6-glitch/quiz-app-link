@@ -3080,6 +3080,9 @@
   const VIEWS=["inputView","practiceView","memoryCardsView","cardsView","reviewView","weakFieldView","statsView","rankView","communityView","mistakesView","moreView"];
   const SCREEN_IDS=["home","quiz","result","search","flash","browse","qbrowse","subjectPicker","slideView","lessonView"].concat(VIEWS);
   let currentScreenId=null;
+  // View Transition の更新コールバックが走るまでは currentScreenId が遷移元のままになる。
+  // その短い間に自動更新が来ても、遷移先を「現在の画面」として扱う。
+  let pendingScreenId=null;
   let historyNavigation=false;
   function hideAllScreens(){
     stopRankTimer(); stopCmTimer();
@@ -3116,6 +3119,7 @@
   }
   function transitionToScreen(id,direction,prepare){
     const target=$("#"+id); if(!target) return;
+    pendingScreenId=id;
     // View Transition 中はページ全体がフェードインするので、セクション単体の
     // 入場アニメーションを重ねない（二重フェードで遷移が重く見えていた）。
     const change=(animateSection)=>{
@@ -3128,6 +3132,7 @@
         setTimeout(()=>target.classList.remove(cls),280);
       }
       currentScreenId=id;
+      if(pendingScreenId===id) pendingScreenId=null;
       document.body.classList.toggle("focus-mode",id==="quiz"||id==="flash");
       updatePrimaryNav(id);
       syncScreenHistory(id);
@@ -7446,13 +7451,13 @@
   // ホームにいる／ホームへ戻るときだけ適用する。演習・学習・一覧の途中では保留しておく。
   function applyAppUpdateIfIdle(goingHome){
     if(!appUpdatePending) return;
-    if(!goingHome && currentScreenId!=="home") return;
+    if(!goingHome && (pendingScreenId||currentScreenId)!=="home") return;
     appUpdatePending=false;
     location.reload();
   }
   window.__studyAppUpdateReady=()=>{
     appUpdatePending=true;
-    if(currentScreenId==="home"){ applyAppUpdateIfIdle(); return; }
+    if((pendingScreenId||currentScreenId)==="home"){ applyAppUpdateIfIdle(); return; }
     toast("🆕 新しいバージョンがあります。ホームに戻ったときに更新します");
   };
 

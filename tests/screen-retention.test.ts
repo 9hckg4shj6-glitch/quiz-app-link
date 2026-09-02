@@ -27,7 +27,8 @@ describe("利用中に画面を奪われない", () => {
 
   it("演習中は新バージョンの再読み込みを保留し、ホームへ戻ったときに適用する", () => {
     expect(html).toContain("window.__studyAppUpdateReady=()=>{");
-    expect(html).toContain("if(!goingHome && currentScreenId!==\"home\") return;");
+    expect(html).toContain('if(!goingHome && (pendingScreenId||currentScreenId)!=="home") return;');
+    expect(html).toContain('if((pendingScreenId||currentScreenId)==="home")');
     expect(mainTs).toContain("onNeedReload()");
     expect(mainTs).toContain("window.__studyAppUpdateReady");
   });

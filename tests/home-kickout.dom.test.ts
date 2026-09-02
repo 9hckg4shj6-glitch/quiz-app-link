@@ -20,6 +20,7 @@ const QUESTIONS = Array.from({ length: 12 }, (_, i) => ({
   id: `t${i + 1}`, year: "テスト年度", field: "テスト分野",
   question: `テスト問題${i + 1}`, choices: ["ア", "イ", "ウ", "エ", "オ"],
   answer: 0, explanation: "テスト解説",
+  slideRefs: [{ deck: "01", name: "テスト講義", pages: [1] }],
 }));
 
 interface App {
@@ -121,6 +122,28 @@ describe("利用中にホーム画面へ戻されない（実動作）", () => {
     expect(app.win.document.querySelector("#quiz").textContent).toBe(before);
   });
 
+  it("学習項目を読んでいる最中に自動同期が終わっても、本文は閉じない", async () => {
+    app = await bootApp();
+    click(app, '#primaryNav [data-primary="learn"]');
+    await until(() => shown(app!, "#inputView"), "学習の画面が開く");
+    click(app, "#lessonList [data-deck]");
+    await until(() => shown(app!, "#lessonView"), "学習項目の本文が開く");
+    const before = app.win.document.querySelector("#lessonView").textContent;
+
+    app.win.__legacyAppRefresh();
+    await tick(20);
+
+    expect(shown(app, "#lessonView")).toBe(true);
+    expect(shown(app, "#home")).toBe(false);
+    expect(app.win.document.querySelector("#lessonView").textContent).toBe(before);
+
+    app.win.__studyAppUpdateReady();
+    await tick(20);
+    expect(app.reloads).toEqual([]);
+    expect(shown(app, "#lessonView")).toBe(true);
+    expect(app.win.document.querySelector("#lessonView").textContent).toBe(before);
+  });
+
   it("暗記カードなど他の画面でも同じ（メニューから開いた画面が閉じない）", async () => {
     app = await bootApp();
     click(app, '[data-menu-view="statsView"]');
@@ -158,5 +181,28 @@ describe("利用中にホーム画面へ戻されない（実動作）", () => {
     click(app, '#primaryNav [data-primary="home"]');   // 利用者が自分でホームへ戻る
     await tick(20);
     expect(app.reloads.length).toBe(1);
+  });
+
+  it("ホームから別画面へ遷移を始めた直後の更新でも、再読み込みしない", async () => {
+    app = await bootApp();
+    const updates: Array<() => void> = [];
+    // 実ブラウザの View Transition は更新コールバックを次の描画機会まで待つ。
+    app.win.document.startViewTransition = (update: () => void) => {
+      updates.push(update);
+      return {};
+    };
+
+    click(app, '#primaryNav [data-primary="practice"]');
+    expect(updates).toHaveLength(1);
+    expect(shown(app, "#home")).toBe(true); // DOM更新前でも、遷移先は問題演習として扱う
+
+    app.win.__studyAppUpdateReady();
+    await tick(20);
+    expect(app.reloads).toEqual([]);
+
+    updates.shift()?.();
+    await tick(20);
+    expect(shown(app, "#practiceView")).toBe(true);
+    expect(shown(app, "#home")).toBe(false);
   });
 });
