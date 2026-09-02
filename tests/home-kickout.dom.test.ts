@@ -16,7 +16,7 @@ import { afterEach, describe, expect, it } from "vitest";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const inlineScript = html.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/)?.[1] ?? "";
 
-const QUESTIONS = Array.from({ length: 12 }, (_, i) => ({
+const QUESTIONS = Array.from({ length: 50 }, (_, i) => ({
   id: `t${i + 1}`, year: "テスト年度", field: "テスト分野",
   question: `テスト問題${i + 1}`, choices: ["ア", "イ", "ウ", "エ", "オ"],
   answer: 0, explanation: "テスト解説",
@@ -93,6 +93,17 @@ async function startQuiz(app: App): Promise<void> {
   await until(() => shown(app, "#quiz"), "演習が始まる");
 }
 
+/** 年度別演習から指定した問題数で開始する */
+async function startQuizWithCount(app: App, count: number): Promise<void> {
+  click(app, '#primaryNav [data-primary="practice"]');
+  await until(() => shown(app, "#practiceView"), "問題演習の画面が開く");
+  click(app, "#yearList .cat");
+  await until(() => shown(app, "#countModal"), "問題数の選択画面が開く");
+  app.win.document.querySelector("#countInput").value = String(count);
+  click(app, "#countStart");
+  await until(() => shown(app, "#quiz"), `${count}問の演習が始まる`);
+}
+
 let app: App | null = null;
 afterEach(() => { app?.dom.window.close(); app = null; });
 
@@ -120,6 +131,35 @@ describe("利用中にホーム画面へ戻されない（実動作）", () => {
     expect(shown(app, "#quiz")).toBe(true);
     expect(shown(app, "#home")).toBe(false);
     expect(app.win.document.querySelector("#quiz").textContent).toBe(before);
+  });
+
+  it("45問を連続で解き、同期や更新が重なってもホームへ戻されない", async () => {
+    app = await bootApp();
+    await startQuizWithCount(app, 45);
+
+    for (let question = 1; question <= 45; question += 1) {
+      expect(app.win.document.querySelector("#counter").textContent).toBe(`${question} / 45`);
+      expect(shown(app, "#quiz")).toBe(true);
+      expect(shown(app, "#home")).toBe(false);
+
+      click(app, "#qBlocks .choice");
+      expect(shown(app, "#nextBtn")).toBe(true);
+
+      // 長時間利用時に発生する自動同期の完了を繰り返し割り込ませる。
+      if (question % 10 === 0) app.win.__legacyAppRefresh();
+      // 新版の配信が40問を超えた直後に重なっても、演習中は適用を保留する。
+      if (question === 41) app.win.__studyAppUpdateReady();
+      await tick();
+
+      expect(app.reloads).toEqual([]);
+      expect(shown(app, "#quiz")).toBe(true);
+      expect(shown(app, "#home")).toBe(false);
+      click(app, "#nextBtn");
+    }
+
+    await until(() => shown(app!, "#result"), "45問の結果画面が開く");
+    expect(shown(app, "#home")).toBe(false);
+    expect(app.reloads).toEqual([]);
   });
 
   it("学習項目を読んでいる最中に自動同期が終わっても、本文は閉じない", async () => {
