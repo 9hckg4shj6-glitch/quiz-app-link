@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 /**
  * 復習画面の実動作テスト。index.html のアプリ本体を jsdom で起動し、
- * 予定時刻を過ぎた問題が「本日復習すべき問題」に、まだの問題が
- * 「これからの復習予定」に時刻つきで並ぶことを確かめる。
+ * 「解いた問題を復習」に、解いた問題が復習時刻の早い順（時刻を過ぎた
+ * ものが先頭）で時刻つきに並ぶことを確かめる。
  */
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const inlineScript = html.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/)?.[1] ?? "";
@@ -54,23 +54,26 @@ describe("復習画面", () => {
     win.document.querySelector('#primaryNav [data-primary="review"]').click();
     await until(() => !win.document.querySelector("#reviewView").classList.contains("hidden"), "復習画面が開く");
 
-    const due = win.document.querySelector("#reviewDueList");
-    const future = win.document.querySelector("#reviewScheduleList");
-    expect(due.querySelectorAll("[data-review-question]").length).toBe(1);
-    expect(due.textContent).toContain("過ぎている問題");
-    expect(due.textContent).toContain("予定から約");
-    expect(future.querySelectorAll("[data-review-question]").length).toBe(1);
-    expect(future.textContent).toContain("これからの問題");
-    expect(future.textContent).toContain("約2時間後");
-
     // ホームの復習カードは件数を時刻で数える
     expect(win.document.querySelector("#reviewDueCount").textContent).toBe("1");
+    expect(win.document.querySelector("#reviewSolvedCount").textContent).toBe("2");
+
+    win.document.querySelector("#reviewSolvedCard").click();
+    await until(() => !win.document.querySelector("#solvedReviewView").classList.contains("hidden"), "解いた問題を復習が開く");
+
+    const list = win.document.querySelector("#reviewScheduleList");
+    const rows = [...list.querySelectorAll("[data-review-question]")];
+    expect(rows.map((el: any) => el.dataset.reviewQuestion)).toEqual(["t1", "t2"]);
+    expect(rows[0].textContent).toContain("予定から約");
+    expect(rows[1].textContent).toContain("約2時間後");
   });
 
   it("年度で絞ると、その年度の分野だけが選択肢になる", async () => {
     const win = await boot();
     win.document.querySelector('#primaryNav [data-primary="review"]').click();
     await until(() => !win.document.querySelector("#reviewView").classList.contains("hidden"), "復習画面が開く");
+    win.document.querySelector("#reviewSolvedCard").click();
+    await until(() => !win.document.querySelector("#solvedReviewView").classList.contains("hidden"), "解いた問題を復習が開く");
 
     const year = win.document.querySelector("#reviewYear");
     const field = win.document.querySelector("#reviewField");

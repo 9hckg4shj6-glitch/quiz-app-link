@@ -1941,16 +1941,16 @@
       </button>
     </div>
 
-    <div class="homeMainLabel"><b>本日復習すべき問題</b><span>予定時刻を迎えた問題です。上のカードからまとめて復習できます</span></div>
-    <div id="reviewDueList"></div>
-
-    <div class="homeMainLabel"><b>これからの復習予定</b><span>時間は目安です。時刻になると本日の復習に入ります</span></div>
-    <div class="reviewFilters">
-      <label>年度・出典 <select id="reviewYear"><option value="">すべて</option></select></label>
-      <label>分野 <select id="reviewField"><option value="">すべて</option></select></label>
+    <div class="homeSection" id="reviewSolvedSection">
+      <button type="button" class="dueCard" id="reviewSolvedCard">
+        <span class="dueIcon">≡</span>
+        <span class="dueBody">
+          <span class="dueTitle">解いた問題を復習</span>
+          <span class="dueSub" id="reviewSolvedSub">復習時刻の早い順に並びます</span>
+        </span>
+        <span class="dueRight"><b class="dueCount" id="reviewSolvedCount">0</b><span class="dueUnit">問</span></span>
+      </button>
     </div>
-    <div id="reviewScheduleList"></div>
-    <button type="button" class="btn ghost" id="reviewPractice" style="margin-top:10px">▶ 問題演習へ</button>
 
     <div class="homeMainLabel"><b>苦手・見直し</b><span>復習予定に関係なく、自分で選んで練習できます</span></div>
     <div class="hubGrid" id="reviewHubGrid"></div>
@@ -1959,6 +1959,21 @@
       <div class="sectlabel">おすすめプレイリスト</div>
       <div id="playlistList" class="plGrid"></div>
     </div>
+  </section>
+
+  <!-- ===== VIEW: 解いた問題を復習 ===== -->
+  <section id="solvedReviewView" class="hidden">
+    <div class="reviewTop">
+      <button class="btn ghost small" id="solvedReviewBack">← 復習・苦手</button>
+      <span class="pill">解いた問題を復習</span>
+    </div>
+    <div class="homeMainLabel"><b>解いた問題を復習</b><span>復習時刻の早い順。時刻を過ぎた問題が先に並びます</span></div>
+    <div class="reviewFilters">
+      <label>年度・出典 <select id="reviewYear"><option value="">すべて</option></select></label>
+      <label>分野 <select id="reviewField"><option value="">すべて</option></select></label>
+    </div>
+    <div id="reviewScheduleList"></div>
+    <button type="button" class="btn ghost" id="reviewPractice" style="margin-top:10px">▶ 問題演習へ</button>
   </section>
 
   <!-- ===== VIEW: 弱点分野（分野別の正答率） ===== -->
@@ -2809,6 +2824,10 @@
     const now=Date.now();
     return DATA.filter(q=>{ const at=reviewAt(progress[q.id]); return at!=null&&at<=now; }).sort(reviewOrder);
   }
+  // 解いた問題を復習時刻の早い順に。予定が無いものは末尾（reviewOrder が Infinity 扱い）
+  function solvedItems(){
+    return DATA.filter(q=>{ const r=progress[q.id]; return !!r&&(r.seen||reviewAt(r)!=null); }).sort(reviewOrder);
+  }
   function dueTermItems(){
     const now=Date.now();
     return termSources().filter(c=>{ const at=reviewAt(progress[c.id]); return at!=null&&at<=now; }).sort(reviewOrder);
@@ -2833,24 +2852,21 @@
     fieldSel.value=fields.includes(keep)?keep:"";
   }
   function renderReviewSchedule(){
-    const root=$("#reviewScheduleList"), dueRoot=$("#reviewDueList"); if(!root||!dueRoot) return;
-    // 学習済みが数百問あると一覧のHTMLは大きい。復習画面を開くとき以外は組み立てない
-    if(pendingScreenId!=="reviewView" && $("#reviewView").classList.contains("hidden")) return;
-    const due=dueItems(), now=Date.now();
+    const root=$("#reviewScheduleList"); if(!root) return;
+    // 学習済みが数百問あると一覧のHTMLは大きい。この画面を開くとき以外は組み立てない
+    if(pendingScreenId!=="solvedReviewView" && $("#solvedReviewView").classList.contains("hidden")) return;
     const year=$("#reviewYear").value, field=$("#reviewField").value;
-    const future=DATA.filter(q=>{ const r=progress[q.id]; if(!r||!r.seen) return false; const at=reviewAt(r); return at==null||at>now; })
-      .filter(q=>(!year||q.year===year)&&(!field||q.field===field)).sort(reviewOrder);
+    const items=solvedItems().filter(q=>(!year||q.year===year)&&(!field||q.field===field));
     // 30秒ごとの時計更新で作り直すとスクロール位置が飛ぶため、顔ぶれが変わったときだけ組み直す。
     // 時刻の文言は renderDue() が data-review-id を見て書き換える
-    const sig=due.map(q=>q.id).join(",")+"|"+year+"|"+field+"|"+future.map(q=>q.id).join(",");
+    const sig=year+"|"+field+"|"+items.map(q=>q.id).join(",");
     if(root.dataset.sig===sig) return;
     root.dataset.sig=sig;
-    const rows=items=>items.map(q=>'<button type="button" class="reviewQuestion" data-review-question="'+esc(q.id)+'">'+
+    root.innerHTML=items.map(q=>'<button type="button" class="reviewQuestion" data-review-question="'+esc(q.id)+'">'+
       '<small>'+esc([q.year,q.field].filter(Boolean).join(" / "))+'</small>'+
-      '<span>'+esc(String(q.question||"").slice(0,110))+'</span>'+scheduleBadge(q)+'</button>').join("");
-    dueRoot.innerHTML=rows(due)||'<div class="empty">今すぐ復習する問題はありません。</div>';
-    root.innerHTML=rows(future)||'<div class="empty">該当する復習予定はありません。</div>';
-    $("#reviewView").querySelectorAll("[data-review-question]").forEach(el=>{
+      '<span>'+esc(String(q.question||"").slice(0,110))+'</span>'+scheduleBadge(q)+'</button>').join("")
+      ||'<div class="empty">該当する問題はありません。</div>';
+    root.querySelectorAll("[data-review-question]").forEach(el=>{
       el.onclick=()=>{ const q=DATA.find(x=>x.id===el.dataset.reviewQuestion); if(q) startQuiz([q],"復習",null,{keepOrder:true}); };
     });
   }
@@ -2875,6 +2891,14 @@
       : "問題やカードを学習すると、最適な時期に復習が出ます";
     ["dueSub","reviewDueSub"].forEach(id=>{ const el=$("#"+id); if(el) el.textContent=message; });
     ["dueCard","reviewDueCard"].forEach(id=>{ const el=$("#"+id); if(el) el.classList.toggle("dueEmpty",!n); });
+    const solved=solvedItems(), solvedCard=$("#reviewSolvedCard");
+    if(solvedCard){
+      $("#reviewSolvedCount").textContent=solved.length;
+      $("#reviewSolvedSub").textContent=solved.length
+        ? (questions.length?`復習時刻を過ぎた ${questions.length}問が先頭・早い順に並びます`:"復習時刻の早い順に並びます")
+        : "問題を解くと、ここに復習の順で並びます";
+      solvedCard.classList.toggle("dueEmpty",!solved.length);
+    }
     // 解説・問題一覧・結果画面に出ている「次の復習：…」をまとめて書き換える
     document.querySelectorAll("[data-review-id]").forEach(el=>{ el.textContent="次の復習："+reviewText(progress[el.dataset.reviewId]); });
     syncReviewFilters();
@@ -3141,7 +3165,7 @@
   }
 
   /* ---------- ホーム（ハブ）と各画面（ビュー） ---------- */
-  const VIEWS=["inputView","practiceView","memoryCardsView","cardsView","reviewView","weakFieldView","statsView","rankView","communityView","mistakesView","moreView"];
+  const VIEWS=["inputView","practiceView","memoryCardsView","cardsView","reviewView","solvedReviewView","weakFieldView","statsView","rankView","communityView","mistakesView","moreView"];
   const SCREEN_IDS=["home","quiz","result","search","flash","browse","qbrowse","subjectPicker","slideView","lessonView"].concat(VIEWS);
   let currentScreenId=null;
   // View Transition の更新コールバックが走るまでは currentScreenId が遷移元のままになる。
@@ -3162,7 +3186,7 @@
     if(["practiceView","quiz","result"].includes(id)) return "practice";
     if(id==="qbrowse") return qbrowseState.origin==="reviewView" ? "review" : "questions";
     if(id==="search") return "search";
-    if(["reviewView","mistakesView","weakFieldView"].includes(id)) return "review";
+    if(["reviewView","solvedReviewView","mistakesView","weakFieldView"].includes(id)) return "review";
     return null;
   }
   function updatePrimaryNav(id){
@@ -3236,6 +3260,7 @@
     practiceView:()=>{ renderScopeLists(); renderQuick(); renderExamDay(); refreshPendingExam(); },
     statsView:()=>{ renderHero(); renderKpis(); renderHeatmap(); renderAch(); },
     reviewView:()=>{ renderDue(); renderPlaylists(); renderReviewHub(); refreshPendingExam(); },
+    solvedReviewView:()=>{ renderDue(); },
     moreView:()=>{ renderUpdatesHome(); }
   };
   // screenId 省略時はいま開いている画面。遷移中は currentScreenId が古いため呼び出し側が渡す。
@@ -7113,6 +7138,7 @@
   document.querySelectorAll(".viewBack").forEach(b=>{ b.onclick=()=>renderHome("back"); });
   $("#mistakesBack").onclick=()=>openView("reviewView");
   $("#weakFieldBack").onclick=()=>openView("reviewView");
+  $("#solvedReviewBack").onclick=()=>openView("reviewView");
   /* コミュニティは階層があるため、掲示板を開いていれば一覧へ戻る */
   $("#cmBack").onclick=()=>{
     if(cmState.creating){ cmState.creating=false; renderCommunity(); return; }
@@ -7226,6 +7252,7 @@
   }
   $("#dueCard").onclick=openDueReview;
   $("#reviewDueCard").onclick=openDueReview;
+  $("#reviewSolvedCard").onclick=()=>openView("solvedReviewView");
   { const y=$("#reviewYear"), f=$("#reviewField"), p=$("#reviewPractice");
     if(y) y.onchange=()=>{ syncReviewFilters(); renderReviewSchedule(); };
     if(f) f.onchange=renderReviewSchedule;
