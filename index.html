@@ -1487,7 +1487,7 @@
       <div class="gradingChoices">
         <button type="button" class="gradingChoice on" id="orderRandom" data-order="random" aria-pressed="true">
           <span class="gradingChoiceTitle">ランダムに演習する</span>
-          <span class="gradingChoiceSub">この範囲から順不同で出題</span>
+          <span class="gradingChoiceSub">復習が近い問題を先に、残りは順不同</span>
         </button>
         <button type="button" class="gradingChoice" id="orderUnseen" data-order="unseen" aria-pressed="false">
           <span class="gradingChoiceTitle">まだ解いてない問題を優先</span>
@@ -2742,7 +2742,7 @@
     if(pendingSel.mode==="due") return it.slice().sort(reviewOrder);
     if(pendingSel.mode==="examday") return sortByExamGain(it);
     if(pendingSel.order==="unseen") return sortByUnseen(it);
-    return shuffle(it);
+    return shuffleDueFirst(it);
   }
   function startFromCountModal(){
     if(!pendingSel) return;
@@ -2750,11 +2750,10 @@
     const n=clampCount(parseInt($("#countInput").value,10), total);
     saveLastCount(n===total?0:n);
     const items=orderedPool().slice(0,n);
-    const keepOrder = pendingSel.mode==="due" || pendingSel.mode==="examday" || pendingSel.order==="unseen";
     const label=pendingSel.label, batch=pendingSel.gradingMode==="batch";
     const ref=pendingSel.key?{mode:pendingSel.mode,key:pendingSel.key}:null;
     closeCountModal();
-    startQuiz(items,label,ref,{keepOrder,batch});
+    startQuiz(items,label,ref,{keepOrder:true,batch});   // orderedPool の並びには意味があるので崩さない
   }
   function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function toast(msg,ms){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),ms||1700); }
@@ -2796,7 +2795,7 @@
   }
   // 「今日やると試験日の点が伸びる順」（限界効用の大きい順）
   function sortByExamGain(items){
-    const m=MEM(), at=examDateMs(); if(!m||!at) return shuffle(items);
+    const m=MEM(), at=examDateMs(); if(!m||!at) return shuffleDueFirst(items);
     return items.map(q=>{ let g=0; try{ g=m.examGain(progress[q.id]||{}, at); }catch(e){ g=0; } return {q, g}; })
       .sort((a,b)=>b.g-a.g)
       .map(x=>x.q);
@@ -2813,6 +2812,14 @@
     return Number.isFinite(at)?at:null;
   }
   function reviewOrder(a,b){ return (reviewAt(progress[a.id])??Infinity)-(reviewAt(progress[b.id])??Infinity)||String(a.id).localeCompare(String(b.id)); }
+  // ランダム演習の並び：復習時刻が迫っている問題（期限切れ〜24時間以内）を復習時刻順で先頭に、
+  // 残りはランダム。復習が溜まっていない時はこれまで通りのランダムになる。
+  const SOON_MS=24*3600*1000;
+  function shuffleDueFirst(items){
+    const now=Date.now(), soon=[], rest=[];
+    items.forEach(q=>{ const at=reviewAt(progress[q.id]); (at!=null&&at-now<=SOON_MS?soon:rest).push(q); });
+    return soon.sort(reviewOrder).concat(shuffle(rest));
+  }
   function reviewText(r,now=Date.now()){
     const at=reviewAt(r); if(at==null) return (r&&r.seen)?"予定未設定":"未学習";
     const delta=at-now, abs=Math.abs(delta);
@@ -3777,13 +3784,13 @@
       <button class="qbtn" id="qRandom"><span class="qi">🎲</span><span class="qn">ランダム${Math.min(RANDOM_N,DATA.length)}問</span><span class="qs">腕試し</span></button>
       <button class="qbtn q-weak" id="qWeak"><span class="qi">🔥</span><span class="qn">苦手を復習</span><span class="qs">${weakItems.length}問</span></button>
       <button class="qbtn q-bookmark" id="qBookmark"><span class="qi">🔖</span><span class="qn">見直したい問題</span><span class="qs">${bookmarkItems.length}問</span></button>`;
-    $("#qRandom").onclick=()=>{ if(!DATA.length){ toast("問題データがありません"); return; } startQuiz(shuffle(DATA).slice(0,RANDOM_N),"ランダム演習"); };
+    $("#qRandom").onclick=()=>{ if(!DATA.length){ toast("問題データがありません"); return; } startQuiz(shuffleDueFirst(DATA).slice(0,RANDOM_N),"ランダム演習",null,{keepOrder:true}); };
     $("#qWeak").onclick=()=>{ if(!weakItems.length){ toast("🎉 いまは苦手問題がありません"); return;} startQuiz(weakItems,"苦手問題"); };
     $("#qBookmark").onclick=()=>{ if(!bookmarkItems.length){ toast("🔖 見直したい問題としてマークしたものはまだありません"); return;} startQuiz(bookmarkItems,"見直したい問題"); };
     $("#qResume").onclick=()=>{
       if(!DATA.length){ toast("問題データがありません"); return; }
       if(lc && lc.mode!=="review"){ const g=resolveGroup(lc.mode, lc.key); if(g){ startQuiz(g.items,g.label); return; } }
-      startQuiz(shuffle(DATA).slice(0,Math.min(RANDOM_N,DATA.length)),"全範囲");
+      startQuiz(shuffleDueFirst(DATA).slice(0,Math.min(RANDOM_N,DATA.length)),"全範囲",null,{keepOrder:true});
     };
   }
   function heatLevel(c){ return !c?0:c<3?1:c<6?2:c<12?3:4; }
@@ -4877,7 +4884,7 @@
     if(!cards || !cards.length){ toast("カードがありません"); return; }
     opts=opts||{};
     closeFlashChooser();
-    const deck = opts.keepOrder ? cards.slice() : shuffle(cards);  // 復習は「忘れかけ順」を崩さない
+    const deck = opts.keepOrder ? cards.slice() : shuffleDueFirst(cards);  // 復習は「忘れかけ順」を崩さない
     flashSession={label,deck,i:0,ok:0,ng:0,ngList:[],judge:opts.judge?opts.judgeSrc:null};
     showFlashView(); renderCard();
   }
@@ -4938,7 +4945,7 @@
     const decks=[
       {icon:"🔁",name:"今日の復習",n:due.length,go:()=>startFlash(due,"今日の復習カード")},
       {icon:"🔥",name:"苦手",n:weak.length,go:()=>startFlash(weak.map(questionToCard),"苦手カード")},
-      {icon:"🎲",name:"ランダム30",n:Math.min(30,DATA.length),go:()=>startFlash(shuffle(DATA).slice(0,30).map(questionToCard),"ランダムカード")}
+      {icon:"🎲",name:"ランダム30",n:Math.min(30,DATA.length),go:()=>startFlash(shuffleDueFirst(DATA).slice(0,30).map(questionToCard),"ランダムカード",{keepOrder:true})}
     ];
     // 出典（授業回）ごとにデッキを作る
     const bySrc={};
@@ -5447,7 +5454,8 @@
     const base = expandGroupItems(items);
     const batch=!!opts.batch && base.every(q=>questionType(q)!=="constructed");
     if(opts.batch&&!batch) toast("記述問題を含むため、一問ずつ採点で開始します");
-    const ordered = opts.keepOrder ? base : shuffle(base);  // 復習・試験日モードは並びに意味があるので崩さない
+    // 復習・試験日モードは並びに意味があるので崩さない。本番モードは分野バランスを保つため純ランダム。
+    const ordered = opts.keepOrder ? base : (opts.exam ? shuffle(base) : shuffleDueFirst(base));
     // queue の要素は「選択問題」「記述問題」の判別共用体（仕様書 §13.2）
     const queue=ordered.map((q,qi)=>{
       if(questionType(q)==="constructed") return {q,qi,type:"constructed",parts:q.responseParts||[],els:null,cw:null};
@@ -7303,7 +7311,7 @@
     updateCountScope();
     $("#countInput").value=keep;   // 件数は変わらないので入力値を保持
   }; });
-  $("#countStartFlash").onclick=()=>{ if(!pendingSel) return; const total=pendingSel.total; const n=clampCount(parseInt($("#countInput").value,10),total); saveLastCount(n===total?0:n); const items=orderedPool().slice(0,n).map(questionToCard); const lbl=pendingSel.label; closeCountModal(); startFlash(items, lbl+"（カード）"); };
+  $("#countStartFlash").onclick=()=>{ if(!pendingSel) return; const total=pendingSel.total; const n=clampCount(parseInt($("#countInput").value,10),total); saveLastCount(n===total?0:n); const items=orderedPool().slice(0,n).map(questionToCard); const lbl=pendingSel.label; closeCountModal(); startFlash(items, lbl+"（カード）",{keepOrder:true}); };
   $("#countInput").onkeydown=(e)=>{ if(e.key==="Enter"){ e.preventDefault(); startFromCountModal(); } };
   $("#countMinus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)-1, pendingSel?pendingSel.total:1); };
   $("#countPlus").onclick=()=>{ const i=$("#countInput"); i.value=clampCount((parseInt(i.value,10)||0)+1, pendingSel?pendingSel.total:1); };
