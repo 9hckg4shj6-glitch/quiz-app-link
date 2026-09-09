@@ -42,6 +42,10 @@ export default defineConfig({
             handler: "NetworkFirst",
             options: {
               cacheName: "study-manifest-v1",
+              // GitHub Pages が max-age=600 を返すため、ふつうに取りに行くと
+              // 最大10分はブラウザのHTTPキャッシュにある古いマニフェストが使われる。
+              // 必ずサーバへ問い合わせ直す（変化が無ければ304で終わる）。
+              fetchOptions: { cache: "no-cache" },
               networkTimeoutSeconds: 5,   // 回線が悪いときはキャッシュへ即座に切り替える
               expiration: { maxEntries: 10 },
               cacheableResponse: { statuses: [0, 200] }
