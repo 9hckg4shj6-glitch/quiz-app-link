@@ -14,6 +14,10 @@
         （window.LESSONS = [...]。授業回は問題の slideRefs から自動で並ぶので省略可）
      6. この配列に1行足す
 
+   category は科目えらび画面の見出し（「医学部1年」「医学部2年」など）。
+   同じ文字列の科目がひとつの塊にまとまり、並び順はこの配列の順そのまま。
+   省略した科目は最後に「その他」としてまとまる。
+
    【重要】問題ID・カードIDは必ず科目ごとに一意にすること。
    進捗（localStorage）とFSRSの復習予定（IndexedDB）はIDで紐づいているため、
    科目をまたいでIDが衝突すると学習記録が混ざる。
@@ -25,6 +29,7 @@ window.SUBJECTS = [
   {
     id: "metabolism",
     name: "代謝・生化学",
+    category: "医学部1年",
     emoji: "⚗️",
     accent: "#147d8f",
     learningMode: "cards",
@@ -37,6 +42,7 @@ window.SUBJECTS = [
   {
     id: "genome",
     name: "ゲノム",
+    category: "医学部1年",
     emoji: "🧬",
     accent: "#7c3aed",
     learningMode: "lessons",
@@ -56,6 +62,7 @@ window.SUBJECTS = [
   {
     id: "immunology1",
     name: "免疫学（1年次）",
+    category: "医学部1年",
     emoji: "🛡️",
     accent: "#e11d48",
     learningMode: "lessons",
@@ -66,6 +73,7 @@ window.SUBJECTS = [
   {
     id: "immunology2",
     name: "免疫学（2年次）",
+    category: "医学部2年",
     emoji: "🦠",
     accent: "#ea580c",
     learningMode: "lessons",
@@ -85,6 +93,7 @@ window.SUBJECTS = [
   {
     id: "animalphysiology",
     name: "動物生理（前期）",
+    category: "医学部2年",
     emoji: "🐁",
     accent: "#0ea5e9",
     learningMode: "lessons",
@@ -102,6 +111,7 @@ window.SUBJECTS = [
   {
     id: "plantphysiology",
     name: "植物生理（前期）",
+    category: "医学部2年",
     emoji: "🌱",
     accent: "#16a34a",
     learningMode: "lessons",
@@ -125,6 +135,7 @@ window.SUBJECTS = [
   {
     id: "pharmacology",
     name: "薬理学",
+    category: "医学部2年",
     emoji: "💊",
     accent: "#9333ea",
     learningMode: "lessons",
@@ -135,6 +146,7 @@ window.SUBJECTS = [
   {
     id: "microbiology",
     name: "微生物学",
+    category: "医学部2年",
     emoji: "🧫",
     accent: "#0d9488",
     learningMode: "lessons",
