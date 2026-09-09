@@ -84,7 +84,7 @@ window.SUBJECTS = [
   },
   {
     id: "animalphysiology",
-    name: "動物生理",
+    name: "動物生理（前期）",
     emoji: "🐁",
     accent: "#0ea5e9",
     learningMode: "lessons",
@@ -101,7 +101,7 @@ window.SUBJECTS = [
   },
   {
     id: "plantphysiology",
-    name: "植物生理",
+    name: "植物生理（前期）",
     emoji: "🌱",
     accent: "#16a34a",
     learningMode: "lessons",
