@@ -628,9 +628,12 @@
   /* ===== フラッシュカード ===== */
   .flashWrap{display:flex;justify-content:center;margin-top:14px}
   .flashCard{width:100%;min-height:56vh;max-height:66vh;overflow-y:auto;box-sizing:border-box;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;text-align:center;
     background:var(--card);border:1.5px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
     padding:26px 20px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform .16s ease,opacity .16s ease;will-change:transform}
+  /* 選択肢や図で背が高くなったとき、justify-content:center だと上端が切れてスクロールできないので auto マージンで中央寄せする（はみ出す時は上から） */
+  .flashCard>:first-child{margin-top:auto}
+  .flashCard>:last-child{margin-bottom:auto}
   .flashCard.isBack{background:color-mix(in srgb,var(--brand) 6%,var(--card));border-color:color-mix(in srgb,var(--brand) 30%,var(--line))}
   .fcTag{font-size:11px;font-weight:900;color:var(--brand);letter-spacing:.03em;background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
   .fcText{font-size:20px;font-weight:800;color:var(--text);line-height:1.6}
@@ -644,6 +647,11 @@
   .fcLightboxClose{position:fixed;top:12px;right:14px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:20px;font-weight:800;cursor:pointer;z-index:1201}
   .fcAnswer{font-size:19px;font-weight:900;color:var(--good);line-height:1.6}
   .fcExpl{font-size:14.5px;font-weight:600;color:var(--text);line-height:1.7;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .fcChoices{list-style:none;margin:0;padding:0;width:100%;display:grid;gap:6px;text-align:left}
+  .fcChoices li{display:flex;gap:8px;align-items:flex-start;font-size:14px;font-weight:700;line-height:1.5;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+  .fcChoices li.ok{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card))}
+  .fcChoices .fcCL{flex:0 0 auto;min-width:18px;font-size:12px;font-weight:900;color:var(--muted);text-transform:uppercase;padding-top:2px}
+  .fcChoices li.ok .fcCL{color:var(--good)}
   .fcTapHint{font-size:12px;color:var(--muted)}
   .fcFigHint{display:inline-block;margin:6px auto 0;font-size:12px;font-weight:700;color:var(--muted);background:rgba(148,163,184,.16);padding:3px 10px;border-radius:999px}
   .fcDivider{width:36px;height:3px;border-radius:2px;background:var(--line)}
@@ -4807,7 +4815,9 @@
       .map(c=>{
         if(c.kind==="multiple-choice"){
           const answer=c.correctChoiceIndex==null?"":(c.choices[c.correctChoiceIndex]||c.back||"");
-          return {id:c.id,kind:"q",field:c.field||"",front:c.front||"",answer,expl:c.explanation||c.back||"",image:c.image||null,imageAlt:c.imageAlt||""};
+          const choices=Array.isArray(c.choices)?c.choices:[];
+          return {id:c.id,kind:"q",field:c.field||"",front:c.front||"",answer,expl:c.explanation||c.back||"",image:c.image||null,imageAlt:c.imageAlt||"",
+            choices,correct:c.correctChoiceIndex==null?[]:[c.correctChoiceIndex]};
         }
         return {id:c.id,kind:"term",field:c.field||"",front:c.front||"",desc:c.back||c.explanation||"",image:c.image||null,imageAlt:c.imageAlt||""};
       });
@@ -4881,22 +4891,30 @@
       return {id:q.id,kind:"q",field:q.field||"",front:q.question,underlines:q.underlines||[],answer:q.modelAnswer||"（模範解答なし）",
         expl:q.explanation||"",image:draw?draw.modelImage:(q.image||null),imageAlt:draw?(draw.modelImageAlt||"模範図"):(q.imageAlt||"")};
     }
-    return {id:q.id,kind:"q",field:q.field||"",front:q.question,underlines:q.underlines||[],answer:ansText(q),expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||""};
+    return {id:q.id,kind:"q",field:q.field||"",front:q.question,underlines:q.underlines||[],answer:ansText(q),expl:q.explanation||"",image:q.image||null,imageAlt:q.imageAlt||"",
+      choices:Array.isArray(q.choices)?q.choices:[],correct:ansIdxs(q)};
   }
   function termToCard(t,i){ return {id:t.id||("tc"+i),kind:"term",field:t.field||"",front:t.term||"",desc:t.desc||"",image:t.image||null,imageAlt:t.imageAlt||"",backImageOnly:!!t.backImageOnly}; }
   function fcImgHTML(c){ return c.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(c.image)}" alt="${esc(c.imageAlt||"")}"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:""; }
   function escML(s){ return esc(s).replace(/\n/g,"<br>"); }
+  // 五択問題のカードは選択肢が無いと解けない（「誤りはどれか」型や図中記号を選ぶ型）ので、表・裏とも a〜e を出す
+  function fcChoicesHTML(c,showAnswer){
+    const list=Array.isArray(c.choices)?c.choices:[]; if(!list.length) return "";
+    const ok=new Set(showAnswer?(c.correct||[]):[]);
+    return `<ol class="fcChoices">${list.map((t,i)=>`<li class="${ok.has(i)?"ok":""}"><span class="fcCL">${qLetter(i)}</span><span>${esc(t)}</span></li>`).join("")}</ol>`;
+  }
   function fcBackHTML(c){
     if(c.kind==="term") return `${fcImgHTML(c)}<div class="fcDivider"></div><div class="fcExpl">${escML(c.desc||"(説明なし)")}</div>`;
-    return `<div class="fcDivider"></div><div class="fcAnswer">正解：${esc(c.answer||"")}</div>${c.expl?`<div class="fcExpl">${esc(c.expl)}</div>`:""}`;
+    return `${fcImgHTML(c)}${fcChoicesHTML(c,true)}<div class="fcDivider"></div><div class="fcAnswer">正解：${esc(c.answer||"")}</div>${c.expl?`<div class="fcExpl">${esc(c.expl)}</div>`:""}`;
   }
   function paintFace(){
     const s=flashSession, c=s.deck[s.i], card=$("#fcCard");
+    card.scrollTop=0;   // 前の面・前のカードのスクロール位置を引き継がない
     if(!s.flipped){
       card.classList.remove("isBack");
       const frontImg=c.backImageOnly?"":fcImgHTML(c);
       const figHint=(c.backImageOnly&&c.image)?`<div class="fcFigHint">🖼 答えに図あり</div>`:"";
-      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${underlineHTML(c.front,c.underlines)}</div>${frontImg}${figHint}<div class="fcTapHint">タップで答えを見る</div>`;
+      card.innerHTML=`${c.field?`<span class="fcTag">${esc(c.field)}</span>`:""}<div class="fcText">${underlineHTML(c.front,c.underlines)}</div>${frontImg}${figHint}${fcChoicesHTML(c,false)}<div class="fcTapHint">タップで答えを見る</div>`;
     } else {
       card.classList.add("isBack");
       card.innerHTML=`<div class="fcText small">${underlineHTML(c.front,c.underlines)}</div>${fcBackHTML(c)}`;
