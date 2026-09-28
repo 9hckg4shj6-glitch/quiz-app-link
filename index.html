@@ -2819,6 +2819,8 @@
     startQuiz(items,label,ref,{keepOrder:true,batch});   // orderedPool の並びには意味があるので崩さない
   }
   function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  // 解説・選択肢別解説の **語句** だけを太字にする。先に全体をエスケープするので任意のHTMLは入らない。
+  function richText(s){ return esc(s).replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>"); }
   function toast(msg,ms){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),ms||1700); }
   function dstr(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
   function todayStr(){ return dstr(new Date()); }
@@ -4340,7 +4342,7 @@
       return `<div class="fbRow"><span class="fbName">${esc(f)}</span><span class="fbBar"><i style="width:${p}%"></i></span><span class="fbNum">${o.c}/${o.n}</span></div>`;
     }).join("");
     const wrong=s.wrongList.map(w=>{ const ans=answerSummary(w.q), cw=questionType(w.q)==="constructed";
-      return `<div class="rvitem"><div class="q">${qUnderlineHTML(w.q)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${esc(w.q.explanation)}</div>`:""}</div>`; }).join("");
+      return `<div class="rvitem"><div class="q">${qUnderlineHTML(w.q)}</div><div class="a you">${cw?"あなたの得点":"あなた"}: ${esc(w.chosen)}</div><div class="a ans">${cw?"模範解答":"正解"}: ${esc(ans)}</div>${w.q.explanation?`<div class="a" style="color:var(--muted)">${richText(w.q.explanation)}</div>`:""}</div>`; }).join("");
     const msg=pct>=90?"🏆 素晴らしい！":pct>=70?"🎉 合格ライン！":pct>=50?"💪 あと一歩！":"📚 復習しよう！";
     const written=writtenMax>0;
     $("#quiz").classList.add("hidden");
@@ -4374,7 +4376,7 @@
   function searchMatches(query){
     const terms=searchTerms(query); if(!terms.length) return [];
     return DATA.filter(q=>{
-      const hay=normQ((q.question||"")+" "+(q.stem||"")+" "+(q.passage||"")+" "+((q.choices||[]).join(" "))+" "+(q.explanation||"")+" "+(q.modelAnswer||"")+" "+(q.field||"")+" "+(q.year||"")+" "+(q.mockTitle||"")+" "+(q.imageAlt||""));
+      const hay=normQ((q.question||"")+" "+(q.stem||"")+" "+(q.passage||"")+" "+((q.choices||[]).join(" "))+" "+(q.explanation||"").replace(/\*\*/g,"")+" "+(q.modelAnswer||"")+" "+(q.field||"")+" "+(q.year||"")+" "+(q.mockTitle||"")+" "+(q.imageAlt||""));
       return terms.every(t=>hay.includes(t));
     });
   }
@@ -4905,7 +4907,7 @@
   }
   function fcBackHTML(c){
     if(c.kind==="term") return `${fcImgHTML(c)}<div class="fcDivider"></div><div class="fcExpl">${escML(c.desc||"(説明なし)")}</div>`;
-    return `${fcImgHTML(c)}${fcChoicesHTML(c,true)}<div class="fcDivider"></div><div class="fcAnswer">正解：${esc(c.answer||"")}</div>${c.expl?`<div class="fcExpl">${esc(c.expl)}</div>`:""}`;
+    return `${fcImgHTML(c)}${fcChoicesHTML(c,true)}<div class="fcDivider"></div><div class="fcAnswer">正解：${esc(c.answer||"")}</div>${c.expl?`<div class="fcExpl">${richText(c.expl)}</div>`:""}`;
   }
   function paintFace(){
     const s=flashSession, c=s.deck[s.i], card=$("#fcCard");
@@ -5250,10 +5252,10 @@
     const img=q.image?`<div class="fcImgWrap"><img class="fcImg" src="${esc(q.image)}" alt="${esc(q.imageAlt||"")}" loading="lazy"><span class="fcZoom" aria-hidden="true">🔍 拡大</span></div>`:"";
     const notes=Array.isArray(q.choiceNotes)?q.choiceNotes:[];
     const choices=(q.choices||[]).map((c,i)=>{
-      const ok=ansIdxs(q).indexOf(i)>=0, note=notes[i]?`<div class="qbCNote">${esc(notes[i])}</div>`:"";
+      const ok=ansIdxs(q).indexOf(i)>=0, note=notes[i]?`<div class="qbCNote">${richText(notes[i])}</div>`:"";
       return `<li class="qbChoice${ok?' ok':''}"><span class="qbCL">${qLetter(i)}</span><span class="qbCBody"><span class="qbCText">${esc(c)}${ok?' <span class="qbOk">✓ 正解</span>':''}</span>${note}</span></li>`;
     }).join("");
-    const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${esc(q.explanation)}${explainFigureHTML(q)}${moreExplHTML(q)}</div>`:"";
+    const expl=q.explanation?`<div class="qbExpl"><b>解説</b>${richText(q.explanation)}${explainFigureHTML(q)}${moreExplHTML(q)}</div>`:"";
     if(questionType(q)==="constructed"){
       const parts=(q.responseParts||[]).map(p=>`<li class="qbChoice"><span class="qbCL">✎</span><span class="qbCBody"><span class="qbCText">${esc(p.label||"解答")}<span class="qbOk">${esc(writtenKindLabel(p))}</span></span></span></li>`).join("");
       const model=`<div class="qbExpl"><b>模範解答（${writtenPoints(q)}点）</b>${esc(q.modelAnswer||"")}</div>`;
@@ -5602,7 +5604,7 @@
   function pathText(q){
     const parts=[q.question||"", q.stem||"", q.passage||"", q.field||"", (q.choices||[]).join(" "), q.explanation||""];
     if(Array.isArray(q.choiceNotes)) parts.push(q.choiceNotes.join(" "));
-    return parts.join(" ");
+    return parts.join(" ").replace(/\*\*/g,"");
   }
   function relatedPathways(q){
     const t=pathText(q), out=[];
@@ -5710,7 +5712,7 @@
     const ansIdx=ansIdxs(q), ansText_=ansIdx.map(i=>q.choices[i]).join(" ／ ");
     $("#slideViewQ").innerHTML=`<div class="svQLabel">${esc([q.year,q.field].filter(Boolean).join(" ・ "))}</div>
       <div class="svQText">${qUnderlineHTML(q)}</div>
-      <div class="svExpl"><b>正解：</b>${esc(ansText_)}<br>${esc(q.explanation.replace(/▶該当スライド：.*$/,"").trim())}</div>`;
+      <div class="svExpl"><b>正解：</b>${esc(ansText_)}<br>${richText(q.explanation.replace(/▶該当スライド：.*$/,"").trim())}</div>`;
     const body=$("#slideViewBody");
     const blocks=q.slideRefs.filter(r=>r.pages&&r.pages.length).map(r=>{
       const pages=r.pages.map(pg=>{
@@ -6124,12 +6126,12 @@
   function renderExplainBody(q,cur,chosen){
     const picked=Array.isArray(chosen)?chosen:(chosen==null?[]:[chosen]);
     if(Array.isArray(q.choiceNotes)&&q.choiceNotes.length){
-      return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>${explainFigureHTML(q)}
+      return `<div class="lead">解説</div><p class="explainSummary">${richText(q.explanation||"")||'(解説なし)'}</p>${explainFigureHTML(q)}
         <p class="explainSummary" style="color:var(--muted);font-size:12.5px;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>${moreExplHTML(q)}`;
     }
     const parsed=cur ? parseChoiceExplanations(q.explanation) : null;   // 記述問題は選択肢別解説を持たない
     if(!parsed){
-      return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||'(解説なし)'}</p>${explainFigureHTML(q)}${moreExplHTML(q)}`;
+      return `<div class="lead">解説</div><p class="explainSummary">${richText(q.explanation||"")||'(解説なし)'}</p>${explainFigureHTML(q)}${moreExplHTML(q)}`;
     }
     const keys=["A","B","C","D","E","F"];
     const rows=cur.choices.map((c,i)=>{
@@ -6137,7 +6139,7 @@
       const mine=picked.indexOf(i)>=0;
       const cls=c.correct?"ce-correct":(mine?"ce-wrongchosen":"");
       const tag=c.correct?'<span class="etag">正解</span>':(mine?'<span class="etag">あなたの回答</span>':"");
-      return `<li class="${cls}"><span class="ekey">${keys[i]}</span><span class="etext"><span class="echoice">${esc(c.text)}${tag}</span>${exp?`<span class="edesc">${esc(exp)}</span>`:""}</span></li>`;
+      return `<li class="${cls}"><span class="ekey">${keys[i]}</span><span class="etext"><span class="echoice">${esc(c.text)}${tag}</span>${exp?`<span class="edesc">${richText(exp)}</span>`:""}</span></li>`;
     }).join("");
     return `<div class="lead">選択肢別の解説</div><ul class="choiceExplainList">${rows}</ul>`;
   }
@@ -6150,9 +6152,9 @@
       const cls=c.correct?"ce-correct":(mine?"ce-wrongchosen":"");
       const tag=c.correct?'<span class="etag">正解</span>':(mine?'<span class="etag">あなたの回答</span>':"");
       return `<li class="${cls}"><span class="ekey">${keys[i]}</span><span class="etext">
-        <span class="echoice">${esc(c.text)}${tag}</span>${note?`<span class="edesc">${esc(note)}</span>`:""}</span></li>`;
+        <span class="echoice">${esc(c.text)}${tag}</span>${note?`<span class="edesc">${richText(note)}</span>`:""}</span></li>`;
     }).join("");
-    return `<div class="lead">解説</div><p class="explainSummary">${esc(q.explanation)||"(解説なし)"}</p>${explainFigureHTML(q)}
+    return `<div class="lead">解説</div><p class="explainSummary">${richText(q.explanation||"")||"(解説なし)"}</p>${explainFigureHTML(q)}
       <div class="lead" style="margin-top:10px">選択肢別の解説</div><ul class="choiceExplainList">${rows}</ul>${moreExplHTML(q)}`;
   }
   function gradeCard(grade,entry){
@@ -6985,7 +6987,7 @@
         b.onclick=()=>{
           const opening=noteEl.classList.contains("hidden");
           noteEl.classList.toggle("hidden");
-          noteEl.textContent=opening?noteText:"";
+          noteEl.innerHTML=opening?richText(noteText):"";
           hint.textContent=opening?"▴ 閉じる":"▾ 解説を見る";
         };
       } else { b.disabled=true; }
