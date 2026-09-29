@@ -194,7 +194,7 @@
   .lsFigs{margin-top:11px}
   /* 画像読込前も授業スライドの標準比率で領域を予約し、索引ジャンプのズレを抑える */
   .lsFigs .svPage img{aspect-ratio:auto 4 / 3}
-  .lsSolve{margin:26px 0 34px}
+  .lsSolve{margin:26px 0 34px;display:flex;flex-direction:column;gap:10px}
   .lsSolveBtn{width:100%;display:flex;align-items:center;gap:13px;text-align:left;
     border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);
     font-family:inherit;padding:15px 17px;cursor:pointer;transition:.15s}
@@ -2354,6 +2354,8 @@
   function currentSubject(){ return subjectById(currentSubjectId); }
   // 科目ごとの機能フラグ（subjects.js の hideCards / hideExamDay など）。選択中の科目のものを見る。
   function subjectFlag(key){ const s=currentSubject(); return !!(s && s[key]); }
+  // category:"予想問題" の欄の表示名。科目ごとに subjects.js の predictionLabel で上書きできる（例：ゲノム＝予想・定着問題）
+  function predictionLabel(fallback="予想問題"){ const s=currentSubject(); return (s && s.predictionLabel) || fallback; }
   function savedSubjectId(){ try{ return localStorage.getItem(SUBJECT_KEY); }catch(e){ return null; } }
   function saveSubjectId(id){ try{ localStorage.setItem(SUBJECT_KEY, id); }catch(e){} }
 
@@ -2740,7 +2742,7 @@
     const unseenLeft = g.items.some(q=>{ const r=progress[q.id]; return !(r&&r.seen>0); });
     pendingSel={items:g.items, baseItems:g.items, label:g.label, mode, key:g.key, total:g.items.length, defaultN:g.defaultN, startAll:!!g.startAll,
       order:(mode==="playlist"&&unseenLeft)?"unseen":"random", gradingMode:"immediate"};
-    $("#countKicker").textContent=g.kicker||(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
+    $("#countKicker").textContent=g.kicker||(mode==="year"?"年度別演習":mode==="prediction"?predictionLabel():mode==="special"?"直前スペシャル":mode==="field"?"分野別演習":mode==="due"?"今日の復習":mode==="examday"?"試験日モード":mode==="playlist"?"プレイリスト":"演習");
     $("#countTitle").textContent=g.label;
     // 復習・試験日モードは出題順に意味があるので、順番を選べるのはそれ以外の範囲だけ
     const orderable=(mode!=="due"&&mode!=="examday");
@@ -4014,6 +4016,7 @@
     // 科目によっては試験日モードを出さない（例：ゲノム）
     { const ed=$("#examDaySection"); if(ed && subjectFlag("hideExamDay")) ed.classList.add("hidden"); }
     renderGroupList("year", "#yearList");
+    { const l=$("#predictionSection .stLabel"); if(l) l.textContent=predictionLabel(); }
     renderGroupList("prediction", "#predictionList");
     renderGroupList("special", "#specialList");
     renderGroupList("field", "#fieldList");
@@ -4034,7 +4037,7 @@
       const s=catStats(g.items), isWeak=g.key==="__weak__", isBookmark=g.key==="__bookmark__";
       const accent=isWeak?"var(--bad)":isBookmark?"var(--gold)":ACCENTS[(g.idx||0)%ACCENTS.length];
       const pct=Math.round(s.seen/s.total*100);
-      const kicker=isWeak?"苦手復習":isBookmark?"見直したい問題":(mode==="year"?"年度別演習":mode==="prediction"?"予想問題":mode==="special"?"直前スペシャル":"分野別演習");
+      const kicker=isWeak?"苦手復習":isBookmark?"見直したい問題":(mode==="year"?"年度別演習":mode==="prediction"?predictionLabel():mode==="special"?"直前スペシャル":"分野別演習");
       const accText=s.seen?`正答率 ${s.acc}%`:"未学習";
       const mastered=s.mastered?`<span class="mastered">${s.mastered}問定着</span>`:`<span class="mastered" style="color:var(--muted)">開始前</span>`;
       const right=(isWeak||isBookmark)?`<span class="badge">${g.items.length}問</span>`:`<span class="badge">${s.total}問</span>${mastered}`;
@@ -5234,7 +5237,7 @@
         g.written.map((x,i)=>qbGroupBtn(x,QB_WRITTEN_ICONS[i%QB_WRITTEN_ICONS.length])).join("")+`</div>`;
     }
     if(g.pred.length){
-      html+=`<div class="qbSectLabel">🔮 予想問題・模試</div><div class="qbGroupList">`+
+      html+=`<div class="qbSectLabel">🔮 ${esc(predictionLabel("予想問題・模試"))}</div><div class="qbGroupList">`+
         g.pred.map((x,i)=>qbGroupBtn(x,QB_PRED_ICONS[i%QB_PRED_ICONS.length])).join("")+`</div>`;
     }
     if(g.spec.length){
@@ -5936,10 +5939,19 @@
     const safe=String(deck).replace(/[^0-9A-Za-z_-]/g,"-");
     return `lesson-section-${safe}-${index+1}`;
   }
-  function startLessonRound(d){
-    if(!d.items.length){ toast("この回の問題が見つかりません"); return; }
-    if(d.items.length<2){ startQuiz(d.items, `${deckLabel(d.deck)} ${d.name}`, {mode:"playlist", key:"__lesson_"+d.deck}); return; }
-    openCountModal({items:d.items, label:`${deckLabel(d.deck)} ${d.name}`, key:"__lesson_"+d.deck, kicker:"この回を解く"}, "playlist");
+  /* 章の出題セット。予想問題（category:"予想問題"）が混ざる回だけ「過去問」と「予想問題」に分けて選ばせる。
+     片方しか無い回は従来どおり「この回を解く」1本。 */
+  function lessonRounds(d){
+    const pred=d.items.filter(q=>q.category==="予想問題");
+    if(!pred.length || pred.length===d.items.length) return [{key:"", title:"この回を解く", tag:"", icon:"📚", items:d.items}];
+    return [{key:"past", title:"過去問から解く", tag:"過去問", icon:"📚", items:d.items.filter(q=>q.category!=="予想問題")},
+            {key:"pred", title:`${predictionLabel()}から解く`, tag:predictionLabel(), icon:"🔮", items:pred}];
+  }
+  function startLessonRound(d, r=lessonRounds(d)[0]){
+    if(!r.items.length){ toast("この回の問題が見つかりません"); return; }
+    const label=`${deckLabel(d.deck)} ${d.name}${r.tag?` ・ ${r.tag}`:""}`, key="__lesson_"+d.deck+(r.key?"_"+r.key:"");
+    if(r.items.length<2){ startQuiz(r.items, label, {mode:"playlist", key}); return; }
+    openCountModal({items:r.items, label, key, kicker:r.title}, "playlist");
   }
   function setLessonActiveSection(index){
     const st=lessonQuickState; if(!st || st.active===index) return;
@@ -6051,15 +6063,17 @@
     const elements=[...$("#lessonBody").querySelectorAll(".lsSect")];
     lessonQuickState={d,sections:sects,elements,active:-1};
     $("#lessonIndexChapter").textContent=`${lessonKicker(d)} ・ ${d.name}`;
-    $("#lessonIndexActions").innerHTML=`${s.total?`<button type="button" class="liAction" data-lesson-index-action="solve">
-        <span class="liActionIcon">📚</span><span class="liActionBody"><span class="liActionTitle">この回を解く</span><span class="liActionSub">${s.total}問から出題</span></span></button>`:""}
+    const rounds=s.total?lessonRounds(d):[];
+    $("#lessonIndexActions").innerHTML=`${rounds.map((r,i)=>`<button type="button" class="liAction" data-lesson-round="${i}">
+        <span class="liActionIcon">${r.icon}</span><span class="liActionBody"><span class="liActionTitle">${esc(r.title)}</span><span class="liActionSub">${r.items.length}問から出題</span></span></button>`).join("")}
       ${d.pages.length?`<button type="button" class="liAction" data-lesson-index-action="slides">
         <span class="liActionIcon">📘</span><span class="liActionBody"><span class="liActionTitle">スライドをすべて見る</span><span class="liActionSub">${d.pages.length}ページ</span></span></button>`:""}`;
     $("#lessonIndexList").innerHTML=sects.map((sc,i)=>`<button type="button" class="liItem" data-section="${i+1}">
       <span class="liNo">${i+1}</span><span class="liText">${esc(sc.heading||`項目 ${i+1}`)}</span></button>`).join("");
     $("#lessonIndexList").querySelectorAll(".liItem").forEach(btn=>{ btn.onclick=()=>jumpToLessonSection(Number(btn.dataset.section)); });
-    const solve=$("#lessonIndexActions").querySelector('[data-lesson-index-action="solve"]');
-    if(solve) solve.onclick=()=>{ closeLessonIndex(false); startLessonRound(d); };
+    $("#lessonIndexActions").querySelectorAll("[data-lesson-round]").forEach(b=>{
+      b.onclick=()=>{ closeLessonIndex(false); startLessonRound(d, rounds[Number(b.dataset.lessonRound)]); };
+    });
     const slides=$("#lessonIndexActions").querySelector('[data-lesson-index-action="slides"]');
     if(slides) slides.onclick=()=>openLessonSlides(d,slides);
     const quick=$("#lessonQuickBtn"); if(quick) quick.onclick=()=>openLessonIndex(quick);
@@ -6102,17 +6116,18 @@
         <span class="lsSolveBody"><span class="lsSolveTitle">この回のスライドをすべて見る</span>
           <span class="lsSolveSub">解説の根拠になった ${d.pages.length}ページ</span></span>
         <span class="lsSolveChev">›</span></button></div>`:"";
-    const solve=!s.total?"":`<div class="lsSolve"><button type="button" class="lsSolveBtn" id="lessonSolveBtn">
-        <span class="lsSolveIcon">📚</span>
-        <span class="lsSolveBody"><span class="lsSolveTitle">この回を解く（${s.total}問）</span>
-          <span class="lsSolveSub">${s.seen?`学習済 ${s.seen}/${s.total}問 ・ 正答率 ${s.acc}%`:"まだ解いていません"}</span></span>
-        <span class="lsSolveChev">›</span></button></div>`;
+    const rounds=s.total?lessonRounds(d):[];
+    const solve=!rounds.length?"":`<div class="lsSolve">${rounds.map((r,i)=>{ const rs=catStats(r.items);
+      return `<button type="button" class="lsSolveBtn" data-lesson-round="${i}">
+        <span class="lsSolveIcon">${r.icon}</span>
+        <span class="lsSolveBody"><span class="lsSolveTitle">${esc(r.title)}（${rs.total}問）</span>
+          <span class="lsSolveSub">${rs.seen?`学習済 ${rs.seen}/${rs.total}問 ・ 正答率 ${rs.acc}%`:"まだ解いていません"}</span></span>
+        <span class="lsSolveChev">›</span></button>`; }).join("")}</div>`;
 
     closeLessonIndex(false); closeLessonSlides(false);
     body.innerHTML=head+quick+keyFigs+soon+sectHTML+solve+all;
     wireLessonFigs(body);
-    const solveBtn=$("#lessonSolveBtn");
-    if(solveBtn) solveBtn.onclick=()=>startLessonRound(d);
+    body.querySelectorAll(".lsSolve [data-lesson-round]").forEach(b=>{ b.onclick=()=>startLessonRound(d, rounds[Number(b.dataset.lessonRound)]); });
     const allBtn=$("#lessonAllBtn"); if(allBtn) allBtn.onclick=()=>openLessonSlides(d,allBtn);
     setupLessonQuickIndex(d,sects,s);
   }
