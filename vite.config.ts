@@ -35,6 +35,8 @@ export default defineConfig({
         // 更新履歴が古いまま出たりする。どちらも数十KBなので、オンラインなら
         // 必ずネットワークから取り直し、オフラインのときだけキャッシュへ落とす。
         globIgnores: ["images/**", "subjects.js", "updates.js"],
+        // 既定の2MiBでは、ゲノム編の questions.js（2.1MB）がプリキャッシュから外れてビルドが失敗する。
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>
