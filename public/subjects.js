@@ -49,7 +49,7 @@ window.SUBJECTS = [
     questions: "subjects/genome/questions.js",
     lessons: "subjects/genome/lessons.js",   // 「📖 学習」画面の要点テキスト（省略可）
     memoryDecks: "subjects/genome/memory-deck.js",  // 暗記カードの「みんなのデッキ」に出す公式デッキ
-    expectQuestions: 680,
+    expectQuestions: 705,
     hideCards: true,     // この科目では「カード」機能を出さない（メニュー・ハブ・カード一覧）
     hideExamDay: true,   // この科目では「試験日モード」を出さない
     predictionLabel: "予想・定着問題",  // category:"予想問題" の欄の表示名（省略時は「予想問題」）
