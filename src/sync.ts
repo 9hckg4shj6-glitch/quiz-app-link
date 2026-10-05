@@ -3,6 +3,7 @@ import { assessAccountBinding, clearLocalDataOwner, getLocalDataOwner } from "./
 import { supabase } from "./backend";
 import { db, nowIso, saveCard, saveDeck, saveSetting, uuid } from "./db";
 import { rebuildScheduleFromEvents } from "./fsrs";
+import { clearPracticeSessions } from "./practice-session";
 import type { OutboxRecord, StudyCard, SyncStatus } from "./types";
 
 export { supabase } from "./backend";
@@ -260,6 +261,7 @@ export async function deleteAccount(): Promise<void> {
 
 /** 別アカウントへ切り替える直前に、非公開の学習データだけを端末から除去する。 */
 export async function clearPrivateStudyDataForAccountSwitch(): Promise<void> {
+  await clearPracticeSessions();
   const device = await db.settings.get("deviceId");
   await db.transaction(
     "rw",

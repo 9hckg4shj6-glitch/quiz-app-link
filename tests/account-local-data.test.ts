@@ -17,12 +17,14 @@ function card(id: string, builtIn: boolean): StudyCard {
 beforeEach(async () => {
   await Promise.all([
     db.cards.clear(), db.decks.clear(), db.reviewEvents.clear(), db.schedules.clear(), db.outbox.clear(),
-    db.settings.clear(), db.writtenAttempts.clear(), db.writtenDrafts.clear(),
+    db.settings.clear(), db.writtenAttempts.clear(), db.writtenDrafts.clear(), db.practiceSessions.clear(),
   ]);
 });
 
 describe("account local data isolation", () => {
   it("アカウント切替時は公開端末IDと内蔵カードだけを残す", async () => {
+    // 切替では破損した途中演習も含め、ローカル専用テーブルを空にする。
+    await db.practiceSessions.put({ subjectId: "metabolism", version: 99 } as any);
     await db.cards.bulkPut([card("built-in", true), card("private", false)]);
     await db.settings.bulkPut([
       { key: "deviceId", ownerId: null, value: "device-1", updatedAt: "2026-08-01T00:00:00.000Z" },
@@ -42,5 +44,6 @@ describe("account local data isolation", () => {
     expect(await db.decks.count()).toBe(0);
     expect((await db.settings.get("deviceId"))?.value).toBe("device-1");
     expect(await db.settings.get("legacyProgress")).toBeUndefined();
+    expect(await db.practiceSessions.count()).toBe(0);
   });
 });

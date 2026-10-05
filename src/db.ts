@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from "dexie";
+import type { PracticeSessionSnapshot } from "./practice-session";
 import type {
   Deck,
   MemoryMark,
@@ -30,6 +31,8 @@ export class StudyDatabase extends Dexie {
   writtenDrafts!: EntityTable<WrittenDraft, "id">;
   /** 暗記カードの「覚えた／まだ」。端末内だけで持つ（同期しない） */
   memoryMarks!: EntityTable<MemoryMark, "cardId">;
+  /** 通常演習の途中状態。端末内専用、同期・バックアップ対象外。 */
+  practiceSessions!: EntityTable<PracticeSessionSnapshot, "subjectId">;
 
   constructor() {
     super("metabolism-study-v2");
@@ -102,6 +105,7 @@ export class StudyDatabase extends Dexie {
       writtenDrafts: "&id, subjectId, questionId, examSessionId, updatedAt",
       memoryMarks: "&cardId, deckId, status, updatedAt",
     });
+    this.version(6).stores({ practiceSessions: "&subjectId, updatedAt" });
   }
 }
 

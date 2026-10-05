@@ -21,6 +21,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <style>
   :root{
+    --reading-font-scale:1; --reading-line-scale:1;
+    font-size:calc(16px * var(--reading-font-scale));
     --bg:#0d1020; --bg2:#141a30; --card:#1a2140; --card2:#232b4e;
     --line:#2e3763; --text:#eef1ff; --muted:#9aa3c7; --brand:#58c7d8;
     --brand2:#76a9ff; --good:#2fd27a; --good-bg:#123326; --bad:#ff5d6c;
@@ -51,7 +53,7 @@
       radial-gradient(1000px 500px at -10% 0%, rgba(31,111,235,.10), transparent 55%),
       linear-gradient(180deg,var(--bg),var(--bg2));
     background-attachment:fixed;
-    color:var(--text); line-height:1.6; min-height:100vh;
+    color:var(--text); line-height:calc(1.6 * var(--reading-line-scale,1)); min-height:100vh;
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   }
   .wrap{max-width:760px;margin:0 auto;padding:16px 16px 56px}
@@ -60,8 +62,8 @@
   .menuWrap{position:relative;flex:0 0 auto}
   /* ===== 科目えらび画面 ===== */
   .spLead{margin:6px 0 18px}
-  .spLead h2{margin:2px 0 6px;font-size:26px;font-weight:900;letter-spacing:-.02em}
-  .spLead p{margin:0;color:var(--muted);font-size:14px;line-height:1.8}
+  .spLead h2{margin:2px 0 6px;font-size:1.625rem;font-weight:900;letter-spacing:-.02em}
+  .spLead p{margin:0;color:var(--muted);font-size:0.875rem;line-height:calc(1.8 * var(--reading-line-scale,1))}
   /* 3列までにして、タイルが小さくなりすぎないようにする */
   .spGroups{display:flex;flex-direction:column;gap:26px;max-width:800px}
   /* 前回のつづき。グリッドの上に横長で大きく置く */
@@ -76,13 +78,13 @@
   .spResume:active{transform:scale(.995)}
   .spResume:focus-visible{outline:3px solid color-mix(in srgb,var(--sp-accent,var(--brand)) 45%,transparent);outline-offset:3px}
   .spResume.busy{opacity:.6;pointer-events:none}
-  .spResumeIcon{flex:0 0 auto;width:66px;height:66px;border-radius:20px;display:grid;place-items:center;font-size:34px;
+  .spResumeIcon{flex:0 0 auto;width:66px;height:66px;border-radius:20px;display:grid;place-items:center;font-size:2.125rem;
     background:color-mix(in srgb,var(--sp-accent,var(--brand)) 15%,var(--card2));border:1px solid var(--line)}
   .spResumeBody{flex:1;min-width:0}
-  .spResumeTag{display:block;font-size:11px;font-weight:900;letter-spacing:.06em;color:var(--sp-accent,var(--brand));margin-bottom:3px}
-  .spResumeName{display:block;font-size:24px;font-weight:900;letter-spacing:-.01em;line-height:1.3;margin-bottom:7px}
-  .spResumeGo{flex:0 0 auto;font-size:20px;font-weight:900;color:var(--sp-accent,var(--brand))}
-  .spGroupTitle{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:13px;font-weight:900;
+  .spResumeTag{display:block;font-size:0.6875rem;font-weight:900;letter-spacing:.06em;color:var(--sp-accent,var(--brand));margin-bottom:3px}
+  .spResumeName{display:block;font-size:1.5rem;font-weight:900;letter-spacing:-.01em;line-height:calc(1.3 * var(--reading-line-scale,1));margin-bottom:7px}
+  .spResumeGo{flex:0 0 auto;font-size:1.25rem;font-weight:900;color:var(--sp-accent,var(--brand))}
+  .spGroupTitle{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:0.8125rem;font-weight:900;
     letter-spacing:.06em;color:var(--muted)}
   .spGroupTitle::after{content:"";flex:1;height:1px;background:var(--line)}
   .spGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
@@ -97,14 +99,14 @@
   .spCard:focus-visible{outline:3px solid color-mix(in srgb,var(--sp-accent,var(--brand)) 45%,transparent);outline-offset:3px}
   .spCard.busy{opacity:.6;pointer-events:none}
   .spCard.soon{border-style:dashed}
-  .spIcon{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;font-size:29px;
+  .spIcon{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;font-size:1.8125rem;
     background:color-mix(in srgb,var(--sp-accent,var(--brand)) 15%,var(--card2));border:1px solid var(--line)}
-  .spName{display:block;font-size:22px;font-weight:900;letter-spacing:-.01em;line-height:1.35;margin-bottom:6px}
-  .spMeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--muted)}
+  .spName{display:block;font-size:1.375rem;font-weight:900;letter-spacing:-.01em;line-height:calc(1.35 * var(--reading-line-scale,1));margin-bottom:6px}
+  .spMeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:0.78125rem;font-weight:800;color:var(--muted)}
   .spMeta .spNum{color:var(--sp-accent,var(--brand))}
   .spBar{display:block;margin-top:10px;height:6px;border-radius:99px;background:var(--card2);overflow:hidden}
   .spBar i{display:block;height:100%;border-radius:99px;background:var(--sp-accent,var(--brand))}
-  .spTag{position:absolute;top:16px;right:16px;font-size:10.5px;font-weight:900;letter-spacing:.03em;
+  .spTag{position:absolute;top:16px;right:16px;font-size:0.65625rem;font-weight:900;letter-spacing:.03em;
     padding:4px 9px;border-radius:99px;background:color-mix(in srgb,var(--sp-accent,var(--brand)) 16%,var(--card2));
     color:var(--sp-accent,var(--brand));border:1px solid color-mix(in srgb,var(--sp-accent,var(--brand)) 30%,transparent)}
   .spTag.soonTag{background:var(--card2);color:var(--muted);border-color:var(--line)}
@@ -112,40 +114,40 @@
     .spGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .spGroups{gap:20px}
     .spResume{gap:13px;padding:15px 16px;border-radius:20px}
-    .spResumeIcon{width:52px;height:52px;font-size:27px;border-radius:16px}
-    .spResumeName{font-size:19px}
+    .spResumeIcon{width:52px;height:52px;font-size:1.6875rem;border-radius:16px}
+    .spResumeName{font-size:1.1875rem}
     .spResumeGo{display:none}
     .spCard{padding:15px;border-radius:20px}
-    .spIcon{width:44px;height:44px;font-size:23px;border-radius:14px}
-    .spName{font-size:16px}
-    .spLead h2{font-size:22px}
+    .spIcon{width:44px;height:44px;font-size:1.4375rem;border-radius:14px}
+    .spName{font-size:1rem}
+    .spLead h2{font-size:1.375rem}
   }
 
   /* 根拠スライド画面 */
   .svQ{padding:16px 18px}
-  .svQLabel{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
-  .svQText{font-size:15.5px;font-weight:800;line-height:1.7;margin-bottom:10px}
-  .svExpl{font-size:14px;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:break-word}
+  .svQLabel{font-size:0.6875rem;font-weight:900;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
+  .svQText{font-size:0.96875rem;font-weight:800;line-height:calc(1.7 * var(--reading-line-scale,1));margin-bottom:10px}
+  .svExpl{font-size:0.875rem;line-height:calc(1.85 * var(--reading-line-scale,1));color:var(--text);white-space:pre-wrap;word-break:break-word}
   .svDeck{margin:22px 0 10px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-  .svDeckName{font-size:15px;font-weight:900}
-  .svDeckTag{font-size:11px;font-weight:900;padding:3px 9px;border-radius:99px;
+  .svDeckName{font-size:0.9375rem;font-weight:900}
+  .svDeckTag{font-size:0.6875rem;font-weight:900;padding:3px 9px;border-radius:99px;
     background:color-mix(in srgb,var(--brand) 14%,var(--card2));color:var(--brand);border:1px solid var(--line)}
   .svPage{margin-bottom:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
-  .svPageCap{font-size:11.5px;font-weight:900;color:var(--muted);padding:9px 12px;background:var(--card2);border-bottom:1px solid var(--line)}
+  .svPageCap{font-size:0.71875rem;font-weight:900;color:var(--muted);padding:9px 12px;background:var(--card2);border-bottom:1px solid var(--line)}
   /* ページ内のどのスライド（象限）が根拠かを示す。pageNotes を持つ科目だけに出る */
   .svPanels{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:var(--card2);border-bottom:1px solid var(--line)}
-  .svPanel{font-size:11px;font-weight:700;color:var(--brand);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+  .svPanel{font-size:0.6875rem;font-weight:700;color:var(--brand);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
   .svPage img{display:block;width:100%;height:auto;background:#fff;cursor:zoom-in}
-  .svHint{font-size:12px;font-weight:800;color:var(--muted);margin:-6px 0 12px 2px}
+  .svHint{font-size:0.75rem;font-weight:800;color:var(--muted);margin:-6px 0 12px 2px}
   /* スライドの全画面ビューア。縦横どちらにもスクロールできるので、拡大しても画像が辿れなくならない */
   .slideLb{position:fixed;inset:0;z-index:1300;background:rgba(2,6,23,.96);display:flex;flex-direction:column}
   .slideLb.hidden{display:none}
   .slideLbBar{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:10px 12px;
     padding-top:max(10px,env(safe-area-inset-top));background:rgba(2,6,23,.92)}
-  .slideLbCap{flex:1;min-width:0;color:#fff;font-size:13px;font-weight:800;
+  .slideLbCap{flex:1;min-width:0;color:#fff;font-size:0.8125rem;font-weight:800;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .slideLbBtn{flex:0 0 auto;border:none;border-radius:11px;background:rgba(255,255,255,.18);color:#fff;
-    font-family:inherit;font-size:13px;font-weight:900;padding:10px 14px;cursor:pointer;transition:.15s}
+    font-family:inherit;font-size:0.8125rem;font-weight:900;padding:10px 14px;cursor:pointer;transition:.15s}
   .slideLbBtn:hover{background:rgba(255,255,255,.3)}
   .slideLbBody{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;
     display:flex;align-items:flex-start;justify-content:center;padding:10px;
@@ -155,40 +157,40 @@
   /* 拡大時は原寸で表示し、はみ出した分は縦横どちらもスクロールで見られる */
   .slideLb.zoom .slideLbBody{display:block}
   .slideLb.zoom .slideLbBody img{max-width:none;max-height:none;width:1280px;margin:0 auto;cursor:zoom-out}
-  .svNote{margin:18px 0 30px;font-size:12.5px;line-height:1.9;color:var(--muted);
+  .svNote{margin:18px 0 30px;font-size:0.78125rem;line-height:calc(1.9 * var(--reading-line-scale,1));color:var(--muted);
     padding:13px 15px;border:1px dashed var(--line);border-radius:14px}
   /* 学習（インプット）画面 */
   .lsLead{padding:15px 17px;display:flex;flex-direction:column;gap:5px}
-  .lsLeadTitle{font-size:15px;font-weight:900}
-  .lsLeadSub{font-size:12.5px;line-height:1.85;color:var(--muted)}
+  .lsLeadTitle{font-size:0.9375rem;font-weight:900}
+  .lsLeadSub{font-size:0.78125rem;line-height:calc(1.85 * var(--reading-line-scale,1));color:var(--muted)}
   /* 章名は長くなることがあるので、一覧では省略せず折り返す */
-  #lessonList .cat .info h3{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.45}
+  #lessonList .cat .info h3{white-space:normal;overflow:visible;text-overflow:clip;line-height:calc(1.45 * var(--reading-line-scale,1))}
   .lsHead{padding:16px 18px}
-  .lsHeadKicker{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
-  .lsHeadTitle{font-size:19px;font-weight:900;line-height:1.5;margin-bottom:9px}
-  .lsHeadMeta{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:11px}
+  .lsHeadKicker{font-size:0.6875rem;font-weight:900;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
+  .lsHeadTitle{font-size:1.1875rem;font-weight:900;line-height:calc(1.5 * var(--reading-line-scale,1));margin-bottom:9px}
+  .lsHeadMeta{display:flex;flex-wrap:wrap;gap:6px;font-size:0.71875rem;color:var(--muted);margin-bottom:11px}
   .lsHeadMeta span{border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:3px 9px;font-weight:800}
   .lessonGroupBar{margin:0 2px 4px}
-  .lsIntro{font-size:14.5px;line-height:1.95}
+  .lsIntro{font-size:0.90625rem;line-height:calc(1.95 * var(--reading-line-scale,1))}
   .lsSect{margin:20px 0 0;scroll-margin-top:178px}
   .lsSectHead{display:flex;align-items:baseline;gap:9px;margin:0 2px 10px}
-  .lsSectNo{flex:0 0 auto;font-size:11px;font-weight:900;color:var(--brand);
+  .lsSectNo{flex:0 0 auto;font-size:0.6875rem;font-weight:900;color:var(--brand);
     border:1px solid var(--line);background:color-mix(in srgb,var(--brand) 12%,var(--card2));
     border-radius:999px;padding:3px 9px}
-  .lsSectName{font-size:16.5px;font-weight:900;line-height:1.5}
-  .lsBody{padding:15px 17px;font-size:14.5px;line-height:2.0;white-space:pre-wrap;word-break:break-word}
+  .lsSectName{font-size:1.03125rem;font-weight:900;line-height:calc(1.5 * var(--reading-line-scale,1))}
+  .lsBody{padding:15px 17px;font-size:0.90625rem;line-height:calc(2.0 * var(--reading-line-scale,1));white-space:pre-wrap;word-break:break-word}
   /* 対比・一覧は文章より表のほうが速く読める。列が多い表はモバイルで潰れるので横スクロールで包む。 */
   .lsTableWrap{margin-top:11px;overflow-x:auto;-webkit-overflow-scrolling:touch;
     border:1px solid var(--line);border-radius:14px;background:var(--card)}
-  .lsTableCap{padding:10px 14px 0;font-size:12.5px;color:var(--muted)}
-  .lsTable{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.75}
+  .lsTableCap{padding:10px 14px 0;font-size:0.78125rem;color:var(--muted)}
+  .lsTable{width:100%;border-collapse:collapse;font-size:0.84375rem;line-height:calc(1.75 * var(--reading-line-scale,1))}
   .lsTable th,.lsTable td{padding:9px 12px;border-bottom:1px solid var(--line);
     text-align:left;vertical-align:top;word-break:break-word}
-  .lsTable thead th{background:var(--card2);font-weight:900;font-size:12.5px;
+  .lsTable thead th{background:var(--card2);font-weight:900;font-size:0.78125rem;
     color:var(--muted);white-space:nowrap}
   .lsTable tbody th{font-weight:800}
   .lsTable tbody tr:last-child th,.lsTable tbody tr:last-child td{border-bottom:0}
-  @media(max-width:520px){ .lsTable{font-size:12.5px} .lsTable th,.lsTable td{padding:8px 10px} }
+  @media(max-width:520px){ .lsTable{font-size:0.78125rem} .lsTable th,.lsTable td{padding:8px 10px} }
   /* 学習本文の ==重要語== だけを赤字にする。文章全体を赤くせず、暗記語と正答語に限定する。 */
   .lsEmphasis{color:var(--bad);font-weight:900}
   .lsFigs{margin-top:11px}
@@ -199,12 +201,12 @@
     border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);
     font-family:inherit;padding:15px 17px;cursor:pointer;transition:.15s}
   .lsSolveBtn:hover{border-color:var(--brand)}
-  .lsSolveIcon{flex:0 0 auto;font-size:22px}
+  .lsSolveIcon{flex:0 0 auto;font-size:1.375rem}
   .lsSolveBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-  .lsSolveTitle{font-size:15.5px;font-weight:900}
-  .lsSolveSub{font-size:12px;color:var(--muted)}
-  .lsSolveChev{flex:0 0 auto;color:var(--muted);font-size:22px}
-  .lsSoon{margin:16px 0 4px;font-size:13px;line-height:1.95;color:var(--muted);
+  .lsSolveTitle{font-size:0.96875rem;font-weight:900}
+  .lsSolveSub{font-size:0.75rem;color:var(--muted)}
+  .lsSolveChev{flex:0 0 auto;color:var(--muted);font-size:1.375rem}
+  .lsSoon{margin:16px 0 4px;font-size:0.8125rem;line-height:calc(1.95 * var(--reading-line-scale,1));color:var(--muted);
     padding:14px 16px;border:1px dashed var(--line);border-radius:14px}
   /* 長い学習コンテンツを読みながら使えるクイック索引 */
   .lessonQuickNav{position:sticky;top:104px;z-index:42;margin:14px 0 18px}
@@ -213,14 +215,14 @@
     border-radius:16px;background:var(--surface-blur);color:var(--text);font-family:inherit;padding:9px 13px;
     cursor:pointer;box-shadow:0 12px 30px rgba(29,45,68,.14);backdrop-filter:saturate(145%) blur(16px)}
   .lessonQuickBtn:hover{border-color:var(--subject-accent,var(--brand))}
-  .lqIcon{flex:0 0 auto;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;font-size:18px;
+  .lqIcon{flex:0 0 auto;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;font-size:1.125rem;
     background:color-mix(in srgb,var(--subject-accent,var(--brand)) 13%,var(--card2));color:var(--subject-accent,var(--brand))}
   .lqBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-  .lqTitle{font-size:13.5px;font-weight:900}
-  .lqCurrent{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lqProgress{flex:0 0 auto;font-size:11.5px;font-weight:900;color:var(--subject-accent,var(--brand));
+  .lqTitle{font-size:0.84375rem;font-weight:900}
+  .lqCurrent{font-size:0.71875rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lqProgress{flex:0 0 auto;font-size:0.71875rem;font-weight:900;color:var(--subject-accent,var(--brand));
     border:1px solid var(--line);border-radius:999px;background:var(--card2);padding:4px 9px}
-  .lqChev{flex:0 0 auto;color:var(--muted);font-size:20px;transition:transform .15s}
+  .lqChev{flex:0 0 auto;color:var(--muted);font-size:1.25rem;transition:transform .15s}
   .lessonQuickBtn[aria-expanded="true"] .lqChev{transform:rotate(180deg)}
   .lessonIndexBackdrop{position:fixed;inset:0;z-index:1040;background:rgba(10,14,24,.48);backdrop-filter:blur(3px)}
   .lessonIndexSheet{position:fixed;z-index:1041;top:142px;left:50%;transform:translateX(-50%);
@@ -228,72 +230,72 @@
     background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 28px 80px rgba(10,20,36,.28);overflow:hidden}
   .liSheetHead{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:15px 17px;border-bottom:1px solid var(--line)}
   .liSheetTitle{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-  .liSheetTitle b{font-size:16px}.liSheetTitle span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .liSheetTitle b{font-size:1rem}.liSheetTitle span{font-size:0.71875rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .liClose{flex:0 0 auto;width:40px;height:40px;border:1px solid var(--line);border-radius:12px;background:var(--card2);
-    color:var(--text);font-size:17px;font-weight:900;cursor:pointer}
+    color:var(--text);font-size:1.0625rem;font-weight:900;cursor:pointer}
   .liActions{flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:12px 14px;border-bottom:1px solid var(--line)}
   .liAction{min-height:54px;display:flex;align-items:center;gap:9px;text-align:left;border:1px solid var(--line);border-radius:14px;
     background:var(--card2);color:var(--text);padding:9px 11px;font-family:inherit;cursor:pointer}
-  .liAction:hover{border-color:var(--subject-accent,var(--brand))}.liActionIcon{font-size:18px}.liActionBody{min-width:0;display:grid;gap:1px}
-  .liActionTitle{font-size:12.5px;font-weight:900}.liActionSub{font-size:10.5px;color:var(--muted)}
+  .liAction:hover{border-color:var(--subject-accent,var(--brand))}.liActionIcon{font-size:1.125rem}.liActionBody{min-width:0;display:grid;gap:1px}
+  .liActionTitle{font-size:0.78125rem;font-weight:900}.liActionSub{font-size:0.65625rem;color:var(--muted)}
   .liList{min-height:0;overflow:auto;padding:8px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
   .liItem{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:start;gap:8px;text-align:left;
     border:1px solid transparent;border-radius:12px;background:transparent;color:var(--text);padding:9px 10px;font-family:inherit;cursor:pointer}
   .liItem:hover{background:var(--card2)}
   .liItem.active{border-color:color-mix(in srgb,var(--subject-accent,var(--brand)) 35%,var(--line));
     background:color-mix(in srgb,var(--subject-accent,var(--brand)) 10%,var(--card2))}
-  .liNo{font-size:11px;font-weight:900;color:var(--subject-accent,var(--brand));padding-top:2px}.liText{font-size:13px;font-weight:800;line-height:1.55}
+  .liNo{font-size:0.6875rem;font-weight:900;color:var(--subject-accent,var(--brand));padding-top:2px}.liText{font-size:0.8125rem;font-weight:800;line-height:calc(1.55 * var(--reading-line-scale,1))}
   /* 索引から開く「この回のスライド」専用ビュー */
   .lessonSlidesOverlay{position:fixed;inset:0;z-index:1120;display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
   .lsoBar{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:10px max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));
     padding-top:max(10px,env(safe-area-inset-top));border-bottom:1px solid var(--line);background:var(--surface-blur);backdrop-filter:blur(16px)}
   .lsoBack{flex:0 0 auto;min-height:42px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);
-    font-family:inherit;font-size:13px;font-weight:900;padding:9px 13px;cursor:pointer}
+    font-family:inherit;font-size:0.8125rem;font-weight:900;padding:9px 13px;cursor:pointer}
   .lsoHeading{flex:1;min-width:0}.lsoHeading b,.lsoHeading span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lsoHeading b{font-size:15px}.lsoHeading span{font-size:11.5px;color:var(--muted)}
+  .lsoHeading b{font-size:0.9375rem}.lsoHeading span{font-size:0.71875rem;color:var(--muted)}
   .lsoScroll{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:16px max(16px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-  .lsoContent{width:min(820px,100%);margin:0 auto}.lsoHint{font-size:12px;font-weight:800;color:var(--muted);margin:0 2px 12px}
+  .lsoContent{width:min(820px,100%);margin:0 auto}.lsoHint{font-size:0.75rem;font-weight:800;color:var(--muted);margin:0 2px 12px}
   .lsoContent .lsFigs{margin-top:0}
   /* 「解説をさらに見る」ボタン */
   .moreExpl{display:inline-flex;align-items:center;gap:8px;margin-top:12px;
     border:1px solid var(--line);background:var(--card2);color:var(--text);
-    font-family:inherit;font-size:13.5px;font-weight:900;padding:10px 15px;border-radius:12px;cursor:pointer;transition:.15s}
+    font-family:inherit;font-size:0.84375rem;font-weight:900;padding:10px 15px;border-radius:12px;cursor:pointer;transition:.15s}
   .moreExpl:hover{border-color:var(--brand);color:var(--brand)}
   .moreExpl .meChev{color:var(--muted);font-weight:800}
   /* 解説の補足図（授業スライドからの切り抜き） */
   .explFig{margin:12px 0 4px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--card2)}
-  .explFig figcaption{font-size:11.5px;font-weight:900;color:var(--muted);margin-bottom:8px;letter-spacing:.02em}
+  .explFig figcaption{font-size:0.71875rem;font-weight:900;color:var(--muted);margin-bottom:8px;letter-spacing:.02em}
   .explFig img{display:block;width:100%;height:auto;border-radius:10px;background:#fff}
   /* 空の科目（まだ問題を入れていない科目）の案内 */
   .emptySubject{display:flex;align-items:center;gap:14px;padding:20px 18px}
-  .emptySubject .esIcon{font-size:28px;flex:0 0 auto}
+  .emptySubject .esIcon{font-size:1.75rem;flex:0 0 auto}
   .emptySubject .esBody{display:grid;gap:4px;min-width:0}
-  .emptySubject .esTitle{font-size:15px;font-weight:900}
-  .emptySubject .esSub{font-size:13px;color:var(--muted);line-height:1.7}
+  .emptySubject .esTitle{font-size:0.9375rem;font-weight:900}
+  .emptySubject .esSub{font-size:0.8125rem;color:var(--muted);line-height:calc(1.7 * var(--reading-line-scale,1))}
   /* 科目切替（科目が2つ以上あるときだけ表示） */
   .titleWrap{min-width:0}
   .subjectWrap{position:relative;margin-top:5px}
   .subjectChip{display:inline-flex;align-items:center;gap:6px;max-width:100%;
     border:1px solid var(--line);background:var(--card2);color:var(--text);
-    border-radius:999px;padding:4px 11px 4px 8px;font-family:inherit;font-size:12.5px;font-weight:800;
+    border-radius:999px;padding:4px 11px 4px 8px;font-family:inherit;font-size:0.78125rem;font-weight:800;
     cursor:pointer;transition:.15s}
   .subjectChip:hover{border-color:var(--subject-accent,var(--brand));color:var(--subject-accent,var(--brand))}
-  .subjectChip .sjEmoji{font-size:14px}
+  .subjectChip .sjEmoji{font-size:0.875rem}
   .subjectChip .sjName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .subjectChip .sjChev{color:var(--muted);font-size:11px}
+  .subjectChip .sjChev{color:var(--muted);font-size:0.6875rem}
   .notifyWrap{position:relative;flex:0 0 auto}
   .updateDot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;
     background:var(--bad);border:2px solid var(--card)}
   .menuPanel.notifyPanel{left:auto;right:max(16px,calc((100vw - 1040px)/2 + 18px));padding-top:4px}
-  .updatesHead{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;padding:8px 10px 6px}
+  .updatesHead{font-size:0.6875rem;font-weight:900;color:var(--muted);text-transform:uppercase;padding:8px 10px 6px}
   .updatesBody{max-height:min(60vh,380px);overflow-y:auto;display:grid;gap:2px}
   .updatesHomeList{display:grid;gap:2px}
   .updateItem{padding:10px;border-radius:10px}
   .updateItem+.updateItem{border-top:1px solid var(--line);border-radius:0 0 10px 10px}
-  .updateItem .updateDate{font-size:10.5px;font-weight:800;color:var(--brand);margin-bottom:3px}
-  .updateItem .updateText{font-size:13px;line-height:1.65;color:var(--text)}
+  .updateItem .updateDate{font-size:0.65625rem;font-weight:800;color:var(--brand);margin-bottom:3px}
+  .updateItem .updateText{font-size:0.8125rem;line-height:calc(1.65 * var(--reading-line-scale,1));color:var(--text)}
   .menuBtn{cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:10px;
-    width:38px;height:38px;display:grid;place-items:center;color:var(--text);font-size:18px;
+    width:38px;height:38px;display:grid;place-items:center;color:var(--text);font-size:1.125rem;
     box-shadow:var(--glow);font-family:inherit;font-weight:900}
   .menuBtn:active{transform:scale(.97)}
   .menuPanel{position:absolute;top:46px;left:0;width:min(290px,calc(100vw - 32px));z-index:80;
@@ -303,33 +305,33 @@
     border-radius:10px;cursor:pointer;text-decoration:none;font-weight:800}
   .menuPanel a:hover,.menuPanel button:hover{background:var(--card2)}
   .menuPanel .mi{width:24px;text-align:center}
-  .menuPanel .ms{margin-left:auto;color:var(--muted);font-size:11px;font-weight:700}
+  .menuPanel .ms{margin-left:auto;color:var(--muted);font-size:0.6875rem;font-weight:700}
   .menuBackdrop{position:fixed;inset:0;z-index:70;background:transparent}
   .logo{width:44px;height:44px;border-radius:13px;flex:0 0 auto;
     background:#f3f6fb;overflow:hidden;
     display:grid;place-items:center;box-shadow:var(--shadow)}
   .logo img{display:block;width:100%;height:100%;object-fit:cover}
-  header.app h1{font-size:19px;margin:0;font-weight:900;letter-spacing:0}
-  header.app p{margin:0;font-size:12px;color:var(--muted)}
+  header.app h1{font-size:1.1875rem;margin:0;font-weight:900;letter-spacing:0}
+  header.app p{margin:0;font-size:0.75rem;color:var(--muted)}
   .lvbadge{margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--card);
     border:1px solid var(--line);border-radius:999px;padding:6px 12px 6px 8px;box-shadow:var(--glow)}
-  .lvbadge .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;
+  .lvbadge .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:0.75rem;
     font-weight:900;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand2))}
-  .lvbadge b{font-size:13px;font-weight:900} .lvbadge small{font-size:10px;color:var(--muted);display:block;line-height:1}
+  .lvbadge b{font-size:0.8125rem;font-weight:900} .lvbadge small{font-size:0.625rem;color:var(--muted);display:block;line-height:calc(1 * var(--reading-line-scale,1))}
   .themeBtn{cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:10px;
-    width:34px;height:34px;display:grid;place-items:center;font-size:15px;box-shadow:var(--glow)}
+    width:34px;height:34px;display:grid;place-items:center;font-size:0.9375rem;box-shadow:var(--glow)}
 
   /* buttons */
   .btn{border:none;cursor:pointer;font-family:inherit;font-weight:800;border-radius:12px;
-    padding:12px 16px;font-size:15px;color:#fff;
+    padding:12px 16px;font-size:0.9375rem;color:#fff;
     background:linear-gradient(135deg,var(--brand),var(--brand2));
     transition:transform .06s ease, filter .15s ease; width:100%}
   .btn:active{transform:scale(.98)} .btn:hover{filter:brightness(1.06)}
   .btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
-  .btn.small{width:auto;padding:9px 14px;font-size:13px;border-radius:10px}
+  .btn.small{width:auto;padding:9px 14px;font-size:0.8125rem;border-radius:10px}
   .btn:disabled{opacity:.5;cursor:default}
 
-  .sectlabel{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:0;
+  .sectlabel{font-size:0.6875rem;font-weight:900;color:var(--muted);letter-spacing:0;
     text-transform:uppercase;margin:22px 4px 10px;display:flex;align-items:center;gap:8px}
   .sectlabel::after{content:"";flex:1;height:1px;background:var(--line)}
   .sectToggle{position:relative;overflow:hidden;width:100%;cursor:pointer;font-family:inherit;
@@ -343,22 +345,22 @@
   .sectToggle:active{transform:scale(.99)}
   .sectToggle:focus-visible{outline:3px solid color-mix(in srgb,var(--accent,var(--brand)) 42%,transparent);outline-offset:3px}
   .sectToggle .stMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-  .sectToggle .stLabel{font-size:16px;font-weight:900;color:var(--text)}
-  .sectToggle .stHint{font-size:11.5px;font-weight:700;color:var(--muted)}
-  .sectToggle .stCount{flex:0 0 auto;font-size:11px;font-weight:900;color:var(--text);
+  .sectToggle .stLabel{font-size:1rem;font-weight:900;color:var(--text)}
+  .sectToggle .stHint{font-size:0.71875rem;font-weight:700;color:var(--muted)}
+  .sectToggle .stCount{flex:0 0 auto;font-size:0.6875rem;font-weight:900;color:var(--text);
     background:color-mix(in srgb,var(--accent,var(--brand)) 16%,var(--card2));
     border:1px solid color-mix(in srgb,var(--accent,var(--brand)) 24%,var(--line));
     border-radius:999px;padding:4px 12px}
   .sectToggle .stChev{flex:0 0 auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
-    font-size:15px;font-weight:900;color:var(--accent,var(--brand));background:var(--card2);
+    font-size:0.9375rem;font-weight:900;color:var(--accent,var(--brand));background:var(--card2);
     border:1px solid var(--line);transition:transform .22s ease}
   .sectToggle[aria-expanded="true"] .stChev{transform:rotate(90deg)}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;
     padding:16px;box-shadow:var(--shadow)}
   .homeLead{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;
     margin-bottom:16px;box-shadow:var(--glow)}
-  .homeLead h2{font-size:18px;line-height:1.35;margin:0 0 4px;font-weight:900}
-  .homeLead p{margin:0;color:var(--muted);font-size:13px}
+  .homeLead h2{font-size:1.125rem;line-height:calc(1.35 * var(--reading-line-scale,1));margin:0 0 4px;font-weight:900}
+  .homeLead p{margin:0;color:var(--muted);font-size:0.8125rem}
   .homeSection{scroll-margin-top:18px}
   .rangeSection + .rangeSection{margin-top:22px}
 
@@ -372,18 +374,18 @@
   .lvring{position:relative;width:104px;height:104px;flex:0 0 auto}
   .lvring svg{transform:rotate(-90deg)}
   .lvring .lc{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
-  .lvring .lc .lv{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:0}
-  .lvring .lc .num{font-size:34px;font-weight:900;line-height:.9;
+  .lvring .lc .lv{font-size:0.6875rem;font-weight:800;color:var(--muted);letter-spacing:0}
+  .lvring .lc .num{font-size:2.125rem;font-weight:900;line-height:calc(.9 * var(--reading-line-scale,1));
     background:linear-gradient(135deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  .lvring .lc .xp{font-size:10px;color:var(--muted);margin-top:2px}
+  .lvring .lc .xp{font-size:0.625rem;color:var(--muted);margin-top:2px}
   .hero-info{flex:1;min-width:0}
-  .hero-info .hi{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;margin-bottom:10px}
+  .hero-info .hi{display:flex;align-items:center;gap:8px;font-size:0.9375rem;font-weight:800;margin-bottom:10px}
   .metric{display:flex;align-items:center;gap:9px;margin-bottom:9px}
-  .metric .mi{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px;
+  .metric .mi{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:0.9375rem;
     background:var(--card2);border:1px solid var(--line);flex:0 0 auto}
   .metric .mt{flex:1;min-width:0}
-  .metric .mt .k{font-size:11px;color:var(--muted);line-height:1.2}
-  .metric .mt .v{font-size:15px;font-weight:900}
+  .metric .mt .k{font-size:0.6875rem;color:var(--muted);line-height:calc(1.2 * var(--reading-line-scale,1))}
+  .metric .mt .v{font-size:0.9375rem;font-weight:900}
   .metric .mt .v b{color:var(--gold)}
   .goalbar{height:7px;border-radius:999px;background:var(--card2);overflow:hidden;margin-top:5px;border:1px solid var(--line)}
   .goalbar i{display:block;height:100%;background:linear-gradient(90deg,var(--good),#7de3b0);width:0;transition:width .5s}
@@ -392,8 +394,8 @@
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 10px;
     text-align:center;box-shadow:var(--shadow)}
-  .kpi .v{font-size:22px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
-  .kpi .k{font-size:10.5px;color:var(--muted);margin-top:5px;font-weight:700}
+  .kpi .v{font-size:1.375rem;font-weight:900;line-height:calc(1 * var(--reading-line-scale,1));font-variant-numeric:tabular-nums}
+  .kpi .k{font-size:0.65625rem;color:var(--muted);margin-top:5px;font-weight:700}
   .kpi.k-total .v{color:var(--brand)} .kpi.k-done .v{color:var(--text)}
   .kpi.k-acc .v{color:var(--good)} .kpi.k-weak .v{color:var(--bad)}
   @media(max-width:460px){ .kpis{grid-template-columns:repeat(2,1fr)} }
@@ -404,9 +406,9 @@
     cursor:pointer;text-align:center;box-shadow:var(--shadow);transition:transform .08s,border-color .15s;
     display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:inherit}
   .qbtn:hover{border-color:var(--brand)} .qbtn:active{transform:scale(.98)}
-  .qbtn .qi{font-size:22px}
-  .qbtn .qn{font-size:13px;font-weight:800}
-  .qbtn .qs{font-size:10.5px;color:var(--muted)}
+  .qbtn .qi{font-size:1.375rem}
+  .qbtn .qn{font-size:0.8125rem;font-weight:800}
+  .qbtn .qs{font-size:0.65625rem;color:var(--muted)}
   .qbtn.q-weak{border-color:rgba(255,93,108,.5)} .qbtn.q-weak .qi{filter:none}
   .qbtn.q-bookmark{border-color:rgba(255,209,102,.5)}
   @media(max-width:460px){ .quick{grid-template-columns:1fr} .qbtn{flex-direction:row;justify-content:center;gap:10px} .qbtn .qs{margin-left:2px} }
@@ -416,29 +418,29 @@
   .countModal{position:relative;width:min(400px,100%);background:var(--card);border:1px solid var(--line);
     border-radius:22px;box-shadow:var(--shadow);padding:24px 22px 20px;animation:pop .2s ease}
   .countModalClose{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
-    border:1px solid var(--line);background:var(--card2);color:var(--muted);cursor:pointer;font-size:15px;
+    border:1px solid var(--line);background:var(--card2);color:var(--muted);cursor:pointer;font-size:0.9375rem;
     display:grid;place-items:center;font-family:inherit}
   .countModalClose:hover{border-color:var(--brand);color:var(--brand)}
-  .cmKicker{font-size:11px;font-weight:900;color:var(--brand);letter-spacing:.04em}
-  .countModal h3{margin:2px 0 4px;font-size:19px;font-weight:900;padding-right:28px}
-  .cmSub{font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.6}
-  .cmSub b{color:var(--text);font-size:15px}
+  .cmKicker{font-size:0.6875rem;font-weight:900;color:var(--brand);letter-spacing:.04em}
+  .countModal h3{margin:2px 0 4px;font-size:1.1875rem;font-weight:900;padding-right:28px}
+  .cmSub{font-size:0.8125rem;color:var(--muted);margin:0 0 16px;line-height:calc(1.6 * var(--reading-line-scale,1))}
+  .cmSub b{color:var(--text);font-size:0.9375rem}
   .countChips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
   .countChip{flex:1;min-width:60px;border:1.5px solid var(--line);background:var(--card2);color:var(--text);
-    border-radius:12px;padding:10px 6px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+    border-radius:12px;padding:10px 6px;font-size:0.875rem;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
   .countChip:hover{border-color:var(--brand)} .countChip:active{transform:scale(.97)}
   .countChip.disabled{opacity:.35;pointer-events:none}
   .countInputRow{display:flex;align-items:center;gap:10px;margin-bottom:18px;justify-content:center}
   .stepBtn{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);
-    color:var(--text);font-size:22px;font-weight:800;cursor:pointer;font-family:inherit;flex:0 0 auto}
+    color:var(--text);font-size:1.375rem;font-weight:800;cursor:pointer;font-family:inherit;flex:0 0 auto}
   .stepBtn:hover{border-color:var(--brand);color:var(--brand)} .stepBtn:active{transform:scale(.95)}
-  #countInput{width:110px;text-align:center;font-size:26px;font-weight:900;font-family:inherit;color:var(--text);
+  #countInput{width:110px;text-align:center;font-size:1.625rem;font-weight:900;font-family:inherit;color:var(--text);
     background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:8px 6px;-moz-appearance:textfield}
   #countInput:focus{outline:none;border-color:var(--brand)}
   #countInput::-webkit-outer-spin-button,#countInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-  .countUnit{font-size:15px;font-weight:800;color:var(--muted)}
+  .countUnit{font-size:0.9375rem;font-weight:800;color:var(--muted)}
   .gradingMode{margin:2px 0 16px}
-  .gradingModeLabel{display:block;margin:0 0 8px;font-size:12px;font-weight:900;color:var(--text)}
+  .gradingModeLabel{display:block;margin:0 0 8px;font-size:0.75rem;font-weight:900;color:var(--text)}
   .gradingChoices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .gradingChoice{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:76px;text-align:left;
     border:1.5px solid var(--line);border-radius:13px;background:var(--card2);color:var(--text);
@@ -447,14 +449,14 @@
   .gradingChoice.on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 11%,var(--card2));
     box-shadow:0 0 0 1px color-mix(in srgb,var(--brand) 28%,transparent) inset}
   .gradingChoice:disabled{opacity:.42;cursor:not-allowed}
-  .gradingChoiceTitle{font-size:13px;font-weight:900}
-  .gradingChoiceSub{font-size:10.5px;line-height:1.45;color:var(--muted);font-weight:700}
-  .gradingModeNote{min-height:17px;margin:5px 2px 0;font-size:10.5px;line-height:1.5;color:var(--muted)}
+  .gradingChoiceTitle{font-size:0.8125rem;font-weight:900}
+  .gradingChoiceSub{font-size:0.65625rem;line-height:calc(1.45 * var(--reading-line-scale,1));color:var(--muted);font-weight:700}
+  .gradingModeNote{min-height:17px;margin:5px 2px 0;font-size:0.65625rem;line-height:calc(1.5 * var(--reading-line-scale,1));color:var(--muted)}
   .cmStart{width:100%;border:none;background:var(--brand);color:#fff;font-family:inherit;font-weight:900;
-    font-size:16px;padding:14px;border-radius:14px;cursor:pointer;transition:.15s}
+    font-size:1rem;padding:14px;border-radius:14px;cursor:pointer;transition:.15s}
   .cmStart:hover{filter:brightness(1.05)} .cmStart:active{transform:scale(.98)}
   .cmStartAlt{width:100%;margin-top:8px;border:1.5px solid color-mix(in srgb,#8369c9 50%,var(--line));background:var(--card2);
-    color:var(--text);font-family:inherit;font-weight:900;font-size:14px;padding:12px;border-radius:14px;cursor:pointer;transition:.12s}
+    color:var(--text);font-family:inherit;font-weight:900;font-size:0.875rem;padding:12px;border-radius:14px;cursor:pointer;transition:.12s}
   .cmStartAlt:hover{border-color:#8369c9} .cmStartAlt:active{transform:scale(.98)}
   /* ===== 今日の復習カード ===== */
   .dueCard{width:100%;display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;font-family:inherit;
@@ -462,14 +464,14 @@
     background:color-mix(in srgb,var(--brand) 10%,var(--card));transition:.15s}
   .dueCard:hover{border-color:var(--brand);transform:translateY(-1px)} .dueCard:active{transform:scale(.99)}
   .dueCard.dueEmpty{border-color:var(--line);background:var(--card);opacity:.85}
-  .dueIcon{font-size:26px;flex:0 0 auto}
+  .dueIcon{font-size:1.625rem;flex:0 0 auto}
   .dueBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-  .dueTitle{font-size:16px;font-weight:900;color:var(--text)}
-  .dueSub{font-size:12px;color:var(--muted)}
+  .dueTitle{font-size:1rem;font-weight:900;color:var(--text)}
+  .dueSub{font-size:0.75rem;color:var(--muted)}
   .dueRight{display:flex;align-items:baseline;gap:3px;flex:0 0 auto}
-  .dueCount{font-size:30px;font-weight:900;color:var(--brand);line-height:1}
+  .dueCount{font-size:1.875rem;font-weight:900;color:var(--brand);line-height:calc(1 * var(--reading-line-scale,1))}
   .dueCard.dueEmpty .dueCount{color:var(--muted)}
-  .dueUnit{font-size:13px;font-weight:800;color:var(--muted)}
+  .dueUnit{font-size:0.8125rem;font-weight:800;color:var(--muted)}
   .examCard{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));background:color-mix(in srgb,var(--gold) 12%,var(--card))}
   .examCard:hover{border-color:var(--gold)}
   .examCard .dueCount{color:var(--gold)}
@@ -486,37 +488,37 @@
      仕様：IMMUNOLOGY_WRITTEN_QUESTION_IMPLEMENTATION_PLAN.md §14 */
   .constructedAnswer{display:flex;flex-direction:column;gap:14px;margin-top:6px}
   .cwPart{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card2)}
-  .cwLabel{display:block;font-weight:800;font-size:13.5px;margin-bottom:4px}
-  .cwPrompt{color:var(--muted);font-size:12.5px;margin:0 0 8px;line-height:1.6}
-  .cwOptional{color:var(--muted);font-weight:600;font-size:11.5px;margin-left:6px}
+  .cwLabel{display:block;font-weight:800;font-size:0.84375rem;margin-bottom:4px}
+  .cwPrompt{color:var(--muted);font-size:0.78125rem;margin:0 0 8px;line-height:calc(1.6 * var(--reading-line-scale,1))}
+  .cwOptional{color:var(--muted);font-weight:600;font-size:0.71875rem;margin-left:6px}
   .cwText{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;background:var(--card);
-    color:var(--text);padding:10px 12px;font:inherit;font-size:14px;line-height:1.7;resize:vertical}
+    color:var(--text);padding:10px 12px;font:inherit;font-size:0.875rem;line-height:calc(1.7 * var(--reading-line-scale,1));resize:vertical}
   .cwText:focus{outline:2px solid var(--brand);outline-offset:1px}
   .cwText:disabled{opacity:.85;background:var(--card2)}
   .cwTerms{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
-  .cwTerm{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;
+  .cwTerm{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:0.75rem;font-weight:700;
     border:1px solid var(--line);background:var(--card);color:var(--text)}
   .cwTerm.used{border-color:var(--good);color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card))}
   .cwTerm.missing{border-color:var(--bad);color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--card))}
-  .cwTermState{font-size:10.5px;font-weight:800;opacity:.9}
+  .cwTermState{font-size:0.65625rem;font-weight:800;opacity:.9}
   .cwNumRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .cwNum{flex:1 1 140px;min-width:120px}
-  .cwUnit{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);padding:10px;font:inherit;font-size:14px}
-  .cwHint{color:var(--muted);font-size:11.5px;margin:6px 0 0}
+  .cwUnit{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);padding:10px;font:inherit;font-size:0.875rem}
+  .cwHint{color:var(--muted);font-size:0.71875rem;margin:6px 0 0}
   /* 作図 */
   .cwModeRow{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
   .cwModeBtn{min-height:44px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);
-    color:var(--text);font-weight:700;font-size:13px;cursor:pointer}
+    color:var(--text);font-weight:700;font-size:0.8125rem;cursor:pointer}
   .cwModeBtn.on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 14%,var(--card));color:var(--brand)}
   .drawWrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;
     background-size:contain;background-repeat:no-repeat;background-position:center}
   .drawCanvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
   .drawTools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .drawTool{min-width:44px;min-height:44px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);
-    background:var(--card);color:var(--text);font-weight:700;font-size:13px;cursor:pointer}
+    background:var(--card);color:var(--text);font-weight:700;font-size:0.8125rem;cursor:pointer}
   .drawTool.on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 14%,var(--card));color:var(--brand)}
   .drawTool:disabled{opacity:.45;cursor:not-allowed}
-  .drawFull{color:var(--bad);font-size:11.5px;margin:6px 0 0;font-weight:700}
+  .drawFull{color:var(--bad);font-size:0.71875rem;margin:6px 0 0;font-weight:700}
   .cwActions{display:flex;flex-direction:column;gap:8px;margin-top:12px}
   .cwActions .btn{width:100%}
   .cwActions .btn:disabled{opacity:.55;cursor:not-allowed}
@@ -524,32 +526,32 @@
   .cwReview{display:grid;gap:12px;margin-top:4px}
   @media(min-width:760px){ .cwReview.two{grid-template-columns:1fr 1fr} }
   .cwPanel{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card2)}
-  .cwPanel h5{margin:0 0 8px;font-size:13px;letter-spacing:.02em;color:var(--muted)}
-  .cwAnswerText{white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.75;margin:0}
+  .cwPanel h5{margin:0 0 8px;font-size:0.8125rem;letter-spacing:.02em;color:var(--muted)}
+  .cwAnswerText{white-space:pre-wrap;word-break:break-word;font-size:0.84375rem;line-height:calc(1.75 * var(--reading-line-scale,1));margin:0}
   .cwAnswerText.empty{color:var(--muted)}
   /* 配布された解答用紙の解答。アプリが書いた模範解答と混ざらないよう枠を分ける */
   .cwOfficial{border:1px solid color-mix(in srgb,var(--ok,#2e9e6b) 45%,var(--line));border-radius:12px;
     padding:10px 12px;margin-bottom:10px;background:color-mix(in srgb,var(--ok,#2e9e6b) 8%,var(--card))}
-  .cwOfficial h6{margin:0 0 6px;font-size:12px;font-weight:900;letter-spacing:.02em;color:var(--ok,#2e9e6b)}
-  .cwOfficialNote{font-size:11.5px;line-height:1.7;color:var(--muted);margin:6px 0 0}
+  .cwOfficial h6{margin:0 0 6px;font-size:0.75rem;font-weight:900;letter-spacing:.02em;color:var(--ok,#2e9e6b)}
+  .cwOfficialNote{font-size:0.71875rem;line-height:calc(1.7 * var(--reading-line-scale,1));color:var(--muted);margin:6px 0 0}
   .cwModelImg{width:100%;border-radius:10px;border:1px solid var(--line);background:#fff;margin-top:8px}
   .cwRubric{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card)}
   .cwRubricHead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
-  .cwRubricTitle{font-weight:800;font-size:14px}
-  .cwScore{font-weight:900;font-size:18px;color:var(--brand);font-variant-numeric:tabular-nums}
-  .cwSource{color:var(--muted);font-size:11.5px;margin:0 0 10px;line-height:1.6}
+  .cwRubricTitle{font-weight:800;font-size:0.875rem}
+  .cwScore{font-weight:900;font-size:1.125rem;color:var(--brand);font-variant-numeric:tabular-nums}
+  .cwSource{color:var(--muted);font-size:0.71875rem;margin:0 0 10px;line-height:calc(1.6 * var(--reading-line-scale,1))}
   .cwCrit{display:flex;gap:10px;align-items:flex-start;padding:9px 4px;border-top:1px dashed var(--line);cursor:pointer}
   .cwCrit input{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--brand)}
   .cwCritBody{flex:1}
-  .cwCritText{font-size:13.5px;line-height:1.6}
-  .cwCritMeta{color:var(--muted);font-size:11.5px;margin-top:2px}
-  .cwAuto{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;
+  .cwCritText{font-size:0.84375rem;line-height:calc(1.6 * var(--reading-line-scale,1))}
+  .cwCritMeta{color:var(--muted);font-size:0.71875rem;margin-top:2px}
+  .cwAuto{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:0.65625rem;font-weight:800;
     background:color-mix(in srgb,var(--brand) 15%,var(--card2));color:var(--brand)}
   .cwRateRow{margin-top:12px}
-  .cwHistory{margin-top:10px;color:var(--muted);font-size:12px}
+  .cwHistory{margin-top:10px;color:var(--muted);font-size:0.75rem}
   @media(prefers-reduced-motion:reduce){ .explain{animation:none} }
   .fieldBreak{text-align:left;margin:6px 0 4px}
-  .fbRow{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:12.5px}
+  .fbRow{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:0.78125rem}
   .fbName{flex:0 0 40%;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .fbBar{flex:1;height:8px;border-radius:5px;background:var(--card2);overflow:hidden}
   .fbBar i{display:block;height:100%;background:var(--good);border-radius:5px}
@@ -558,56 +560,56 @@
   .searchEntry{width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;
     border:1.5px solid var(--line);background:var(--card2);border-radius:14px;padding:14px 16px;color:var(--muted);transition:.15s}
   .searchEntry:hover{border-color:var(--brand)} .searchEntry:active{transform:scale(.99)}
-  .seIcon{font-size:18px} .seText{font-size:15px;font-weight:700}
+  .seIcon{font-size:1.125rem} .seText{font-size:0.9375rem;font-weight:700}
   .searchBar{display:flex;align-items:center;gap:8px;background:var(--card2);border:1.5px solid var(--line);
     border-radius:14px;padding:4px 12px;margin:14px 0 8px}
   .searchBar:focus-within{border-color:var(--brand)}
-  .sbIcon{font-size:16px;flex:0 0 auto}
+  .sbIcon{font-size:1rem;flex:0 0 auto}
   #searchInput{flex:1;min-width:0;border:none;background:transparent;color:var(--text);font-family:inherit;
-    font-size:16px;padding:12px 2px;outline:none}
+    font-size:1rem;padding:12px 2px;outline:none}
   .searchClear{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
-    background:var(--card);color:var(--muted);cursor:pointer;font-size:13px;font-family:inherit}
+    background:var(--card);color:var(--muted);cursor:pointer;font-size:0.8125rem;font-family:inherit}
   .searchClear:hover{border-color:var(--brand);color:var(--brand)}
   .searchActions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 12px;flex-wrap:wrap}
-  .srCount{font-size:13px;font-weight:800;color:var(--muted)}
-  .btn.small{padding:9px 14px;font-size:13px;width:auto}
+  .srCount{font-size:0.8125rem;font-weight:800;color:var(--muted)}
+  .btn.small{padding:9px 14px;font-size:0.8125rem;width:auto}
   #searchResults{display:grid;gap:8px}
   .srItem{width:100%;text-align:left;cursor:pointer;font-family:inherit;background:var(--card);border:1px solid var(--line);
     border-radius:12px;padding:13px 14px;transition:.12s}
   .srItem:hover{border-color:var(--brand)} .srItem:active{transform:scale(.995)}
-  .srQ{font-size:14.5px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:6px}
+  .srQ{font-size:0.90625rem;font-weight:700;color:var(--text);line-height:calc(1.5 * var(--reading-line-scale,1));margin-bottom:6px}
   .srQ mark{background:color-mix(in srgb,var(--gold) 45%,transparent);color:inherit;border-radius:3px;padding:0 1px}
-  .srMeta{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)}
+  .srMeta{display:flex;align-items:center;gap:8px;font-size:0.71875rem;color:var(--muted)}
   .srOk{color:var(--good);font-weight:800} .srNg{color:var(--bad);font-weight:800}
-  .srMore{text-align:center;color:var(--muted);font-size:12px;padding:8px}
+  .srMore{text-align:center;color:var(--muted);font-size:0.75rem;padding:8px}
   /* ===== バックアップ・引き継ぎモーダル ===== */
   .bkCard{width:min(440px,100%);max-height:88vh;overflow-y:auto}
   .bkBlock{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px 12px 14px;margin-top:12px}
-  .bkLabel{font-size:13px;font-weight:900;color:var(--text);margin-bottom:8px}
-  .bkArea{width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;line-height:1.5;color:var(--text);
+  .bkLabel{font-size:0.8125rem;font-weight:900;color:var(--text);margin-bottom:8px}
+  .bkArea{width:100%;box-sizing:border-box;font-family:inherit;font-size:0.75rem;line-height:calc(1.5 * var(--reading-line-scale,1));color:var(--text);
     background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;resize:vertical;word-break:break-all}
   .bkArea:focus{outline:none;border-color:var(--brand)}
   .bkBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .bkBtn{flex:1;min-width:90px;border:1.5px solid var(--line);background:var(--card);color:var(--text);
-    border-radius:10px;padding:11px 8px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+    border-radius:10px;padding:11px 8px;font-size:0.8125rem;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
   .bkBtn:hover{border-color:var(--brand)} .bkBtn:active{transform:scale(.97)}
   .bkReplace{width:100%;margin-top:8px;border:none;background:transparent;color:var(--bad);font-family:inherit;
-    font-weight:800;font-size:12.5px;padding:8px;cursor:pointer;text-decoration:underline}
+    font-weight:800;font-size:0.78125rem;padding:8px;cursor:pointer;text-decoration:underline}
   /* ===== PWA バナー（インストール / 更新） ===== */
   .pwaBanner{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:260;
     display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
     border-radius:16px;box-shadow:var(--shadow);padding:12px 14px;animation:pwaUp .28s ease}
   @keyframes pwaUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   .pwaBanner.update{border-color:color-mix(in srgb,var(--brand) 55%,var(--line));background:color-mix(in srgb,var(--brand) 8%,var(--card))}
-  .pwaIcon{font-size:24px;flex:0 0 auto}
-  .pwaBody{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
-  .pwaBody b{font-size:14px;font-weight:900;color:var(--text)}
-  .pwaBody span{font-size:11.5px;color:var(--muted)}
+  .pwaIcon{font-size:1.5rem;flex:0 0 auto}
+  .pwaBody{flex:1;min-width:0;display:flex;flex-direction:column;line-height:calc(1.35 * var(--reading-line-scale,1))}
+  .pwaBody b{font-size:0.875rem;font-weight:900;color:var(--text)}
+  .pwaBody span{font-size:0.71875rem;color:var(--muted)}
   .pwaBtn{flex:0 0 auto;border:none;background:var(--brand);color:#fff;font-family:inherit;font-weight:900;
-    font-size:14px;padding:10px 18px;border-radius:11px;cursor:pointer;transition:.12s}
+    font-size:0.875rem;padding:10px 18px;border-radius:11px;cursor:pointer;transition:.12s}
   .pwaBtn:hover{filter:brightness(1.05)} .pwaBtn:active{transform:scale(.97)}
   .pwaClose{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
-    background:var(--card2);color:var(--muted);cursor:pointer;font-size:12px;font-family:inherit}
+    background:var(--card2);color:var(--muted);cursor:pointer;font-size:0.75rem;font-family:inherit}
   .pwaClose:hover{border-color:var(--brand);color:var(--brand)}
   @media(max-width:400px){ .pwaBody span{display:none} }
   /* ===== 弱点プレイリスト ===== */
@@ -616,12 +618,12 @@
     border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:13px 15px;transition:.14s}
   .plCard:hover{border-color:var(--brand);transform:translateY(-1px)} .plCard:active{transform:scale(.99)}
   .plCard.plEmpty{opacity:.5;cursor:default} .plCard.plEmpty:hover{border-color:var(--line);transform:none}
-  .plIcon{font-size:22px;flex:0 0 auto}
+  .plIcon{font-size:1.375rem;flex:0 0 auto}
   .plBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-  .plName{font-size:15px;font-weight:900;color:var(--text)}
-  .plDesc{font-size:11.5px;color:var(--muted)}
-  .plCount{flex:0 0 auto;font-size:22px;font-weight:900;color:var(--brand)}
-  .plCount small{font-size:11px;font-weight:800;color:var(--muted);margin-left:1px}
+  .plName{font-size:0.9375rem;font-weight:900;color:var(--text)}
+  .plDesc{font-size:0.71875rem;color:var(--muted)}
+  .plCount{flex:0 0 auto;font-size:1.375rem;font-weight:900;color:var(--brand)}
+  .plCount small{font-size:0.6875rem;font-weight:800;color:var(--muted);margin-left:1px}
   .plCard.plEmpty .plCount{color:var(--muted)}
   .flashEntry{border-color:color-mix(in srgb,#8369c9 50%,var(--line));background:color-mix(in srgb,#8369c9 10%,var(--card))}
   .flashEntry:hover{border-color:#8369c9}
@@ -635,74 +637,74 @@
   .flashCard>:first-child{margin-top:auto}
   .flashCard>:last-child{margin-bottom:auto}
   .flashCard.isBack{background:color-mix(in srgb,var(--brand) 6%,var(--card));border-color:color-mix(in srgb,var(--brand) 30%,var(--line))}
-  .fcTag{font-size:11px;font-weight:900;color:var(--brand);letter-spacing:.03em;background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
-  .fcText{font-size:20px;font-weight:800;color:var(--text);line-height:1.6}
-  .fcText.small{font-size:13px;font-weight:700;color:var(--muted);line-height:1.5}
+  .fcTag{font-size:0.6875rem;font-weight:900;color:var(--brand);letter-spacing:.03em;background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
+  .fcText{font-size:1.25rem;font-weight:800;color:var(--text);line-height:calc(1.6 * var(--reading-line-scale,1))}
+  .fcText.small{font-size:0.8125rem;font-weight:700;color:var(--muted);line-height:calc(1.5 * var(--reading-line-scale,1))}
   .fcImgWrap{position:relative;display:inline-block;max-width:100%}
   .fcImg{max-width:100%;max-height:34vh;height:auto;border-radius:10px;background:#fff;padding:6px;cursor:zoom-in;display:block}
-  .fcZoom{position:absolute;right:8px;bottom:8px;background:rgba(15,23,42,.78);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;pointer-events:none}
+  .fcZoom{position:absolute;right:8px;bottom:8px;background:rgba(15,23,42,.78);color:#fff;font-size:0.6875rem;font-weight:700;padding:3px 8px;border-radius:999px;pointer-events:none}
   .fcLightbox{position:fixed;inset:0;background:rgba(2,6,23,.94);z-index:1200;overflow:auto;padding:14px;display:flex;align-items:flex-start;justify-content:center}
   .fcLightbox.hidden{display:none}
   .fcLightbox img{width:100%;max-width:1000px;height:auto;border-radius:8px;background:#fff}
-  .fcLightboxClose{position:fixed;top:12px;right:14px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:20px;font-weight:800;cursor:pointer;z-index:1201}
-  .fcAnswer{font-size:19px;font-weight:900;color:var(--good);line-height:1.6}
-  .fcExpl{font-size:14.5px;font-weight:600;color:var(--text);line-height:1.7;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .fcLightboxClose{position:fixed;top:12px;right:14px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:1.25rem;font-weight:800;cursor:pointer;z-index:1201}
+  .fcAnswer{font-size:1.1875rem;font-weight:900;color:var(--good);line-height:calc(1.6 * var(--reading-line-scale,1))}
+  .fcExpl{font-size:0.90625rem;font-weight:600;color:var(--text);line-height:calc(1.7 * var(--reading-line-scale,1));text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
   .fcChoices{list-style:none;margin:0;padding:0;width:100%;display:grid;gap:6px;text-align:left}
-  .fcChoices li{display:flex;gap:8px;align-items:flex-start;font-size:14px;font-weight:700;line-height:1.5;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+  .fcChoices li{display:flex;gap:8px;align-items:flex-start;font-size:0.875rem;font-weight:700;line-height:calc(1.5 * var(--reading-line-scale,1));color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
   .fcChoices li.ok{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card))}
-  .fcChoices .fcCL{flex:0 0 auto;min-width:18px;font-size:12px;font-weight:900;color:var(--muted);text-transform:uppercase;padding-top:2px}
+  .fcChoices .fcCL{flex:0 0 auto;min-width:18px;font-size:0.75rem;font-weight:900;color:var(--muted);text-transform:uppercase;padding-top:2px}
   .fcChoices li.ok .fcCL{color:var(--good)}
-  .fcTapHint{font-size:12px;color:var(--muted)}
-  .fcFigHint{display:inline-block;margin:6px auto 0;font-size:12px;font-weight:700;color:var(--muted);background:rgba(148,163,184,.16);padding:3px 10px;border-radius:999px}
+  .fcTapHint{font-size:0.75rem;color:var(--muted)}
+  .fcFigHint{display:inline-block;margin:6px auto 0;font-size:0.75rem;font-weight:700;color:var(--muted);background:rgba(148,163,184,.16);padding:3px 10px;border-radius:999px}
   .fcDivider{width:36px;height:3px;border-radius:2px;background:var(--line)}
   .flashBtns{display:flex;gap:10px;align-items:stretch;margin-top:14px}
   .fcGrade{flex:1;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;
-    padding:15px 8px;font-size:15px;font-weight:900;font-family:inherit;cursor:pointer;transition:.12s}
+    padding:15px 8px;font-size:0.9375rem;font-weight:900;font-family:inherit;cursor:pointer;transition:.12s}
   .fcGrade:active{transform:scale(.97)}
   .fcNg{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))} .fcNg:hover{border-color:var(--bad);color:var(--bad)}
   .fcOk{border-color:color-mix(in srgb,var(--good) 45%,var(--line))} .fcOk:hover{border-color:var(--good);color:var(--good)}
   .fcFlip{flex:0 0 auto;border:none;background:var(--brand);color:#fff;border-radius:14px;padding:15px 18px;
-    font-size:14px;font-weight:900;font-family:inherit;cursor:pointer;transition:.12s}
+    font-size:0.875rem;font-weight:900;font-family:inherit;cursor:pointer;transition:.12s}
   .fcFlip:active{transform:scale(.96)}
-  .flashFoot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+  .flashFoot{text-align:center;font-size:0.71875rem;color:var(--muted);margin-top:10px}
   /* チューザ */
   .fcDecks{display:grid;gap:8px;margin-bottom:6px}
   .fcDeck{width:100%;display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;font-family:inherit;
     border:1.5px solid var(--line);background:var(--card2);border-radius:12px;padding:12px 14px;transition:.12s}
   .fcDeck:hover{border-color:var(--brand)} .fcDeck:active{transform:scale(.99)}
   .fcDeck.disabled{opacity:.45;pointer-events:none}
-  .fcDeckIcon{font-size:20px;flex:0 0 auto}
-  .fcDeckName{flex:1;font-size:14.5px;font-weight:800;color:var(--text)}
-  .fcDeckN{flex:0 0 auto;font-size:13px;font-weight:900;color:var(--brand)}
-  .fcFieldLabel{font-size:12px;font-weight:900;color:var(--muted);margin:14px 2px 8px}
+  .fcDeckIcon{font-size:1.25rem;flex:0 0 auto}
+  .fcDeckName{flex:1;font-size:0.90625rem;font-weight:800;color:var(--text)}
+  .fcDeckN{flex:0 0 auto;font-size:0.8125rem;font-weight:900;color:var(--brand)}
+  .fcFieldLabel{font-size:0.75rem;font-weight:900;color:var(--muted);margin:14px 2px 8px}
   .fcFieldChips{display:flex;flex-wrap:wrap;gap:7px}
   .fcFieldChip{border:1.5px solid var(--line);background:var(--card2);color:var(--text);border-radius:999px;
-    padding:8px 13px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+    padding:8px 13px;font-size:0.78125rem;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
   .fcFieldChip:hover{border-color:var(--brand)} .fcFieldChip:active{transform:scale(.96)}
 
   /* ===== カード一覧（ライブラリ） ===== */
   .browseEntry{border-color:color-mix(in srgb,#2f9e7d 52%,var(--line));background:color-mix(in srgb,#2f9e7d 10%,var(--card))}
   .browseEntry:hover{border-color:#2f9e7d}
   #browseDeckGrid{display:grid;gap:9px;margin-top:6px}
-  .browseCert{font-size:12.5px;font-weight:800;color:var(--muted);margin:0 2px 4px}
+  .browseCert{font-size:0.78125rem;font-weight:800;color:var(--muted);margin:0 2px 4px}
   .browseCert b{color:var(--gold)}
   .brDeck2{display:flex;flex-direction:column;gap:8px;text-align:left;font-family:inherit;cursor:pointer;color:var(--text);
     background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--glow);transition:.14s}
   .brDeck2:hover{border-color:var(--brand);transform:translateY(-1px)} .brDeck2:active{transform:scale(.99)}
   .brDeck2.certified{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));background:color-mix(in srgb,var(--gold) 8%,var(--card))}
   .brDeckHead{display:flex;align-items:center;gap:10px}
-  .brDeckTitle{flex:1;min-width:0;font-size:15px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .brDeckN{flex:0 0 auto;font-size:12px;font-weight:900;color:var(--brand)}
-  .brCert{flex:0 0 auto;font-size:11px;font-weight:900;color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,var(--card2));
+  .brDeckTitle{flex:1;min-width:0;font-size:0.9375rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brDeckN{flex:0 0 auto;font-size:0.75rem;font-weight:900;color:var(--brand)}
+  .brCert{flex:0 0 auto;font-size:0.6875rem;font-weight:900;color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,var(--card2));
     border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));padding:2px 9px;border-radius:999px}
-  .brDeckSub{font-size:11.5px;color:var(--muted);font-weight:700}
+  .brDeckSub{font-size:0.71875rem;color:var(--muted);font-weight:700}
   .brDeckBar{height:7px;border-radius:999px;background:var(--card2);overflow:hidden;border:1px solid var(--line)}
   .brDeckBar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:999px;transition:width .4s}
   .brDeck2.certified .brDeckBar i{background:linear-gradient(90deg,var(--gold),#ffe08a)}
   .brJudgeBtn{border:1.5px solid color-mix(in srgb,var(--gold) 50%,var(--line));background:color-mix(in srgb,var(--gold) 10%,var(--card2));
-    color:var(--text);border-radius:10px;padding:9px 13px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;white-space:nowrap}
+    color:var(--text);border-radius:10px;padding:9px 13px;font-size:0.78125rem;font-weight:800;font-family:inherit;cursor:pointer;white-space:nowrap}
   .brJudgeBtn:hover{border-color:var(--gold)} .brJudgeBtn:active{transform:scale(.97)}
-  .judgeBanner{border-radius:16px;padding:15px;margin-bottom:14px;border:1px solid var(--line);text-align:center;font-size:14.5px;font-weight:800;line-height:1.6}
+  .judgeBanner{border-radius:16px;padding:15px;margin-bottom:14px;border:1px solid var(--line);text-align:center;font-size:0.90625rem;font-weight:800;line-height:calc(1.6 * var(--reading-line-scale,1))}
   .judgeBanner.ok{background:var(--good-bg);border-color:var(--good);color:var(--good)}
   .judgeBanner.ng{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
   .judgeBanner.cert{background:color-mix(in srgb,var(--gold) 14%,var(--card));border-color:var(--gold);color:var(--gold)}
@@ -714,12 +716,12 @@
   .brHead{width:100%;border:none;background:transparent;color:inherit;font-family:inherit;cursor:pointer;
     display:flex;align-items:center;gap:11px;padding:13px 15px;text-align:left}
   .brHead:active{transform:scale(.997)}
-  .brFront{flex:1;min-width:0;font-size:14.5px;font-weight:700;color:var(--text);line-height:1.55}
+  .brFront{flex:1;min-width:0;font-size:0.90625rem;font-weight:700;color:var(--text);line-height:calc(1.55 * var(--reading-line-scale,1))}
   .brMeta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:0 0 auto}
-  .brSrc{font-size:10.5px;font-weight:900;color:var(--brand);white-space:nowrap}
-  .brField{font-size:10px;color:var(--muted);white-space:nowrap}
-  .brFig{font-size:10.5px;color:var(--muted);white-space:nowrap}
-  .brChev{flex:0 0 auto;color:var(--brand);font-size:14px;font-weight:900;transition:transform .2s}
+  .brSrc{font-size:0.65625rem;font-weight:900;color:var(--brand);white-space:nowrap}
+  .brField{font-size:0.625rem;color:var(--muted);white-space:nowrap}
+  .brFig{font-size:0.65625rem;color:var(--muted);white-space:nowrap}
+  .brChev{flex:0 0 auto;color:var(--brand);font-size:0.875rem;font-weight:900;transition:transform .2s}
   .brItem.open .brChev{transform:rotate(90deg)}
   .brBack{border-top:1px solid var(--line);padding:14px 15px;background:color-mix(in srgb,var(--brand) 5%,var(--card));
     display:flex;flex-direction:column;gap:12px;text-align:left}
@@ -727,28 +729,28 @@
   .brBack .fcImgWrap{align-self:center}
   .brActions{display:flex;justify-content:flex-end}
   .brFlipOne{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;
-    padding:8px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+    padding:8px 14px;font-size:0.78125rem;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
   .brFlipOne:hover{border-color:var(--brand);color:var(--brand)} .brFlipOne:active{transform:scale(.97)}
   /* ===== 問題一覧（qbrowse） ===== */
-  .qbSectLabel{font-size:12.5px;font-weight:900;color:var(--muted);margin:16px 2px 9px;letter-spacing:.02em}
+  .qbSectLabel{font-size:0.78125rem;font-weight:900;color:var(--muted);margin:16px 2px 9px;letter-spacing:.02em}
   .qbSectLabel:first-child{margin-top:2px}
   .qbGroupList{display:grid;gap:10px;margin-bottom:6px}
-  .qbNum{flex:0 0 auto;min-width:28px;height:24px;padding:0 7px;white-space:nowrap;border-radius:8px;background:color-mix(in srgb,var(--brand) 13%,var(--card2));color:var(--brand);font-weight:900;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+  .qbNum{flex:0 0 auto;min-width:28px;height:24px;padding:0 7px;white-space:nowrap;border-radius:8px;background:color-mix(in srgb,var(--brand) 13%,var(--card2));color:var(--brand);font-weight:900;font-size:0.78125rem;display:flex;align-items:center;justify-content:center}
   .qbBack .qbChoices{list-style:none;margin:0;padding:0;display:grid;gap:7px}
   .qbChoice{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card2)}
   .qbChoice.ok{border-color:var(--good);background:var(--good-bg)}
-  .qbCL{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:var(--muted);text-transform:lowercase}
+  .qbCL{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:0.75rem;color:var(--muted);text-transform:lowercase}
   .qbChoice.ok .qbCL{background:var(--good);color:#fff;border-color:var(--good)}
   .qbCBody{flex:1;min-width:0}
-  .qbCText{font-size:13.5px;font-weight:700;line-height:1.55;color:var(--text)}
-  .qbOk{font-size:10.5px;font-weight:900;color:var(--good);margin-left:6px;white-space:nowrap}
-  .qbCNote{font-size:12px;color:var(--muted);font-weight:600;line-height:1.55;margin-top:4px}
-  .qbExpl{font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
-  .qbExpl b{display:block;font-size:11px;color:var(--brand);margin-bottom:4px;font-weight:900}
-  .qbPractice{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
+  .qbCText{font-size:0.84375rem;font-weight:700;line-height:calc(1.55 * var(--reading-line-scale,1));color:var(--text)}
+  .qbOk{font-size:0.65625rem;font-weight:900;color:var(--good);margin-left:6px;white-space:nowrap}
+  .qbCNote{font-size:0.75rem;color:var(--muted);font-weight:600;line-height:calc(1.55 * var(--reading-line-scale,1));margin-top:4px}
+  .qbExpl{font-size:0.8125rem;line-height:calc(1.7 * var(--reading-line-scale,1));white-space:pre-wrap;word-break:break-word;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+  .qbExpl b{display:block;font-size:0.6875rem;color:var(--brand);margin-bottom:4px;font-weight:900}
+  .qbPractice{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;padding:8px 14px;font-size:0.78125rem;font-weight:800;font-family:inherit;cursor:pointer;transition:.12s}
   .qbPractice:hover{border-color:var(--brand);color:var(--brand)} .qbPractice:active{transform:scale(.97)}
   .qbPager{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin:16px 0 6px}
-  .qbPageBtn{min-width:34px;height:34px;padding:0 9px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:9px;font-weight:800;font-size:13px;font-family:inherit;cursor:pointer;transition:.12s}
+  .qbPageBtn{min-width:34px;height:34px;padding:0 9px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:9px;font-weight:800;font-size:0.8125rem;font-family:inherit;cursor:pointer;transition:.12s}
   .qbPageBtn:hover:not(:disabled){border-color:var(--brand)} .qbPageBtn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
   .qbPageBtn:disabled{opacity:.38;cursor:default}
   .qbPageBtn.qbNav{font-weight:800}
@@ -757,7 +759,7 @@
   .qbRow{display:flex;align-items:center}
   .qbRow .brHead{flex:1;min-width:0;padding-right:2px}
   .qbBm{flex:0 0 auto;width:44px;height:44px;margin-right:6px;border:none;background:transparent;cursor:pointer;
-    border-radius:12px;color:var(--muted);font-size:19px;line-height:1;font-family:inherit;transition:.12s}
+    border-radius:12px;color:var(--muted);font-size:1.1875rem;line-height:calc(1 * var(--reading-line-scale,1));font-family:inherit;transition:.12s}
   .qbBm:hover{background:var(--card2);color:var(--gold)}
   .qbBm.on{color:var(--gold)}
   .qbBm:active{transform:scale(.9)}
@@ -767,16 +769,16 @@
   .qbSelBox{width:21px;height:21px;border-radius:7px;border:2px solid var(--line);background:var(--card);position:relative;transition:.12s}
   .qbSel:hover .qbSelBox{border-color:var(--brand)}
   .qbSel.on .qbSelBox{background:var(--brand);border-color:var(--brand)}
-  .qbSel.on .qbSelBox::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:900}
+  .qbSel.on .qbSelBox::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:0.8125rem;font-weight:900}
   .qbRow .qbSel+.brHead{padding-left:8px}
   .qbSelBar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:83;
     width:min(560px,calc(100vw - 24px));display:flex;align-items:center;gap:9px;padding:10px 12px;
     border-radius:18px;border:1px solid var(--line);background:var(--card);box-shadow:0 20px 48px rgba(29,45,68,.24)}
-  .qbSelN{flex:1;min-width:0;font-size:13px;font-weight:900;color:var(--text)}
+  .qbSelN{flex:1;min-width:0;font-size:0.8125rem;font-weight:900;color:var(--text)}
   .qbSelBar button{border-radius:12px;font-family:inherit;font-weight:800;cursor:pointer;transition:.12s;white-space:nowrap}
-  .qbSelGo{border:none;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;padding:10px 14px;font-size:13px}
+  .qbSelGo{border:none;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;padding:10px 14px;font-size:0.8125rem}
   .qbSelGo:active{transform:scale(.97)}
-  .qbSelClear{border:1px solid var(--line);background:var(--card2);color:var(--muted);padding:10px 12px;font-size:12.5px}
+  .qbSelClear{border:1px solid var(--line);background:var(--card2);color:var(--muted);padding:10px 12px;font-size:0.78125rem}
   .qbSelClear:hover{border-color:var(--brand);color:var(--brand)}
   @media(max-width:920px){ .qbSelBar{bottom:calc(var(--nav-height) + env(safe-area-inset-bottom) + 14px)} }
   .qbPageGap{color:var(--muted);font-weight:900;padding:0 2px}
@@ -784,8 +786,8 @@
   /* ===== 弱点分野（分野別の正答率） ===== */
   .wfHead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
   .wfStats{display:flex;gap:18px}
-  .wfStats b{display:block;font-size:22px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
-  .wfStats span{display:block;margin-top:5px;font-size:11px;font-weight:800;color:var(--muted)}
+  .wfStats b{display:block;font-size:1.375rem;font-weight:900;line-height:calc(1 * var(--reading-line-scale,1));font-variant-numeric:tabular-nums}
+  .wfStats span{display:block;margin-top:5px;font-size:0.6875rem;font-weight:800;color:var(--muted)}
   .wfList{display:grid;gap:10px}
   .wfRow{width:100%;display:flex;flex-direction:column;gap:7px;text-align:left;font-family:inherit;cursor:pointer;color:var(--text);
     background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;box-shadow:var(--shadow);transition:.14s}
@@ -793,10 +795,10 @@
   .wfRow.weak{border-color:rgba(255,93,108,.55)}
   .wfRow.weak .fbBar i{background:var(--bad)}
   .wfTop{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-  .wfName{font-size:14.5px;font-weight:900;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .wfPct{flex:0 0 auto;font-size:15px;font-weight:900;font-variant-numeric:tabular-nums}
+  .wfName{font-size:0.90625rem;font-weight:900;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wfPct{flex:0 0 auto;font-size:0.9375rem;font-weight:900;font-variant-numeric:tabular-nums}
   .wfRow.weak .wfPct{color:var(--bad)}
-  .wfMeta{font-size:11.5px;font-weight:700;color:var(--muted)}
+  .wfMeta{font-size:0.71875rem;font-weight:700;color:var(--muted)}
 
   /* ===== ホームのハブ（カテゴリボタン） ===== */
   .hubGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:4px}
@@ -806,12 +808,12 @@
   .hubBtn:hover{transform:translateY(-2px);border-color:var(--brand);box-shadow:0 24px 60px rgba(29,45,68,.18)}
   .hubBtn:active{transform:scale(.99)}
   .hubBtn:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 42%,transparent);outline-offset:3px}
-  .hubIcon{flex:0 0 auto;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:24px;
+  .hubIcon{flex:0 0 auto;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:1.5rem;
     background:var(--card2);border:1px solid var(--line)}
   .hubBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-  .hubName{font-size:16px;font-weight:900}
-  .hubSub{font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .hubChev{flex:0 0 auto;color:var(--brand);font-size:16px;font-weight:900}
+  .hubName{font-size:1rem;font-weight:900}
+  .hubSub{font-size:0.71875rem;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hubChev{flex:0 0 auto;color:var(--brand);font-size:1rem;font-weight:900}
   @media(max-width:560px){ .hubGrid{grid-template-columns:1fr} }
 
   /* ===== heatmap ===== */
@@ -822,7 +824,7 @@
   .heat .cell.l1{background:var(--h1)} .heat .cell.l2{background:var(--h2)}
   .heat .cell.l3{background:var(--h3)} .heat .cell.l4{background:var(--h4)}
   .heat .cell.future{background:transparent;border-color:transparent}
-  .heat-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:11px;color:var(--muted)}
+  .heat-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:0.6875rem;color:var(--muted)}
   .heat-leg{display:flex;align-items:center;gap:4px}
   .heat-leg .cell{width:12px;height:12px;border-radius:3px}
 
@@ -830,7 +832,7 @@
   .tabs{display:flex;gap:8px;background:var(--card);padding:6px;border-radius:14px;
     border:1px solid var(--line);margin-bottom:14px;box-shadow:var(--glow)}
   .tab{flex:1;text-align:center;padding:10px 6px;border-radius:10px;font-weight:800;
-    font-size:14px;color:var(--muted);cursor:pointer;transition:.15s}
+    font-size:0.875rem;color:var(--muted);cursor:pointer;transition:.15s}
   .tab.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;box-shadow:var(--shadow)}
   .grid{display:grid;grid-template-columns:1fr;gap:11px}
   .cat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;
@@ -839,17 +841,17 @@
   .cat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent,var(--brand))}
   .cat:active{transform:scale(.99)} .cat:hover{border-color:var(--accent,var(--brand))}
   .cat .info{flex:1;min-width:0}
-  .cat .info h3{margin:0 0 5px;font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cat .info h3{margin:0 0 5px;font-size:1rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cat .pbar{height:6px;border-radius:999px;background:var(--card2);overflow:hidden;margin-bottom:5px}
   .cat .pbar i{display:block;height:100%;background:var(--accent,var(--brand));width:0}
-  .cat .meta{font-size:11.5px;color:var(--muted)}
+  .cat .meta{font-size:0.71875rem;color:var(--muted)}
   .cat .rt{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-  .cat .badge{font-size:10.5px;font-weight:900;padding:3px 9px;border-radius:999px;background:var(--bad-bg);color:var(--bad);white-space:nowrap}
-  .cat .mastered{font-size:10.5px;font-weight:900;color:var(--good)}
-  .cat .chev{color:var(--muted);font-size:22px}
+  .cat .badge{font-size:0.65625rem;font-weight:900;padding:3px 9px;border-radius:999px;background:var(--bad-bg);color:var(--bad);white-space:nowrap}
+  .cat .mastered{font-size:0.65625rem;font-weight:900;color:var(--good)}
+  .cat .chev{color:var(--muted);font-size:1.375rem}
   .weakcat{border-color:rgba(255,93,108,.55)} .weakcat::before{background:var(--bad)}
   .bookmarkcat{border-color:rgba(255,209,102,.55)} .bookmarkcat::before{background:var(--gold)}
-  .empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:14px}
+  .empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:0.875rem}
 
   /* 戻るバー（検索画面などで共用） */
   .reviewTop{display:flex;align-items:center;gap:10px;margin-bottom:14px}
@@ -859,26 +861,26 @@
   .ach{flex:0 0 auto;width:96px;text-align:center;background:var(--card2);border:1px solid var(--line);
     border-radius:14px;padding:12px 8px;position:relative}
   .ach.on{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,209,102,.25)}
-  .ach .ai{font-size:26px;filter:grayscale(1) opacity(.4)}
+  .ach .ai{font-size:1.625rem;filter:grayscale(1) opacity(.4)}
   .ach.on .ai{filter:none}
-  .ach .an{font-size:11px;font-weight:800;margin-top:5px;line-height:1.25}
-  .ach .ad{font-size:9.5px;color:var(--muted);margin-top:3px;line-height:1.2}
-  .ach.on::after{content:"✓";position:absolute;top:6px;right:8px;color:var(--gold);font-weight:900;font-size:12px}
+  .ach .an{font-size:0.6875rem;font-weight:800;margin-top:5px;line-height:calc(1.25 * var(--reading-line-scale,1))}
+  .ach .ad{font-size:0.59375rem;color:var(--muted);margin-top:3px;line-height:calc(1.2 * var(--reading-line-scale,1))}
+  .ach.on::after{content:"✓";position:absolute;top:6px;right:8px;color:var(--gold);font-weight:900;font-size:0.75rem}
 
   /* ===== quiz ===== */
   .qtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px}
   .qtop #quitBtn{white-space:nowrap}
   .qtop .prog{flex:1;height:8px;border-radius:999px;background:var(--card2);overflow:hidden}
   .qtop .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));width:0;transition:width .3s}
-  .pill{font-size:12px;font-weight:900;padding:5px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);white-space:nowrap}
+  .pill{font-size:0.75rem;font-weight:900;padding:5px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);white-space:nowrap}
   .pill.streak{color:var(--warn)}
   .quizQueueBar{display:flex;justify-content:flex-end;min-height:34px;margin:-4px 0 8px}
   .laterQueueBtn{display:inline-flex;align-items:center;gap:7px;border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));
     border-radius:999px;background:color-mix(in srgb,var(--warn) 10%,var(--card));color:var(--text);
-    padding:6px 11px;font:inherit;font-size:12px;font-weight:900;cursor:pointer;transition:.15s}
+    padding:6px 11px;font:inherit;font-size:0.75rem;font-weight:900;cursor:pointer;transition:.15s}
   .laterQueueBtn:hover{border-color:var(--warn);transform:translateY(-1px)}
   .laterQueueBtn .laterCount{display:grid;place-items:center;min-width:21px;height:21px;padding:0 6px;border-radius:999px;
-    background:var(--warn);color:#29200a;font-size:11px;font-variant-numeric:tabular-nums}
+    background:var(--warn);color:#29200a;font-size:0.6875rem;font-variant-numeric:tabular-nums}
   .quizNav{position:sticky;bottom:max(10px,env(safe-area-inset-bottom));z-index:45;display:grid;
     grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);gap:9px;margin-top:14px;
     padding:9px;border:1px solid color-mix(in srgb,var(--line) 78%,transparent);border-radius:18px;
@@ -890,61 +892,61 @@
     border:1px solid color-mix(in srgb,var(--warn) 42%,var(--line))}
   .quizNav .deferBtn:hover:not(:disabled){border-color:var(--warn)}
   @media(max-width:520px){
-    .qtop{gap:7px}.qtop .pill{padding:4px 7px;font-size:11px}
-    .qtop #quitBtn{font-size:11px;padding:7px 9px}
+    .qtop{gap:7px}.qtop .pill{padding:4px 7px;font-size:0.6875rem}
+    .qtop #quitBtn{font-size:0.6875rem;padding:7px 9px}
     .quizNav{gap:6px;padding:7px;border-radius:16px}
-    .quizNav .btn{font-size:12px;padding:9px 5px}
+    .quizNav .btn{font-size:0.75rem;padding:9px 5px}
   }
   .qcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
   .qhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
   .qhead .qtag{margin-bottom:0}
-  .bookmarkToggle{flex:0 0 auto;cursor:pointer;font-family:inherit;font-weight:800;font-size:12.5px;
+  .bookmarkToggle{flex:0 0 auto;cursor:pointer;font-family:inherit;font-weight:800;font-size:0.78125rem;
     padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--muted);transition:.15s}
   .bookmarkToggle:hover{border-color:var(--gold)}
   .bookmarkToggle:active{transform:scale(.97)}
   .bookmarkToggle.on{background:color-mix(in srgb,var(--gold) 18%,var(--card2));border-color:var(--gold);color:var(--gold)}
-  .qtag{display:inline-block;font-size:11px;font-weight:800;color:var(--brand);background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px;margin-bottom:10px}
-  .qtext{font-size:17px;font-weight:700;margin:0 0 4px}
+  .qtag{display:inline-block;font-size:0.6875rem;font-weight:800;color:var(--brand);background:var(--card2);border:1px solid var(--line);padding:3px 10px;border-radius:999px;margin-bottom:10px}
+  .qtext{font-size:1.0625rem;font-weight:700;margin:0 0 4px}
   /* 原本で下線が引かれている部分。どこを指しているかが分からないと解けない設問があるので必ず再現する */
   .qUnderline{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:var(--brand)}
   /* 大問まるごと1画面。見出し → 共通の問題文 → 小問（.qBlock）の順に並べる */
   .qGroupHead{margin:0 0 12px;padding:10px 12px;border-radius:12px;
     background:color-mix(in srgb,var(--brand) 8%,var(--card2));border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line))}
   .qGroupHead.hidden{display:none}
-  .qGroupTitle{font-size:15px;font-weight:900;color:var(--brand);margin:0}
-  .qGroupMeta{font-size:11.5px;font-weight:700;color:var(--muted);margin:3px 0 0}
+  .qGroupTitle{font-size:0.9375rem;font-weight:900;color:var(--brand);margin:0}
+  .qGroupMeta{font-size:0.71875rem;font-weight:700;color:var(--muted);margin:3px 0 0}
   .qBlock+.qBlock{margin-top:22px;padding-top:20px;border-top:2px dashed var(--line)}
   .qBlockHead{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
-  .qBlockNo{font-size:12px;font-weight:900;color:var(--brand);background:var(--card2);
+  .qBlockNo{font-size:0.75rem;font-weight:900;color:var(--brand);background:var(--card2);
     border:1px solid var(--line);border-radius:999px;padding:2px 10px;white-space:nowrap}
-  .qBlockPts{font-size:11.5px;font-weight:700;color:var(--muted)}
+  .qBlockPts{font-size:0.71875rem;font-weight:700;color:var(--muted)}
   .qGroupFoot{margin-top:20px}
   .qGroupFoot.hidden{display:none}
   .qGroupFoot .btn{width:100%}
   /* 大問の共通設問文。長い実験文・症例文が小問ごとに繰り返されるので、折りたたんで置く */
   .qStem{margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--card2);overflow:hidden}
   .qStem.hidden{display:none}
-  .qStem>summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:12px;font-weight:800;color:var(--brand);display:flex;align-items:center;gap:6px}
+  .qStem>summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:0.75rem;font-weight:800;color:var(--brand);display:flex;align-items:center;gap:6px}
   .qStem>summary::-webkit-details-marker{display:none}
-  .qStem>summary::after{content:"▾";margin-left:auto;font-size:11px;opacity:.7}
+  .qStem>summary::after{content:"▾";margin-left:auto;font-size:0.6875rem;opacity:.7}
   .qStem[open]>summary::after{content:"▴"}
   .qStemBody{padding:0 12px 12px}
-  .qStemText{font-size:14px;line-height:1.85;white-space:pre-wrap;margin:0}
+  .qStemText{font-size:0.875rem;line-height:calc(1.85 * var(--reading-line-scale,1));white-space:pre-wrap;margin:0}
   .qStemFig{margin:10px 0 0;padding:8px;background:#fff;border:1px solid var(--line);border-radius:10px;text-align:center}
   .qStemFig img{max-width:100%;height:auto;display:block;margin:0 auto;cursor:zoom-in}
   .qStemFig.zoomed{overflow-x:auto}
   .qStemFig.zoomed img{cursor:zoom-out;max-width:none;width:auto}
-  .qStemFigCap{font-size:11px;color:var(--muted);margin-top:6px}
+  .qStemFigCap{font-size:0.6875rem;color:var(--muted);margin-top:6px}
   /* 穴埋め（クローズ）問題。本文中に入力欄を埋め込む */
-  .cwCloze{font-size:15px;line-height:2.2;white-space:pre-wrap}
+  .cwCloze{font-size:0.9375rem;line-height:calc(2.2 * var(--reading-line-scale,1));white-space:pre-wrap}
   /* 入力欄は本文の行に収まる幅にする（広いと「）」だけが次行に落ちて読めなくなる） */
-  .cwClozeIn{display:inline-block;width:7em;max-width:100%;font:inherit;font-size:14px;padding:2px 6px;
+  .cwClozeIn{display:inline-block;width:7em;max-width:100%;font:inherit;font-size:0.875rem;padding:2px 6px;
     vertical-align:baseline;border:none;border-bottom:2px solid var(--brand);border-radius:4px 4px 0 0;
     background:var(--card2);color:var(--fg)}
   @media (min-width:520px){ .cwClozeIn{width:9em} }
   .cwClozeIn:focus{outline:none;background:color-mix(in srgb,var(--brand) 10%,var(--card2))}
   .cwClozeIn:disabled{opacity:.75}
-  .cwClozeNo{display:inline-block;font-size:10px;font-weight:800;color:var(--brand);vertical-align:super;margin-right:1px}
+  .cwClozeNo{display:inline-block;font-size:0.625rem;font-weight:800;color:var(--brand);vertical-align:super;margin-right:1px}
   .qfigure{margin:14px 0 0;padding:10px;background:#fff;border:1px solid var(--line);border-radius:12px;text-align:center}
   .qfigure.hidden{display:none}
   .qfigure img{max-width:100%;height:auto;display:block;margin:0 auto;cursor:zoom-in}
@@ -952,48 +954,48 @@
   .qfigure.zoomed{overflow-x:auto}
   .choices{display:grid;gap:10px;margin-top:16px}
   .choice{text-align:left;width:100%;border:1.5px solid var(--line);background:var(--card2);color:var(--text);
-    border-radius:13px;padding:13px 14px;font-size:15px;font-family:inherit;cursor:pointer;
+    border-radius:13px;padding:13px 14px;font-size:0.9375rem;font-family:inherit;cursor:pointer;
     display:flex;gap:11px;align-items:flex-start;transition:.12s;font-weight:600}
   .choice:hover:not(:disabled){border-color:var(--brand)} .choice:disabled{cursor:default}
   .choice .key{flex:0 0 auto;width:24px;height:24px;border-radius:7px;background:var(--card);border:1px solid var(--line);
-    display:grid;place-items:center;font-size:12px;font-weight:900;color:var(--muted)}
+    display:grid;place-items:center;font-size:0.75rem;font-weight:900;color:var(--muted)}
   .choice.correct{border-color:var(--good);background:var(--good-bg)} .choice.correct .key{background:var(--good);color:#fff;border-color:var(--good)}
   .choice.wrong{border-color:var(--bad);background:var(--bad-bg)} .choice.wrong .key{background:var(--bad);color:#fff;border-color:var(--bad)}
   .choice .choiceBody{display:flex;flex-direction:column;gap:4px;flex:1 1 auto;min-width:0}
-  .choice .revealHint{font-size:11px;font-weight:800;color:var(--brand)}
+  .choice .revealHint{font-size:0.6875rem;font-weight:800;color:var(--brand)}
   .choiceNote{margin:2px 0 0;padding:10px 12px;border-radius:12px;background:var(--card2);
-    border:1px dashed var(--line);font-size:13px;line-height:1.7;color:var(--text)}
+    border:1px dashed var(--line);font-size:0.8125rem;line-height:calc(1.7 * var(--reading-line-scale,1));color:var(--text)}
   .explain{margin-top:14px;border-radius:14px;padding:15px;border:1px solid var(--line);background:var(--card);animation:pop .25s ease}
   @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .explain .head{font-weight:900;font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .explain .head{font-weight:900;font-size:0.9375rem;margin-bottom:6px;display:flex;align-items:center;gap:8px}
   .explain.ok .head{color:var(--good)} .explain.ng .head{color:var(--bad)}
-  .explain .body{font-size:14.5px;color:var(--text)}
-  .explain .body .lead{color:var(--muted);font-size:12.5px;margin-bottom:6px}
-  .explainSummary{margin:0;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+  .explain .body{font-size:0.90625rem;color:var(--text)}
+  .explain .body .lead{color:var(--muted);font-size:0.78125rem;margin-bottom:6px}
+  .explainSummary{margin:0;line-height:calc(1.75 * var(--reading-line-scale,1));white-space:pre-wrap;word-break:break-word}
   .choiceExplainList{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
   .choiceExplainList li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;
     border-radius:12px;background:var(--card2);border:1px solid var(--line)}
   .choiceExplainList li.ce-correct{background:var(--good-bg);border-color:var(--good)}
   .choiceExplainList li.ce-wrongchosen{background:var(--bad-bg);border-color:var(--bad)}
   .choiceExplainList .ekey{flex:0 0 auto;width:22px;height:22px;border-radius:7px;
-    display:grid;place-items:center;font-size:11.5px;font-weight:900;
+    display:grid;place-items:center;font-size:0.71875rem;font-weight:900;
     background:var(--card);border:1px solid var(--line);color:var(--muted)}
   .choiceExplainList li.ce-correct .ekey{background:var(--good);border-color:var(--good);color:#fff}
   .choiceExplainList li.ce-wrongchosen .ekey{background:var(--bad);border-color:var(--bad);color:#fff}
-  .choiceExplainList .etext{display:flex;flex-direction:column;gap:4px;font-size:13.5px;line-height:1.6;color:var(--text)}
+  .choiceExplainList .etext{display:flex;flex-direction:column;gap:4px;font-size:0.84375rem;line-height:calc(1.6 * var(--reading-line-scale,1));color:var(--text)}
   .choiceExplainList .echoice{font-weight:800}
-  .choiceExplainList .etag{display:inline-block;font-size:10px;font-weight:900;padding:2px 8px;
+  .choiceExplainList .etag{display:inline-block;font-size:0.625rem;font-weight:900;padding:2px 8px;
     border-radius:999px;margin-left:7px;background:var(--card);color:var(--muted);vertical-align:middle}
   .choiceExplainList li.ce-correct .etag{background:var(--good);color:#fff}
   .choiceExplainList li.ce-wrongchosen .etag{background:var(--bad);color:#fff}
-  .choiceExplainList .edesc{color:var(--muted);font-size:13px;line-height:1.6}
+  .choiceExplainList .edesc{color:var(--muted);font-size:0.8125rem;line-height:calc(1.6 * var(--reading-line-scale,1))}
 
   /* ===== confidence (FSRS 4段階) ===== */
   .confRow{margin-top:12px;padding:12px 14px;border-radius:14px;border:1px dashed color-mix(in srgb,var(--brand) 42%,var(--line));background:color-mix(in srgb,var(--brand) 6%,var(--card2))}
-  .confLabel{display:block;font-size:12.5px;font-weight:900;color:var(--text);margin-bottom:8px}
-  .confLabel small{font-weight:700;color:var(--muted);font-size:11px;margin-left:6px}
+  .confLabel{display:block;font-size:0.78125rem;font-weight:900;color:var(--text);margin-bottom:8px}
+  .confLabel small{font-weight:700;color:var(--muted);font-size:0.6875rem;margin-left:6px}
   .confBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .confBtn{font-family:inherit;font-size:13px;font-weight:800;padding:10px 6px;border-radius:12px;
+  .confBtn{font-family:inherit;font-size:0.8125rem;font-weight:800;padding:10px 6px;border-radius:12px;
     border:1.5px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;transition:.15s}
   .confBtn:hover{border-color:var(--brand);transform:translateY(-1px)}
   .confBtn[data-g="2"].sel{background:var(--warn);border-color:var(--warn);color:#fff}
@@ -1001,70 +1003,70 @@
   .confBtn[data-g="4"].sel{background:var(--good);border-color:var(--good);color:#fff}
   .confRow.done .confBtn{cursor:default}
   .confRow.done .confBtn:not(.sel){opacity:.4}
-  .confResult{margin-top:9px;font-size:12.5px;font-weight:800;color:var(--brand)}
+  .confResult{margin-top:9px;font-size:0.78125rem;font-weight:800;color:var(--brand)}
 
   /* ===== 代謝経路リンク ===== */
   .pathBox{margin-top:12px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card2)}
-  .pathBox .pbHead{font-size:12px;font-weight:900;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .pathBox .pbHead{font-size:0.75rem;font-weight:900;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:6px}
   .pathItem{margin-top:12px} .pathItem:first-of-type{margin-top:0}
-  .pathName{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:900;color:var(--text)}
+  .pathName{display:inline-flex;align-items:center;gap:6px;font-size:0.84375rem;font-weight:900;color:var(--text)}
   .pathFlow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:8px 0}
-  .pathStep{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+  .pathStep{font-size:0.71875rem;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
   .pathStep.on{background:color-mix(in srgb,var(--brand) 18%,var(--card));border-color:var(--brand);color:var(--text)}
-  .pathArrow{color:var(--muted);font-size:11px}
-  .pathMore{font-family:inherit;font-size:12.5px;font-weight:800;color:var(--brand);background:var(--card);
+  .pathArrow{color:var(--muted);font-size:0.6875rem}
+  .pathMore{font-family:inherit;font-size:0.78125rem;font-weight:800;color:var(--brand);background:var(--card);
     border:1.5px solid color-mix(in srgb,var(--brand) 35%,var(--line));border-radius:999px;padding:6px 13px;cursor:pointer}
   .pathMore:hover{background:color-mix(in srgb,var(--brand) 10%,var(--card))}
 
   /* ===== ランキング ===== */
   .rankIntro{padding:20px 18px}
   .rankJoinPanel{margin-top:14px}
-  .rankTitle{font-size:17px;font-weight:900;margin-bottom:8px}
-  .rankLead{font-size:13.5px;line-height:1.7;color:var(--text);margin:0 0 14px}
+  .rankTitle{font-size:1.0625rem;font-weight:900;margin-bottom:8px}
+  .rankLead{font-size:0.84375rem;line-height:calc(1.7 * var(--reading-line-scale,1));color:var(--text);margin:0 0 14px}
   .rankJoin{display:flex;gap:8px;flex-wrap:wrap}
-  .rankJoin input{flex:1 1 160px;min-width:0;font-family:inherit;font-size:15px;padding:11px 13px;border-radius:12px;
+  .rankJoin input{flex:1 1 160px;min-width:0;font-family:inherit;font-size:0.9375rem;padding:11px 13px;border-radius:12px;
     border:1.5px solid var(--line);background:var(--card2);color:var(--text)}
   .rankJoin input:focus{outline:none;border-color:var(--brand)}
   .rankJoin .btn{flex:0 0 auto;width:auto;padding:11px 20px;margin:0}
-  .rankNote{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6}
-  .rankLoading{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+  .rankNote{font-size:0.71875rem;color:var(--muted);margin-top:12px;line-height:calc(1.6 * var(--reading-line-scale,1))}
+  .rankLoading{padding:26px;text-align:center;color:var(--muted);font-size:0.8125rem}
   .rankMe{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;margin-bottom:14px;
     background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 20%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line));box-shadow:var(--shadow)}
-  .rankMeRank{font-size:34px;font-weight:900;line-height:1;color:var(--brand)}
-  .rankMeRank small{font-size:13px;font-weight:800;color:var(--muted);margin-left:2px}
-  .rankMeName{font-size:15px;font-weight:900}
-  .rankMeSolved{font-size:12.5px;color:var(--muted);margin-top:3px}
-  .youTag{display:inline-block;font-size:10px;font-weight:900;padding:2px 8px;border-radius:999px;background:var(--brand);color:#fff;vertical-align:middle;margin-left:4px}
+  .rankMeRank{font-size:2.125rem;font-weight:900;line-height:calc(1 * var(--reading-line-scale,1));color:var(--brand)}
+  .rankMeRank small{font-size:0.8125rem;font-weight:800;color:var(--muted);margin-left:2px}
+  .rankMeName{font-size:0.9375rem;font-weight:900}
+  .rankMeSolved{font-size:0.78125rem;color:var(--muted);margin-top:3px}
+  .youTag{display:inline-block;font-size:0.625rem;font-weight:900;padding:2px 8px;border-radius:999px;background:var(--brand);color:#fff;vertical-align:middle;margin-left:4px}
   .rankListPanel{padding:6px 6px 8px}
-  .rankListHead{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px;font-size:11.5px;font-weight:800;color:var(--muted)}
-  .rankRefresh{font-family:inherit;font-size:12px;font-weight:800;color:var(--brand);background:none;border:none;cursor:pointer;padding:4px 6px}
+  .rankListHead{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px;font-size:0.71875rem;font-weight:800;color:var(--muted)}
+  .rankRefresh{font-family:inherit;font-size:0.75rem;font-weight:800;color:var(--brand);background:none;border:none;cursor:pointer;padding:4px 6px}
   .rankList{display:flex;flex-direction:column}
   .rankRow{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px}
   .rankRow:nth-child(odd){background:var(--card2)}
   .rankRow.you{background:color-mix(in srgb,var(--brand) 14%,var(--card2));box-shadow:0 0 0 1.5px var(--brand) inset}
-  .rankNum{flex:0 0 auto;min-width:30px;text-align:center;font-size:14px;font-weight:900;color:var(--muted)}
-  .rankNum.medal{font-size:19px}
-  .rankName{flex:1 1 auto;min-width:0;font-size:14.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rankSolved{flex:0 0 auto;font-size:15px;font-weight:900;color:var(--brand)}
-  .rankSolved small{font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
-  .rankEmpty{padding:24px;text-align:center;color:var(--muted);font-size:13px}
-  .rankFooter{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px}
+  .rankNum{flex:0 0 auto;min-width:30px;text-align:center;font-size:0.875rem;font-weight:900;color:var(--muted)}
+  .rankNum.medal{font-size:1.1875rem}
+  .rankName{flex:1 1 auto;min-width:0;font-size:0.90625rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rankSolved{flex:0 0 auto;font-size:0.9375rem;font-weight:900;color:var(--brand)}
+  .rankSolved small{font-size:0.6875rem;font-weight:800;color:var(--muted);margin-left:2px}
+  .rankEmpty{padding:24px;text-align:center;color:var(--muted);font-size:0.8125rem}
+  .rankFooter{text-align:center;font-size:0.78125rem;color:var(--muted);margin-top:14px}
   .rankFooter a{color:var(--brand);cursor:pointer;font-weight:700}
 
   /* ===== 忘却曲線 ===== */
-  .fcLead{font-size:12.5px;color:var(--text);margin:0 0 10px;line-height:1.6}
+  .fcLead{font-size:0.78125rem;color:var(--text);margin:0 0 10px;line-height:calc(1.6 * var(--reading-line-scale,1))}
   .fcChart{width:100%;height:auto;display:block}
   .fcStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
   .fcStat{text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:9px 4px}
-  .fcStat b{display:block;font-size:17px;font-weight:900;color:var(--brand);line-height:1.1}
-  .fcStat span{font-size:10.5px;color:var(--muted);font-weight:700}
-  .fcNote{font-size:11.5px;color:var(--muted);line-height:1.65;margin-top:10px}
+  .fcStat b{display:block;font-size:1.0625rem;font-weight:900;color:var(--brand);line-height:calc(1.1 * var(--reading-line-scale,1))}
+  .fcStat span{font-size:0.65625rem;color:var(--muted);font-weight:700}
+  .fcNote{font-size:0.71875rem;color:var(--muted);line-height:calc(1.65 * var(--reading-line-scale,1));margin-top:10px}
 
   /* ===== 試験日モード ===== */
   .examDayCard{--accent:#c2410c}
-  .examDayFoot{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
+  .examDayFoot{text-align:center;font-size:0.75rem;color:var(--muted);margin-top:8px}
   .examDayFoot a{color:var(--brand);cursor:pointer;font-weight:700}
-  .examDateInput{width:100%;box-sizing:border-box;font-family:inherit;font-size:17px;font-weight:800;
+  .examDateInput{width:100%;box-sizing:border-box;font-family:inherit;font-size:1.0625rem;font-weight:800;
     text-align:center;padding:12px;border-radius:12px;border:1.5px solid var(--line);
     background:var(--card2);color:var(--text);margin-bottom:14px}
   .examDateInput:focus{outline:none;border-color:var(--brand)}
@@ -1072,46 +1074,46 @@
   /* ===== 端末間同期 ===== */
   .syncBlock{border:1.5px solid color-mix(in srgb,var(--brand) 35%,var(--line));
     background:color-mix(in srgb,var(--brand) 6%,var(--card2))}
-  .syncLead{font-size:12.5px;line-height:1.7;color:var(--text);margin:0 0 12px}
-  .syncCode{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:26px;font-weight:900;
+  .syncLead{font-size:0.78125rem;line-height:calc(1.7 * var(--reading-line-scale,1));color:var(--text);margin:0 0 12px}
+  .syncCode{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.625rem;font-weight:900;
     letter-spacing:2px;text-align:center;padding:14px 10px;border-radius:12px;margin-bottom:10px;
     background:var(--card);border:1.5px dashed var(--brand);color:var(--brand);user-select:all;overflow-wrap:anywhere}
-  .syncStatus{font-size:11.5px;color:var(--muted);text-align:center;margin-top:9px;font-weight:700}
-  .syncNote{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6}
-  .syncOr{font-size:11px;color:var(--muted);text-align:center;margin:14px 0 8px;font-weight:800}
+  .syncStatus{font-size:0.71875rem;color:var(--muted);text-align:center;margin-top:9px;font-weight:700}
+  .syncNote{font-size:0.6875rem;color:var(--muted);margin-top:10px;line-height:calc(1.6 * var(--reading-line-scale,1))}
+  .syncOr{font-size:0.6875rem;color:var(--muted);text-align:center;margin:14px 0 8px;font-weight:800}
   .syncJoin{display:flex;gap:8px}
   .syncJoin input{flex:1 1 auto;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-    font-size:16px;font-weight:800;letter-spacing:1px;text-align:center;text-transform:uppercase;
+    font-size:1rem;font-weight:800;letter-spacing:1px;text-align:center;text-transform:uppercase;
     padding:11px 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--text)}
   .syncJoin input:focus{outline:none;border-color:var(--brand)}
-  .syncJoin input[type="email"]{font-family:inherit;font-size:14px;font-weight:600;letter-spacing:0;text-align:left;text-transform:none}
+  .syncJoin input[type="email"]{font-family:inherit;font-size:0.875rem;font-weight:600;letter-spacing:0;text-align:left;text-transform:none}
   .syncJoin .bkBtn{flex:0 0 auto}
   .authProviders{display:grid;grid-template-columns:1fr;gap:9px;margin:12px 0}
-  .authProvider{min-height:48px;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
-  .authProvider span{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;font-size:13px}
+  .authProvider{min-height:48px;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:0.8125rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
+  .authProvider span{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;font-size:0.8125rem}
   .authProvider.google{background:#fff;color:#202124;border:1px solid #dadce0}
   .authProvider.google span{color:#4285f4;border:1px solid #dadce0}
   .authProvider svg{display:block;width:18px;height:18px}
   .legacySync,.accountDanger{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
-  .legacySync summary,.accountDanger summary{cursor:pointer;font-size:12px;font-weight:900;color:var(--muted)}
+  .legacySync summary,.accountDanger summary{cursor:pointer;font-size:0.75rem;font-weight:900;color:var(--muted)}
   .legacySync[open] summary,.accountDanger[open] summary{margin-bottom:10px;color:var(--text)}
   .accountSigned{display:flex;align-items:center;gap:11px;margin:10px 0 12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
-  .accountAvatar{flex:0 0 auto;width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#31a8ff,#3157e8);color:#fff;font-size:18px;font-weight:900}
-  .accountSigned b,.accountSigned span,.accountSigned small{display:block}.accountSigned b{font-size:14px}.accountSigned span{font-size:12px;color:var(--muted)}.accountSigned small{font-size:10.5px;color:var(--brand);font-weight:800;margin-top:2px}
+  .accountAvatar{flex:0 0 auto;width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#31a8ff,#3157e8);color:#fff;font-size:1.125rem;font-weight:900}
+  .accountSigned b,.accountSigned span,.accountSigned small{display:block}.accountSigned b{font-size:0.875rem}.accountSigned span{font-size:0.75rem;color:var(--muted)}.accountSigned small{font-size:0.65625rem;color:var(--brand);font-weight:800;margin-top:2px}
   .authLinks{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}.authLinks:empty{display:none}
-  .authLinkBtn{border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text);font-size:11.5px;font-weight:900;padding:7px 11px;cursor:pointer}
-  .accountDanger p{font-size:11.5px;line-height:1.65;color:var(--muted)}
+  .authLinkBtn{border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text);font-size:0.71875rem;font-weight:900;padding:7px 11px;cursor:pointer}
+  .accountDanger p{font-size:0.71875rem;line-height:calc(1.65 * var(--reading-line-scale,1));color:var(--muted)}
   @media(max-width:480px){.authProviders{grid-template-columns:1fr}.syncJoin{flex-direction:column}.syncJoin .bkBtn{width:100%}}
   .bkAdvanced{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
-  .bkAdvanced summary{font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer;padding:4px 0}
+  .bkAdvanced summary{font-size:0.78125rem;font-weight:800;color:var(--muted);cursor:pointer;padding:4px 0}
   .bkAdvanced summary:hover{color:var(--brand)}
   .bkAdvanced[open] summary{margin-bottom:10px}
 
   /* ===== 誤答メモ（演習中） ===== */
   .whyBox{margin-top:12px;padding:12px 14px;border-radius:14px;border:1px dashed color-mix(in srgb,var(--bad) 40%,var(--line));background:color-mix(in srgb,var(--bad) 5%,var(--card2))}
-  .whyLabel{display:block;font-size:12.5px;font-weight:900;color:var(--text);margin-bottom:7px}
-  .whyLabel small{font-weight:700;color:var(--muted);font-size:11px;margin-left:6px}
-  .whyInput,.maNote{width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;line-height:1.6;
+  .whyLabel{display:block;font-size:0.78125rem;font-weight:900;color:var(--text);margin-bottom:7px}
+  .whyLabel small{font-weight:700;color:var(--muted);font-size:0.6875rem;margin-left:6px}
+  .whyInput,.maNote{width:100%;box-sizing:border-box;font-family:inherit;font-size:0.875rem;line-height:calc(1.6 * var(--reading-line-scale,1));
     padding:9px 11px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);resize:vertical}
   .whyInput:focus,.maNote:focus{outline:none;border-color:var(--brand)}
 
@@ -1119,32 +1121,32 @@
   .maSummary{margin-bottom:14px}
   .maStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
   .maStat{text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 4px}
-  .maStat b{display:block;font-size:18px;font-weight:900;color:var(--bad);line-height:1.15;overflow-wrap:anywhere}
-  .maStat span{font-size:10.5px;color:var(--muted);font-weight:700}
+  .maStat b{display:block;font-size:1.125rem;font-weight:900;color:var(--bad);line-height:calc(1.15 * var(--reading-line-scale,1));overflow-wrap:anywhere}
+  .maStat span{font-size:0.65625rem;color:var(--muted);font-weight:700}
   .maBars{display:flex;flex-direction:column;gap:7px}
   .maBar{display:flex;align-items:center;gap:8px}
-  .maBarLabel{flex:0 0 88px;font-size:11.5px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .maBarLabel{flex:0 0 88px;font-size:0.71875rem;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .maBarTrack{flex:1 1 auto;height:9px;border-radius:99px;background:var(--card2);overflow:hidden}
   .maBarFill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,color-mix(in srgb,var(--bad) 70%,var(--warn)),var(--bad))}
-  .maBarNum{flex:0 0 auto;font-size:11.5px;font-weight:800;color:var(--muted);min-width:18px;text-align:right}
+  .maBarNum{flex:0 0 auto;font-size:0.71875rem;font-weight:800;color:var(--muted);min-width:18px;text-align:right}
   .maFilters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
-  .maChip{font-family:inherit;font-size:12.5px;font-weight:800;padding:7px 13px;border-radius:999px;
+  .maChip{font-family:inherit;font-size:0.78125rem;font-weight:800;padding:7px 13px;border-radius:999px;
     border:1.5px solid var(--line);background:var(--card2);color:var(--muted);cursor:pointer}
   .maChip.on{background:var(--brand);border-color:var(--brand);color:#fff}
   .maChip b{font-weight:900;margin-left:3px}
   .maPracticeAll{margin-bottom:14px}
   .maList{display:flex;flex-direction:column;gap:12px}
   .maItem{padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
-  .maQ{font-size:14px;font-weight:700;line-height:1.55;margin-bottom:8px}
+  .maQ{font-size:0.875rem;font-weight:700;line-height:calc(1.55 * var(--reading-line-scale,1));margin-bottom:8px}
   .maFacts{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:8px}
-  .maField{font-size:10.5px;font-weight:800;color:var(--muted);background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
-  .maWrong{font-size:11px;font-weight:900;color:var(--bad)}
-  .maUnsolved{font-size:10.5px;font-weight:900;color:#fff;background:var(--bad);border-radius:999px;padding:2px 8px}
-  .maAns{font-size:13px;line-height:1.6;margin-bottom:5px}
+  .maField{font-size:0.65625rem;font-weight:800;color:var(--muted);background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+  .maWrong{font-size:0.6875rem;font-weight:900;color:var(--bad)}
+  .maUnsolved{font-size:0.65625rem;font-weight:900;color:#fff;background:var(--bad);border-radius:999px;padding:2px 8px}
+  .maAns{font-size:0.8125rem;line-height:calc(1.6 * var(--reading-line-scale,1));margin-bottom:5px}
   .maAns b{color:var(--good)}
-  .maMiss{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .maMiss{font-size:0.75rem;color:var(--muted);margin-bottom:8px}
   .maActions{margin-top:8px;text-align:right}
-  .maMore{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+  .maMore{text-align:center;color:var(--muted);font-size:0.75rem;padding:12px}
 
   /* ===== 新着バッジ（ホーム） ===== */
   .hubBtn.hasNew{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
@@ -1152,7 +1154,7 @@
   .hubDot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;
     background:var(--bad);border:2px solid var(--card);animation:hubPulse 2s ease-in-out infinite}
   @keyframes hubPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.18);opacity:.75}}
-  .hubBadge{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:900;line-height:1;
+  .hubBadge{display:inline-block;margin-left:6px;font-size:0.65625rem;font-weight:900;line-height:calc(1 * var(--reading-line-scale,1));
     padding:3px 7px;border-radius:999px;background:var(--bad);color:#fff;vertical-align:middle}
   .cmNew{color:var(--bad);font-weight:900}
 
@@ -1165,37 +1167,37 @@
   .cmBoard{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;
     background:none;border:none;cursor:pointer;font-family:inherit;color:var(--text)}
   .cmBoardBody{display:flex;flex-direction:column;gap:3px;flex:1 1 auto;min-width:0}
-  .cmBoardTitle{font-size:14.5px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .cmBoardDesc{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .cmBoardMeta{font-size:11px;color:var(--muted)}
-  .cmBoardCount{flex:0 0 auto;font-size:15px;font-weight:900;color:var(--brand)}
-  .cmBoardCount small{font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
-  .cmActions{font-size:11.5px;color:var(--muted);padding:0 12px 9px}
+  .cmBoardTitle{font-size:0.90625rem;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmBoardDesc{font-size:0.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmBoardMeta{font-size:0.6875rem;color:var(--muted)}
+  .cmBoardCount{flex:0 0 auto;font-size:0.9375rem;font-weight:900;color:var(--brand)}
+  .cmBoardCount small{font-size:0.6875rem;font-weight:800;color:var(--muted);margin-left:2px}
+  .cmActions{font-size:0.71875rem;color:var(--muted);padding:0 12px 9px}
   .cmActions a{color:var(--muted);cursor:pointer;font-weight:700}
   .cmActions a:hover{color:var(--bad)}
   .cmToList{margin-bottom:10px}
   .cmHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-  .cmHeadTitle{font-size:17px;font-weight:900;min-width:0;overflow-wrap:anywhere}
+  .cmHeadTitle{font-size:1.0625rem;font-weight:900;min-width:0;overflow-wrap:anywhere}
   .cmPostsPanel{padding:6px}
   .cmPosts{display:flex;flex-direction:column}
   .cmPost{padding:12px;border-radius:12px}
   .cmPost:nth-child(odd){background:var(--card2)}
   .cmPost.mine{background:color-mix(in srgb,var(--brand) 10%,var(--card2))}
   .cmPostHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
-  .cmAuthor{font-size:12.5px;font-weight:900}
-  .cmDate{font-size:11px;color:var(--muted);flex:0 0 auto}
-  .cmText{font-size:14px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+  .cmAuthor{font-size:0.78125rem;font-weight:900}
+  .cmDate{font-size:0.6875rem;color:var(--muted);flex:0 0 auto}
+  .cmText{font-size:0.875rem;line-height:calc(1.7 * var(--reading-line-scale,1));white-space:pre-wrap;overflow-wrap:anywhere}
   .cmPost .cmActions{padding:7px 0 0}
   .cmCompose{margin-top:14px;padding:12px}
-  .cmCompose textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;line-height:1.6;
+  .cmCompose textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:0.9375rem;line-height:calc(1.6 * var(--reading-line-scale,1));
     padding:11px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);color:var(--text);resize:vertical}
   .cmCompose textarea:focus{outline:none;border-color:var(--brand)}
   .cmComposeRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
-  .cmCount{font-size:11.5px;color:var(--muted);font-weight:700}
+  .cmCount{font-size:0.71875rem;color:var(--muted);font-weight:700}
   .cmCompose .btn{width:auto;margin:0;padding:10px 20px}
   .cmForm{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-  .cmForm label{font-size:11.5px;font-weight:800;color:var(--muted);margin-top:6px}
-  .cmForm input{font-family:inherit;font-size:15px;padding:11px 13px;border-radius:12px;
+  .cmForm label{font-size:0.71875rem;font-weight:800;color:var(--muted);margin-top:6px}
+  .cmForm input{font-family:inherit;font-size:0.9375rem;padding:11px 13px;border-radius:12px;
     border:1.5px solid var(--line);background:var(--card2);color:var(--text)}
   .cmForm input:focus{outline:none;border-color:var(--brand)}
   .cmFormRow{display:flex;gap:8px;justify-content:flex-end}
@@ -1203,33 +1205,33 @@
 
   /* ===== result ===== */
   .result{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 20px;text-align:center;box-shadow:var(--shadow);margin-bottom:16px}
-  .score{font-size:46px;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  .result .sub{color:var(--muted);font-size:14px;margin-top:6px}
-  .result .xpgain{display:inline-block;margin-top:10px;font-size:12px;font-weight:900;color:var(--gold);background:var(--card2);border:1px solid var(--line);padding:5px 12px;border-radius:999px}
+  .score{font-size:2.875rem;font-weight:900;line-height:calc(1 * var(--reading-line-scale,1));background:linear-gradient(135deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .result .sub{color:var(--muted);font-size:0.875rem;margin-top:6px}
+  .result .xpgain{display:inline-block;margin-top:10px;font-size:0.75rem;font-weight:900;color:var(--gold);background:var(--card2);border:1px solid var(--line);padding:5px 12px;border-radius:999px}
   .stats{display:flex;gap:10px;margin:18px 0}
   .stat{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 8px}
-  .stat b{display:block;font-size:22px;font-weight:900} .stat span{font-size:11px;color:var(--muted)}
-  .review{margin-top:8px} .review h4{font-size:14px;margin:16px 0 8px;color:var(--muted)}
+  .stat b{display:block;font-size:1.375rem;font-weight:900} .stat span{font-size:0.6875rem;color:var(--muted)}
+  .review{margin-top:8px} .review h4{font-size:0.875rem;margin:16px 0 8px;color:var(--muted)}
   .rvitem{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
-  .rvitem .q{font-size:14px;font-weight:700;margin-bottom:6px}
-  .rvitem .a{font-size:13px} .rvitem .a.you{color:var(--bad)} .rvitem .a.ans{color:var(--good)}
+  .rvitem .q{font-size:0.875rem;font-weight:700;margin-bottom:6px}
+  .rvitem .a{font-size:0.8125rem} .rvitem .a.you{color:var(--bad)} .rvitem .a.ans{color:var(--good)}
   .batchReview{display:grid;gap:10px}
   .batchRv{padding:14px;text-align:left}
   .batchRv.ok{border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
   .batchRv.ng{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
   .batchRvHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
-  .batchRvNo{font-size:11px;font-weight:900;color:var(--muted)}
-  .batchRvState{font-size:12px;font-weight:900}
+  .batchRvNo{font-size:0.6875rem;font-weight:900;color:var(--muted)}
+  .batchRvState{font-size:0.75rem;font-weight:900}
   .batchRv.ok .batchRvState{color:var(--good)} .batchRv.ng .batchRvState{color:var(--bad)}
   .batchExpl{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
-  .batchExpl summary{cursor:pointer;font-size:12px;font-weight:900;color:var(--brand)}
-  .batchExplBody{padding-top:8px;font-size:13px;line-height:1.75}
+  .batchExpl summary{cursor:pointer;font-size:0.75rem;font-weight:900;color:var(--brand)}
+  .batchExplBody{padding-top:8px;font-size:0.8125rem;line-height:calc(1.75 * var(--reading-line-scale,1))}
 
   .row{display:flex;gap:10px;margin-top:12px} .row .btn{flex:1}
   .hidden{display:none!important}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);
-    padding:11px 16px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;font-weight:800;z-index:60;animation:pop .2s ease;max-width:90vw;text-align:center}
-  .foot{margin-top:26px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.9}
+    padding:11px 16px;border-radius:12px;box-shadow:var(--shadow);font-size:0.8125rem;font-weight:800;z-index:60;animation:pop .2s ease;max-width:90vw;text-align:center}
+  .foot{margin-top:26px;text-align:center;color:var(--muted);font-size:0.71875rem;line-height:calc(1.9 * var(--reading-line-scale,1))}
   .foot a{color:var(--brand);cursor:pointer;text-decoration:none} .foot a:hover{text-decoration:underline}
   input[type=file]{display:none}
 
@@ -1291,14 +1293,14 @@
   }
   .menuBtn{
     width:42px;height:42px;border-radius:14px;background:var(--surface-blur);
-    border-color:color-mix(in srgb,var(--line) 78%,transparent);font-size:19px;
+    border-color:color-mix(in srgb,var(--line) 78%,transparent);font-size:1.1875rem;
   }
   .menuPanel{
     position:fixed;top:70px;left:max(16px,calc((100vw - 1040px)/2 + 18px));
     z-index:120;width:min(330px,calc(100vw - 32px));padding:10px;border-radius:18px;
     background:var(--surface-blur);backdrop-filter:saturate(150%) blur(18px);
   }
-  .menuPanel a,.menuPanel button{padding:12px;border-radius:12px;font-size:14px}
+  .menuPanel a,.menuPanel button{padding:12px;border-radius:12px;font-size:0.875rem}
   .menuPanel .mi{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--card2)}
   .menuBackdrop{z-index:60;background:rgba(12,18,28,.18);backdrop-filter:blur(1px)}
   .logo{border-radius:14px;background:#f3f6fb}
@@ -1321,16 +1323,16 @@
     background-size:22px 22px;border-radius:50%;opacity:.34;transform:rotate(12deg);
   }
   .leadCopy{position:relative;z-index:1}
-  .leadEyebrow{font-size:12px;font-weight:900;color:var(--brand);margin-bottom:8px}
-  .homeLead h2{font-size:clamp(24px,4vw,36px);line-height:1.18;margin:0 0 8px;font-weight:900;letter-spacing:0}
-  .homeLead p{max-width:590px;font-size:14px;line-height:1.8}
+  .leadEyebrow{font-size:0.75rem;font-weight:900;color:var(--brand);margin-bottom:8px}
+  .homeLead h2{font-size:clamp(1.5rem,calc(4vw * var(--reading-font-scale,1)),2.25rem);line-height:calc(1.18 * var(--reading-line-scale,1));margin:0 0 8px;font-weight:900;letter-spacing:0}
+  .homeLead p{max-width:590px;font-size:0.875rem;line-height:calc(1.8 * var(--reading-line-scale,1))}
   .leadStats{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,88px);gap:8px}
   .leadStat{background:color-mix(in srgb,var(--card) 72%,transparent);border:1px solid var(--line);
     border-radius:16px;padding:12px 10px;text-align:center;backdrop-filter:blur(8px)}
-  .leadStat b{display:block;font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
-  .leadStat span{display:block;margin-top:5px;color:var(--muted);font-size:11px;font-weight:800}
+  .leadStat b{display:block;font-size:1.5rem;line-height:calc(1 * var(--reading-line-scale,1));font-variant-numeric:tabular-nums}
+  .leadStat span{display:block;margin-top:5px;color:var(--muted);font-size:0.6875rem;font-weight:800}
 
-  .sectlabel{letter-spacing:0;margin:24px 2px 12px;font-size:12px;color:var(--text);text-transform:none}
+  .sectlabel{letter-spacing:0;margin:24px 2px 12px;font-size:0.75rem;color:var(--text);text-transform:none}
   .sectlabel::after{background:linear-gradient(90deg,var(--line),transparent)}
   .grid{gap:12px}
   @media(min-width:760px){
@@ -1350,16 +1352,16 @@
   }
   .cat::before{width:5px;border-radius:18px 0 0 18px}
   .cat .info{display:flex;flex-direction:column;justify-content:center}
-  .cat .cat-kicker{font-size:11px;font-weight:900;color:var(--muted);margin-bottom:2px}
-  .cat .info h3{font-size:17px;margin:0 0 8px;letter-spacing:0}
-  .cat .meta{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted)}
+  .cat .cat-kicker{font-size:0.6875rem;font-weight:900;color:var(--muted);margin-bottom:2px}
+  .cat .info h3{font-size:1.0625rem;margin:0 0 8px;letter-spacing:0}
+  .cat .meta{display:flex;flex-wrap:wrap;gap:6px;font-size:0.75rem;color:var(--muted)}
   .cat .meta span{border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:2px 8px}
   .cat .pbar{height:7px;margin-top:12px;margin-bottom:0;border:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
   .cat .pbar i{width:var(--pct,0%)}
   .cat .rt{justify-content:center;min-width:76px}
   .cat .badge{background:color-mix(in srgb,var(--accent,var(--brand)) 14%,var(--card2));color:var(--text)}
-  .cat .mastered{color:var(--good);font-size:11px}
-  .cat .chev{font-size:12px;font-weight:900;color:var(--brand);border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:var(--card2)}
+  .cat .mastered{color:var(--good);font-size:0.6875rem}
+  .cat .chev{font-size:0.75rem;font-weight:900;color:var(--brand);border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:var(--card2)}
   .cat-year{min-height:132px}
 
   /* 年度別の小分け（五択問題／記述問題） */
@@ -1375,11 +1377,11 @@
   .catSub:hover{border-color:var(--accent,var(--brand))}
   .catSub:active{transform:scale(.99)}
   .csIcon{flex:none;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
-    font-size:16px;background:color-mix(in srgb,var(--accent,var(--brand)) 14%,var(--card2))}
+    font-size:1rem;background:color-mix(in srgb,var(--accent,var(--brand)) 14%,var(--card2))}
   .csBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-  .csTitle{font-size:14.5px;font-weight:800}
-  .csSub{font-size:11.5px;color:var(--muted)}
-  .csChev{flex:none;font-size:12px;font-weight:900;color:var(--brand);
+  .csTitle{font-size:0.90625rem;font-weight:800}
+  .csSub{font-size:0.71875rem;color:var(--muted)}
+  .csChev{flex:none;font-size:0.75rem;font-weight:900;color:var(--brand);
     border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:var(--card2)}
   .weakcat{background:linear-gradient(180deg,color-mix(in srgb,var(--bad) 8%,transparent),transparent),var(--card)}
   .bookmarkcat{background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 8%,transparent),transparent),var(--card)}
@@ -1389,12 +1391,12 @@
   .qbtn{
     border-radius:18px;min-height:112px;background:var(--card);align-items:flex-start;text-align:left;padding:16px;
   }
-  .qbtn .qi{font-size:24px;background:var(--card2);width:42px;height:42px;border-radius:13px;display:grid;place-items:center}
-  .qbtn .qn{font-size:15px}.qbtn .qs{font-size:12px}
+  .qbtn .qi{font-size:1.5rem;background:var(--card2);width:42px;height:42px;border-radius:13px;display:grid;place-items:center}
+  .qbtn .qn{font-size:0.9375rem}.qbtn .qs{font-size:0.75rem}
   .hero{border-radius:22px;background:var(--card)}
   .hero .glowdot{display:none}
   .lvring .lc .lv{letter-spacing:0}
-  .kpis{gap:12px}.kpi{border-radius:18px;padding:16px 12px;text-align:left}.kpi .v{font-size:26px}
+  .kpis{gap:12px}.kpi{border-radius:18px;padding:16px 12px;text-align:left}.kpi .v{font-size:1.625rem}
   .ach{border-radius:16px}
   .foot{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
   .btn{background:linear-gradient(135deg,#0f8d8d,#1f6feb);border-radius:14px}
@@ -1404,17 +1406,17 @@
     .wrap{padding:12px 12px 56px}
     header.app{gap:8px}
     .logo{display:none}
-    header.app h1{font-size:16px}
-    header.app p{font-size:11px}
+    header.app h1{font-size:1rem}
+    header.app p{font-size:0.6875rem}
     .lvbadge{padding:5px 9px 5px 6px}
     .homeLead{grid-template-columns:1fr;padding:19px;border-radius:18px}
     .leadStats{grid-template-columns:repeat(3,1fr)}
-    .leadStat{padding:10px 6px}.leadStat b{font-size:20px}
+    .leadStat{padding:10px 6px}.leadStat b{font-size:1.25rem}
     #fieldList.grid{grid-template-columns:1fr}
     .cat{min-height:106px;padding:14px;gap:11px}
     .cat .rt{min-width:auto}.cat .badge{display:none}
     .sectToggle{padding:13px 14px;gap:10px}
-    .sectToggle .stLabel{font-size:15px}
+    .sectToggle .stLabel{font-size:0.9375rem}
     .sectToggle .stCount{display:none}
     .quick{grid-template-columns:1fr}.qbtn{min-height:0;flex-direction:row;align-items:center}
     .hero-grid{align-items:flex-start}.lvring{width:88px;height:88px}.lvring svg{width:88px;height:88px}
@@ -1424,7 +1426,7 @@
       border-radius:24px 24px 0 0;padding-bottom:env(safe-area-inset-bottom)}
     .lessonIndexSheet::before{content:"";flex:0 0 auto;width:42px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 0}
     .liSheetHead{padding:10px 14px 12px}.liActions{padding:10px 12px}.liAction{min-height:52px;padding:8px 9px}
-    .liActionTitle{font-size:12px}.liActionSub{font-size:10px}.liList{padding:7px 8px 10px}
+    .liActionTitle{font-size:0.75rem}.liActionSub{font-size:0.625rem}.liList{padding:7px 8px 10px}
   }
 
   @media(prefers-reduced-motion:reduce){
@@ -1438,20 +1440,20 @@
     background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);
     padding:26px 24px 22px;animation:pop .22s ease}
   .updatesModalClose{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;
-    border:1px solid var(--line);background:var(--card2);color:var(--muted);cursor:pointer;font-size:14px;
+    border:1px solid var(--line);background:var(--card2);color:var(--muted);cursor:pointer;font-size:0.875rem;
     display:grid;place-items:center;font-family:inherit}
   .updatesModalClose:hover{border-color:var(--brand);color:var(--brand)}
   .updatesModalHead{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-right:30px}
-  .updatesModalHead .umIcon{width:48px;height:48px;border-radius:14px;flex:0 0 auto;font-size:24px;
+  .updatesModalHead .umIcon{width:48px;height:48px;border-radius:14px;flex:0 0 auto;font-size:1.5rem;
     display:grid;place-items:center;background:color-mix(in srgb,var(--brand) 16%,var(--card2))}
-  .umEyebrow{font-size:11px;font-weight:900;color:var(--brand);letter-spacing:.04em;margin-bottom:2px}
-  .updatesModalHead h2{margin:0;font-size:19px;font-weight:900}
+  .umEyebrow{font-size:0.6875rem;font-weight:900;color:var(--brand);letter-spacing:.04em;margin-bottom:2px}
+  .updatesModalHead h2{margin:0;font-size:1.1875rem;font-weight:900}
   .updatesModalBody{display:grid;gap:12px;margin-bottom:20px}
   .updatesModalBody .updateItem{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
-  .updatesModalBody .updateDate{font-size:11px;font-weight:900;color:var(--brand);margin-bottom:5px}
-  .updatesModalBody .updateText{font-size:14.5px;line-height:1.75;color:var(--text)}
+  .updatesModalBody .updateDate{font-size:0.6875rem;font-weight:900;color:var(--brand);margin-bottom:5px}
+  .updatesModalBody .updateText{font-size:0.90625rem;line-height:calc(1.75 * var(--reading-line-scale,1));color:var(--text)}
   .updatesModalDismiss{width:100%;border:1px solid var(--line);background:var(--card2);color:var(--muted);
-    font-family:inherit;font-weight:800;font-size:13px;padding:12px;border-radius:12px;cursor:pointer;transition:.15s}
+    font-family:inherit;font-weight:800;font-size:0.8125rem;padding:12px;border-radius:12px;cursor:pointer;transition:.15s}
   .updatesModalDismiss:hover{border-color:var(--brand);color:var(--brand)}
 
   /* ===== 初回のアカウント選択 ===== */
@@ -1464,20 +1466,20 @@
     background:radial-gradient(circle,rgba(50,184,255,.28),rgba(50,104,255,0));pointer-events:none}
   .accountChoiceMark{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;margin-bottom:18px;
     background:linear-gradient(145deg,rgba(43,178,255,.18),rgba(55,82,232,.2));border:1px solid rgba(61,158,255,.28);
-    color:var(--brand);font-size:27px;box-shadow:inset 0 1px rgba(255,255,255,.5)}
-  .accountChoiceEyebrow{font-size:10.5px;font-weight:900;letter-spacing:.13em;color:var(--brand);margin-bottom:6px}
-  .accountChoiceCard h2{font-size:24px;line-height:1.35;margin:0 0 10px;font-weight:950;letter-spacing:-.02em}
-  .accountChoiceLead{font-size:13px;line-height:1.8;color:var(--muted);margin:0 0 22px}
+    color:var(--brand);font-size:1.6875rem;box-shadow:inset 0 1px rgba(255,255,255,.5)}
+  .accountChoiceEyebrow{font-size:0.65625rem;font-weight:900;letter-spacing:.13em;color:var(--brand);margin-bottom:6px}
+  .accountChoiceCard h2{font-size:1.5rem;line-height:calc(1.35 * var(--reading-line-scale,1));margin:0 0 10px;font-weight:950;letter-spacing:-.02em}
+  .accountChoiceLead{font-size:0.8125rem;line-height:calc(1.8 * var(--reading-line-scale,1));color:var(--muted);margin:0 0 22px}
   .accountChoiceActions{display:grid;gap:10px}
   .accountChoiceLogin,.accountChoiceGuest{width:100%;min-height:52px;border-radius:14px;font-family:inherit;
-    font-size:14px;font-weight:900;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s}
+    font-size:0.875rem;font-weight:900;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s}
   .accountChoiceLogin{border:1px solid #dadce0;color:#202124;background:#fff;
     box-shadow:0 10px 24px rgba(25,45,75,.12);display:flex;align-items:center;justify-content:center;gap:10px}
   .accountChoiceLogin svg{width:20px;height:20px;display:block}
   .accountChoiceGuest{border:1px solid var(--line);color:var(--text);background:var(--card2)}
   .accountChoiceLogin:hover,.accountChoiceGuest:hover{transform:translateY(-1px)}
-  .accountChoiceNote{font-size:10.5px;line-height:1.65;color:var(--muted);text-align:center;margin:13px 4px 0}
-  @media(max-width:480px){.accountChoiceBackdrop{padding:14px}.accountChoiceCard{padding:24px 20px;border-radius:22px}.accountChoiceCard h2{font-size:21px}}
+  .accountChoiceNote{font-size:0.65625rem;line-height:calc(1.65 * var(--reading-line-scale,1));color:var(--muted);text-align:center;margin:13px 4px 0}
+  @media(max-width:480px){.accountChoiceBackdrop{padding:14px}.accountChoiceCard{padding:24px 20px;border-radius:22px}.accountChoiceCard h2{font-size:1.3125rem}}
 
   /* confetti */
   .confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:70;pointer-events:none;border-radius:2px;animation:fall linear forwards}
@@ -1728,6 +1730,14 @@
       </div>
     </div>
 
+    <div class="homeSection panel hidden savedPractice" id="savedPracticeSection" aria-label="途中の演習">
+      <b>途中の演習</b>
+      <p id="savedPracticeInfo"></p>
+      <div class="row">
+        <button type="button" class="btn primary" id="resumePracticeBtn">続きから再開</button>
+        <button type="button" class="btn ghost" id="discardPracticeBtn">破棄</button>
+      </div>
+    </div>
     <div class="homeSection dueSection" id="dueSection">
       <button type="button" class="dueCard" id="dueCard">
         <span class="dueIcon">🔁</span>
@@ -1794,7 +1804,7 @@
           <span class="dueTitle">問題一覧（年度別）</span>
           <span class="dueSub">年度（五択）・記述問題・予想問題ごとに全問を1ページ10問で閲覧</span>
         </span>
-        <span class="dueRight"><span class="dueUnit" style="font-size:15px">一覧 →</span></span>
+        <span class="dueRight"><span class="dueUnit" style="font-size:0.9375rem">一覧 →</span></span>
       </button>
     </div>
 
@@ -2065,6 +2075,25 @@
       <span class="pill">設定・データ</span>
     </div>
 
+    <div class="homeSection panel readabilitySettings" id="readabilitySection">
+      <h3>読みやすさ</h3>
+      <p>文字サイズと行間をアプリ全体に適用します。この端末に保存されます。</p>
+      <label for="readingFontSize">文字サイズ</label>
+      <select id="readingFontSize">
+        <option value="100">標準（100%）</option><option value="125">大きい（125%）</option><option value="150">特大（150%）</option>
+      </select>
+      <label for="readingLineHeight">行間</label>
+      <select id="readingLineHeight">
+        <option value="1">標準</option><option value="1.2">広め</option><option value="1.4">さらに広め</option>
+      </select>
+      <div class="readingPreview" aria-label="読みやすさの見本">
+        <p><b>見本の問題文</b><br>細胞内の構造と働きについて、正しい選択肢を選んでください。</p>
+        <p>✓ 正答 · あなたの回答：ミトコンドリア</p>
+        <p><b>解説</b><br>重要な用語だけでなく、仕組みを自分の言葉で説明できるか確かめましょう。</p>
+      </div>
+      <button type="button" class="btn ghost" id="resetReadabilityBtn">標準に戻す</button>
+      <p id="readabilityStatus" role="status"></p>
+    </div>
     <div class="homeSection" id="syncSection">
       <div class="sectlabel">端末間同期</div>
       <div class="bkBlock syncBlock" id="syncBlock"></div>
@@ -2109,11 +2138,13 @@
   <section id="quiz" class="hidden">
     <div class="qtop">
       <button class="btn ghost small" id="quitBtn">ここまでで終了</button>
+      <button type="button" class="btn ghost small" id="pausePracticeBtn">保存して中断</button>
       <div class="prog"><i id="progBar"></i></div>
       <span class="pill" id="counter">1 / 10</span>
       <span class="pill streak" id="streakPill">🔥 0</span>
       <span class="pill timer hidden" id="examTimer">⏱ 50:00</span>
     </div>
+    <p class="practiceSaveStatus" id="practiceSaveStatus" role="status" aria-live="polite"></p>
     <div class="quizQueueBar hidden" id="quizQueueBar">
       <button type="button" class="laterQueueBtn hidden" id="laterQueueBtn" aria-label="後で解く問題へ移動">
         <span>⏳ 後で解く問題</span><span class="laterCount" id="laterCount">0</span>
@@ -2491,6 +2522,7 @@
     grid.querySelectorAll("[data-subject]").forEach(el=>{ el.onclick=()=>chooseSubject(el.dataset.subject, el); });
   }
   function openSubjectPicker(){
+    saveCurrentPractice();
     stopExamTimer(); closeFcLightbox();
     updateSubjectStats();
     renderBadge();
@@ -2508,6 +2540,7 @@
     const prev=savedSubjectId();
     subjectLoading=true; if(el) el.classList.add("busy");
     try{
+      await saveCurrentPractice();
       session=null; flashSession=null; stopExamTimer();
       if(id!==prev){ meta.lastCategory=null; saveMeta(); }
       await activateSubject(id);
@@ -3369,10 +3402,11 @@
   // ホームの中身だけを描き直す。画面遷移もスクロール位置のリセットも伴わない。
   function renderHomeContent(){
     syncCmUnread();
-    refreshData("home"); renderHub();
+    refreshData("home"); renderHub(); refreshSavedPractice();
     refreshCmUnread(false);
   }
   function renderHome(direction){
+    saveCurrentPractice();
     stopExamTimer(); closeFcLightbox();
     transitionToScreen("home",direction||"back",renderHomeContent);
     // 科目えらびから入った直後（"forward"）だけは、再読み込みすると科目えらびへ戻るので見送る
@@ -3408,6 +3442,7 @@
     renderExamGrading();
   }
   function openView(id){
+    saveCurrentPractice();
     if(VIEWS.indexOf(id)===-1){ renderHome(); return; }
     stopExamTimer(); closeFcLightbox();
     transitionToScreen(id,"tab",()=>{
@@ -3685,7 +3720,7 @@
         <span class="dueIcon">✏️</span>
         <span class="dueBody"><span class="dueTitle">新しい掲示板を作る</span>
           <span class="dueSub">質問・情報共有・雑談など、自由に立てられます</span></span>
-        <span class="dueRight"><span class="dueUnit" style="font-size:15px">作る →</span></span>
+        <span class="dueRight"><span class="dueUnit" style="font-size:0.9375rem">作る →</span></span>
       </button>
       <div class="panel cmListPanel">
         <div class="rankListHead"><span>掲示板 ${boards.length} 件</span>
@@ -3819,7 +3854,7 @@
       <div class="hero-info">
         <div class="hi">👋 ${rk.icon} ${esc(rk.name)}</div>
         <div class="metric"><div class="mi">🔥</div><div class="mt"><div class="k">連続学習</div>
-          <div class="v"><b>${meta.streakDays}</b>日連続 <span style="color:var(--muted);font-weight:700;font-size:12px">（最長 ${meta.bestStreakDays}日 ・ 🧊×${meta.freezes||0}）</span></div></div></div>
+          <div class="v"><b>${meta.streakDays}</b>日連続 <span style="color:var(--muted);font-weight:700;font-size:0.75rem">（最長 ${meta.bestStreakDays}日 ・ 🧊×${meta.freezes||0}）</span></div></div></div>
         <div class="metric"><div class="mi">🎯</div><div class="mt"><div class="k">今日の目標</div>
           <div class="v">${todayN} / ${DAILY_GOAL} 問 ${todayN>=DAILY_GOAL?'✅':''}</div>
           <div class="goalbar"><i style="width:${goalPct}%"></i></div></div></div>
@@ -4107,6 +4142,159 @@
 
   /* ---------- クイズ ---------- */
   let session=null;
+  function PS(){ return window.STUDY_CORE&&window.STUDY_CORE.practiceSessions; }
+  let practiceSaveTimer=null, practiceSaveFailed=false, startingPractice=false;
+  let practiceWrites=Promise.resolve(), savedPracticeRefresh=0;
+  function practiceSnapshot(s){
+    return {
+      version:1,id:s.practiceId,subjectId:s.subjectId,label:s.label,updatedAt:new Date().toISOString(),
+      startedAt:s.startedAt,batch:s.batch,pageIndex:s.p,xpGained:s.xpGained||0,
+      correct:s.correct,streak:s.streak,maxStreak:s.maxStreak,leveledUp:s.leveledUp||0,
+      entries:s.queue.map(cur=>{
+        const cw=cur.cw;
+        const written=cw?{
+          answers:cw.submitted?cw.answers:readConstructedAnswers(cw),submitted:!!cw.submitted,finalized:!!cw.finalized,
+          selected:[...(cw.selected||[])],giveUp:!!cw.giveUp,durationMs:cw.durationMs||0,
+          startedAt:cw.startedAt,rating:cw.rating||null,gainXP:cw.gainXP||0,mult:cw.mult||1,
+        }:(cur.savedWritten||null);
+        const raw=s.batch?s.answers[cur.qi]:cur.picks;
+        return {questionId:cur.q.id,fingerprint:cur.fingerprint,type:cur.type,
+          choiceOrder:cur.type==="choice"?cur.choices.map(c=>c.idx):[],
+          picks:raw==null?[]:(Array.isArray(raw)?raw.slice():[raw]),revealed:!!cur.revealed,graded:!!cur.graded,
+          rating:cur.rating||null,feedback:cur.feedback||null,written};
+      }),
+      pages:s.pages.map(p=>({questionIds:p.idxs.map(i=>s.queue[i].q.id),deferred:!!p.deferred})),
+      wrongList:s.wrongList.map(w=>({questionId:w.q.id,chosen:w.chosen})),
+    };
+  }
+  function reportPracticeSaveError(){
+    if(!window.document) return;
+    $("#practiceSaveStatus").textContent="途中状態を保存できませんでした。端末の空き容量などを確認してから、もう一度「保存して中断」を押してください。";
+    if(!practiceSaveFailed) toast("⚠️ 演習の途中状態を保存できませんでした",3000);
+    practiceSaveFailed=true;
+  }
+  function saveCurrentPractice(){
+    clearTimeout(practiceSaveTimer);
+    const s=session;
+    if(!s||s.exam||s.finished) return Promise.resolve(true);
+    const store=PS();
+    if(!store){ reportPracticeSaveError(); return Promise.resolve(false); }
+    const snapshot=practiceSnapshot(s);
+    const write=practiceWrites.catch(()=>{}).then(()=>store.save(snapshot));
+    practiceWrites=write;
+    return write.then(()=>{
+      practiceSaveFailed=false;
+      if(window.document&&session===s) $("#practiceSaveStatus").textContent="途中状態はこの端末に自動保存されます";
+      return true;
+    }).catch(()=>{ reportPracticeSaveError(); return false; });
+  }
+  function schedulePracticeSave(){
+    if(!session||session.exam||session.finished) return;
+    clearTimeout(practiceSaveTimer);
+    practiceSaveTimer=setTimeout(saveCurrentPractice,300);
+  }
+  function removeSavedPractice(subjectId){
+    const remove=practiceWrites.catch(()=>{}).then(async()=>{
+      const store=PS(); if(!store) return;
+      let saved=null; try{ saved=await store.get(subjectId); }catch(e){}
+      const wa=WA();
+      if(saved&&wa) await Promise.all(saved.entries.filter(c=>c.type==="constructed").map(c=>{
+        clearTimeout(writtenDraftTimers[c.questionId]); return wa.deleteDraft(c.questionId,null);
+      }));
+      await store.delete(subjectId);
+    });
+    practiceWrites=remove;
+    return remove;
+  }
+  function finishSavedPractice(){
+    if(!session||session.exam||session.finished) return Promise.resolve();
+    session.finished=true; clearTimeout(practiceSaveTimer);
+    return removeSavedPractice(session.subjectId).catch(reportPracticeSaveError);
+  }
+  async function refreshSavedPractice(){
+    const store=PS(), subjectId=currentSubjectId, token=++savedPracticeRefresh;
+    if(!store||!subjectId) return;
+    let saved=null,error="";
+    try{ saved=await store.get(subjectId); }catch(e){ error=e.message||"保存データを読み込めませんでした"; }
+    if(!window.document||token!==savedPracticeRefresh||currentSubjectId!==subjectId) return;
+    const section=$("#savedPracticeSection"); section.classList.toggle("hidden",!saved&&!error);
+    if(!saved&&!error) return;
+    $("#resumePracticeBtn").disabled=!!error;
+    $("#savedPracticeInfo").textContent=error||`${saved.label} · 回答済み ${saved.entries.filter(c=>saved.batch?c.picks.length>0:(c.revealed||c.written&&c.written.finalized)).length} / ${saved.entries.length}問 · 保存 ${new Date(saved.updatedAt).toLocaleString("ja-JP")}`;
+  }
+  async function resumeSavedPractice(){
+    const store=PS(), subjectId=currentSubjectId; if(!store||!subjectId||startingPractice) return;
+    startingPractice=true;
+    try{
+      const saved=await store.get(subjectId); if(!saved) return;
+      const byId=new Map(DATA.map(q=>[q.id,q]));
+      const seen=new Set();
+      const queue=saved.entries.map((e,qi)=>{
+        const q=byId.get(e.questionId);
+        if(!q||seen.has(q.id)||JSON.stringify(q)!==e.fingerprint||questionType(q)!==e.type) throw new Error("教材の内容が変わったため、この演習は再開できません。破棄して新しく開始してください。");
+        seen.add(q.id);
+        if(e.type==="choice"&&(e.choiceOrder.length!==q.choices.length||new Set(e.choiceOrder).size!==q.choices.length||e.choiceOrder.some(i=>i>=q.choices.length)||e.picks.some(i=>i>=q.choices.length)||new Set(e.picks).size!==e.picks.length||e.picks.length>ansIdxs(q).length)) throw new Error("回答の保存データが壊れているため再開できません。");
+        if(e.type==="choice"&&e.revealed&&!e.feedback) throw new Error("採点結果を復元できません。演習を破棄して新しく開始してください。");
+        const ok=new Set(ansIdxs(q));
+        return {q,qi,type:e.type,fingerprint:e.fingerprint,choices:e.choiceOrder.map(idx=>({idx,text:q.choices[idx],correct:ok.has(idx)})),
+          need:ok.size,parts:q.responseParts||[],picks:e.picks.slice(),revealed:e.revealed,graded:e.graded,
+          rating:e.rating,feedback:e.feedback,savedWritten:e.written,els:null,cw:null};
+      });
+      const indexById=new Map(queue.map((cur,i)=>[cur.q.id,i]));
+      const pages=saved.pages.map(p=>({groupId:byId.get(p.questionIds[0])?.groupId||null,
+        idxs:p.questionIds.map(id=>indexById.get(id)),deferred:p.deferred,rendered:false,domCache:null}));
+      const indices=pages.flatMap(p=>p.idxs);
+      if(saved.pageIndex>=pages.length||indices.some(i=>i==null)||new Set(indices).size!==queue.length||indices.length!==queue.length) throw new Error("問題の並びを復元できません。演習を破棄して新しく開始してください。");
+      const expectedPages=buildPages(queue).map(p=>p.idxs.join(",")).sort();
+      if(pages.map(p=>p.idxs.join(",")).sort().join("|")!==expectedPages.join("|")) throw new Error("大問の構成が変わったため再開できません。");
+      if(saved.wrongList.some(w=>!indexById.has(w.questionId))) throw new Error("採点結果の保存データが壊れているため再開できません。");
+      if(currentSubjectId!==subjectId) return;
+      refreshPageOffsets(pages,queue);
+      session={label:saved.label,practiceId:saved.id,subjectId,queue,pages,p:saved.pageIndex,i:0,
+        correct:saved.correct,streak:saved.streak,maxStreak:saved.maxStreak,wrongList:saved.wrongList.map(w=>({q:byId.get(w.questionId),chosen:w.chosen})),
+        xpStart:meta.xp-saved.xpGained,xpGained:saved.xpGained,leveledUp:saved.leveledUp,
+        exam:false,batch:saved.batch,batchSubmitted:false,answers:queue.map(c=>saved.batch?(c.picks.length?(c.need>1?c.picks.slice():c.picks[0]):undefined):undefined),
+        startedAt:saved.startedAt,examSessionId:null,written:{}};
+      queue.forEach(c=>{ const w=c.savedWritten; if(w&&w.finalized) session.written[c.qi]={earned:rubricPoints(c.q,w.selected),max:writtenPoints(c.q),rubricIds:w.selected,rating:w.rating}; });
+      showPracticeSession();
+    }catch(e){ $("#savedPracticeInfo").textContent=e.message||"途中の演習を再開できませんでした"; toast("⚠️ 演習を再開できませんでした",3000); }
+    finally{ startingPractice=false; }
+  }
+  function showPracticeSession(){
+    transitionToScreen("quiz","forward",()=>{
+      $("#examTimer").classList.toggle("hidden",!session.exam);
+      $("#streakPill").classList.toggle("hidden",session.exam||session.batch);
+      $("#pausePracticeBtn").classList.toggle("hidden",session.exam);
+      $("#practiceSaveStatus").classList.toggle("hidden",session.exam);
+      $("#quitBtn").textContent=session.exam?"← 中断":"ここまでで終了";
+      $("#quitBtn").title=session.exam?"採点せずに本番モードを中断します":"未回答を採点せず、解き終えた問題だけで結果を表示します";
+      if(session.exam) startExamTimer();
+      renderQuestion();
+    });
+  }
+  $("#resumePracticeBtn").onclick=resumeSavedPractice;
+  $("#discardPracticeBtn").onclick=async()=>{
+    if(!confirm("途中の演習を破棄しますか？ 採点済みの学習記録は残ります。")) return;
+    try{
+      if(session&&!session.exam&&session.subjectId===currentSubjectId){ session.finished=true; clearTimeout(practiceSaveTimer); }
+      await removeSavedPractice(currentSubjectId); await refreshSavedPractice();
+    }catch(e){ reportPracticeSaveError(); }
+  };
+  $("#pausePracticeBtn").onclick=async()=>{
+    const s=session; if(!s||s.exam||s.finished) return;
+    const btn=$("#pausePracticeBtn"); btn.disabled=true;
+    try{ if(await saveCurrentPractice()){
+      const wa=WA();
+      if(wa) await Promise.all(s.queue.filter(c=>c.cw&&!c.cw.submitted).map(c=>{
+        clearTimeout(writtenDraftTimers[c.q.id]);
+        return wa.saveDraft({subjectId:s.subjectId,questionId:c.q.id,mode:"practice",answers:readConstructedAnswers(c.cw)});
+      }));
+      if(session===s){ session=null; renderHome(); }
+    } }catch(e){ reportPracticeSaveError(); }finally{ btn.disabled=false; }
+  };
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden) saveCurrentPractice(); });
+  window.addEventListener("pagehide",()=>saveCurrentPractice());
+  window.addEventListener("study:core-ready",()=>{ refreshSavedPractice(); if(session&&!session.exam) saveCurrentPractice(); });
   /* ---------- 本番モード（分野バランス50問・100点満点・制限時間つき） ---------- */
   let examTimer=null;
   function buildExamSet(n){
@@ -4232,6 +4420,7 @@
       syncWeak(r);
     });
     s.correct=correct; s.streak=run; s.maxStreak=maxRun;
+    s.xpGained=(s.xpGained||0)+gained;
     s.leveledUp=addXP(gained);
     meta.bestRunStreak=Math.max(meta.bestRunStreak,maxRun);
     markStudied(); saveProgress(); saveMeta();
@@ -4351,7 +4540,7 @@
     $("#quiz").classList.add("hidden");
     $("#result").innerHTML=`
       <div class="result">
-        <div class="score">${score} <span style="font-size:24px;color:var(--muted)">/ ${maxScore}点</span></div>
+        <div class="score">${score} <span style="font-size:1.5rem;color:var(--muted)">/ ${maxScore}点</span></div>
         <div class="sub">本番モード ・ ${correct}/${total-(written?s.gradeQueue.length:0)}問正解 ・ 得点率 ${pct}% ${msg}</div>
         ${written?`<div class="sub">選択問題 ${choiceScore} / ${choiceMax}点 ・ 記述問題 ${writtenScore} / ${writtenMax}点</div>`:""}
         <div><span class="xpgain">⭐ +${gained} XP ${s.leveledUp?` ・ 🎉 Lv.${s.leveledUp}`:''} ・ ⏱ 所要 ${mm}:${String(ss).padStart(2,"0")}</span></div>
@@ -4714,6 +4903,9 @@
         <div class="bkBtns"><button type="button" class="bkReplace" id="accountReplace">端末の学習記録を消して切り替える</button><button type="button" class="bkBtn" id="accountCancelSwitch">新しいログインを取り消す</button></div>`;
       $("#accountReplace").onclick=async()=>{
         if(!confirm("この端末の非公開学習データを消し、現在ログイン中のアカウントの記録へ置き換えますか？\nランキングとコミュニティも、ログイン中のアカウントの情報へ統一されます。")) return;
+        if(session) session.finished=true;
+        session=null; clearTimeout(practiceSaveTimer); clearWrittenDraftTimers();
+        await practiceWrites.catch(()=>{});
         progress={}; meta={}; saveProgress(); saveMeta();
         const wa=WA(); if(wa) await wa.deleteAll();
         await ac.resolveSwitch("replace");
@@ -5526,8 +5718,22 @@
     return m ? {parent:m[1].replace(/\s+/g,""), item:m[2]} : {parent:"", item:String(cat||"")};
   }
 
-  function startQuiz(items,label,catRef,opts){
+  async function startQuiz(items,label,catRef,opts){
     opts=opts||{};
+    if(startingPractice) return;
+    startingPractice=true;
+    const subjectId=currentSubjectId;
+    try{
+      if(session&&!session.exam&&!session.finished) await saveCurrentPractice();
+      if(!opts.exam && PS()){
+        let previous=null;
+        try{ previous=await PS().get(subjectId); }catch(e){ previous={label:"復元できない途中の演習"}; }
+        if(previous&&!confirm(`「${previous.label}」の途中状態を、新しい演習で置き換えますか？ 採点済みの学習記録は残ります。`)) return;
+        if(previous) await removeSavedPractice(subjectId);
+      }
+      if(currentSubjectId!==subjectId) return;
+      clearTimeout(practiceSaveTimer);
+      if(session){ session.finished=true; session.queue.forEach(c=>clearTimeout(writtenDraftTimers[c.q.id])); }
     if(catRef){ meta.lastCategory={mode:catRef.mode,key:catRef.key,label}; saveMeta(); }
     const base = expandGroupItems(items);
     const batch=!!opts.batch && base.every(q=>questionType(q)!=="constructed");
@@ -5536,25 +5742,21 @@
     const ordered = opts.keepOrder ? base : (opts.exam ? shuffle(base) : shuffleDueFirst(base));
     // queue の要素は「選択問題」「記述問題」の判別共用体（仕様書 §13.2）
     const queue=ordered.map((q,qi)=>{
-      if(questionType(q)==="constructed") return {q,qi,type:"constructed",parts:q.responseParts||[],els:null,cw:null};
+      if(questionType(q)==="constructed") return {q,qi,fingerprint:JSON.stringify(q),type:"constructed",parts:q.responseParts||[],els:null,cw:null};
       const ok=new Set(ansIdxs(q));
       // noShuffle: 選択肢が図中の記号そのもの（"A"〜"E"）の問題。並べ替えると
       // 表示上の見出し記号と選択肢の記号が食い違って読めなくなるので原本の順のまま出す。
       let ch=q.choices.map((c,i)=>({text:c,correct:ok.has(i),idx:i})); if(SHUFFLE_CHOICES && !q.noShuffle) ch=shuffle(ch);
-      return {q,qi,type:"choice",choices:ch,need:ok.size,picks:[],els:null,graded:false}; });
+      return {q,qi,fingerprint:JSON.stringify(q),type:"choice",choices:ch,need:ok.size,picks:[],els:null,graded:false}; });
     const pages=buildPages(queue);
-    session={label,queue,pages,p:0,i:pages[0]?pages[0].idxs[0]:0,correct:0,streak:0,maxStreak:0,wrongList:[],
+    session={label,practiceId:"practice-"+Date.now()+"-"+Math.random().toString(36).slice(2),subjectId,queue,pages,p:0,i:pages[0]?pages[0].idxs[0]:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpGained:0,
       xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,batch,batchSubmitted:false,answers:[],startedAt:Date.now(),
       examSessionId: opts.exam ? ("exam-"+Date.now()+"-"+Math.random().toString(36).slice(2,8)) : null, written:{}};
-    transitionToScreen("quiz","forward",()=>{
-      const et=$("#examTimer"); if(et) et.classList.toggle("hidden",!session.exam);
-      const sp=$("#streakPill"); if(sp) sp.classList.toggle("hidden",!!session.exam||session.batch);
-      $("#quitBtn").textContent=session.exam?"← 中断":"ここまでで終了";
-      $("#quitBtn").title=session.exam?"採点せずに本番モードを中断します":"未回答を採点せず、解き終えた問題だけで結果を表示します";
-      if(session.exam) startExamTimer();
-      renderQuestion();
-    });
+    showPracticeSession();
+    }catch(e){ toast("⚠️ 演習を開始できませんでした",3000); }
+    finally{ startingPractice=false; }
   }
+
   function parseChoiceExplanations(text){
     if(!text || !/^[a-f]:\s*[×○]/.test(text.trim())) return null;
     const re=/([a-f]):\s*([×○])\s*([\s\S]*?)(?=\s\/\s[a-f]:\s*[×○]|$)/g;
@@ -6142,7 +6344,7 @@
     const picked=Array.isArray(chosen)?chosen:(chosen==null?[]:[chosen]);
     if(Array.isArray(q.choiceNotes)&&q.choiceNotes.length){
       return `<div class="lead">解説</div><p class="explainSummary">${richText(q.explanation||"")||'(解説なし)'}</p>${explainFigureHTML(q)}
-        <p class="explainSummary" style="color:var(--muted);font-size:12.5px;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>${moreExplHTML(q)}`;
+        <p class="explainSummary" style="color:var(--muted);font-size:0.78125rem;margin-top:6px">💡 上の選択肢をタップすると、その選択肢ごとの解説を確認できます。</p>${moreExplHTML(q)}`;
     }
     const parsed=cur ? parseChoiceExplanations(q.explanation) : null;   // 記述問題は選択肢別解説を持たない
     if(!parsed){
@@ -6176,7 +6378,8 @@
     const s=session; if(!s) return 0;
     const cur=entry||s.queue[s.i]; if(!cur) return 0;
     const r=rec(cur.q.id);
-    if(!cur.graded){ cur.graded=true; r.lastGrade=grade; scheduleSRS(r, grade, cur.q.id); saveProgress(); }
+    if(!cur.graded){ cur.graded=true; cur.rating=grade; r.lastGrade=grade; scheduleSRS(r, grade, cur.q.id); saveProgress(); }
+    saveCurrentPractice();
     return Math.max(1, r.interval||1);
   }
   // 「次へ」「中断」で、手ごたえ未選択のまま先へ進む選択問題を「できた」で締める
@@ -6556,7 +6759,11 @@
   }
   /* 入力途中の下書き。500msデバウンスでIndexedDBへ（§10.3） */
   const writtenDraftTimers={};
+  function clearWrittenDraftTimers(){
+    Object.keys(writtenDraftTimers).forEach(key=>{ clearTimeout(writtenDraftTimers[key]); delete writtenDraftTimers[key]; });
+  }
   function scheduleWrittenDraft(cw){
+    schedulePracticeSave();
     const s=session; if(!s||!cw||cw.submitted) return;
     const key=cw.q.id;
     clearTimeout(writtenDraftTimers[key]);
@@ -6567,12 +6774,31 @@
     },500);
   }
   function restoreWrittenDraft(cw){
+    if(cw.entry&&cw.entry.savedWritten){ restorePracticeWritten(cw); return; }
     const s=session, wa=WA(); if(!wa||!s||!cw) return;
     Promise.resolve(wa.getDraft(cw.q.id, s.examSessionId)).then(d=>{
       if(!d || session!==s || cw.submitted) return;
       Object.keys(d.answers||{}).forEach(pid=>{ const rd=cw.readers[pid]; if(rd) rd.restore(d.answers[pid]); });
       updateConstructedSubmit(cw);
     }).catch(()=>{});
+  }
+  // 採点済み答案は描画だけ行う。finalizeConstructedGrade は呼ばない。
+  function restorePracticeWritten(cw){
+    const saved=cw.entry.savedWritten;
+    Object.keys(saved.answers).forEach(pid=>{ const rd=cw.readers[pid]; if(rd) rd.restore(saved.answers[pid]); });
+    cw.startedAt=saved.startedAt; cw.durationMs=saved.durationMs; cw.giveUp=saved.giveUp;
+    cw.rating=saved.rating; cw.gainXP=saved.gainXP; cw.mult=saved.mult;
+    if(!saved.submitted){ updateConstructedSubmit(cw); return; }
+    cw.submitted=true; cw.finalized=saved.finalized; cw.answers=saved.answers; cw.selected=new Set(saved.selected);
+    Object.values(cw.readers).forEach(rd=>rd.lock());
+    cw.els.constructedActions.classList.add("hidden");
+    renderConstructedReview(cw,cw.answers,{giveUp:cw.giveUp});
+    if(cw.finalized){
+      const row=cw.els.explainBox.querySelector('[data-el="cwRateRow"]');
+      row.innerHTML=`<div class="confRow done"><span class="confLabel">採点を確定しました</span><div class="confResult">📅 次の復習：${esc(reviewText(progress[cw.q.id]))}</div></div>`;
+      cw.els.explainBox.querySelectorAll("[data-crit]").forEach(cb=>cb.disabled=true);
+      showWrittenHistory(cw.q.id,cw.els.explainBox);
+    }
   }
 
   /* ---------- 採点画面（§7-5〜§7-9） ---------- */
@@ -6693,6 +6919,7 @@
     refreshWrittenScore(cw);
   }
   function refreshWrittenScore(cw){
+    schedulePracticeSave();
     const q=cw.q, box=cw.els.explainBox, max=writtenPoints(q), earned=rubricPoints(q,[...cw.selected]);
     const el=box.querySelector('[data-el="cwScore"]'); if(el) el.textContent=`${earned} / ${max}点`;
     const head=box.querySelector('[data-el="cwHead"]');
@@ -6712,7 +6939,7 @@
   function finalizeConstructedGrade(rating,cwArg){
     const s=session, cw=cwArg||(s&&s.cw); if(!s||!cw||cw.finalized) return;
     const q=cw.q, max=writtenPoints(q), ids=[...cw.selected], earned=rubricPoints(q,ids);
-    cw.finalized=true;
+    cw.finalized=true; cw.rating=rating;
     const full = earned>=max;
     const r=rec(q.id); recordAnswerCounters(r,q.id,full);
     let gainXP, mult=1;
@@ -6727,6 +6954,7 @@
       gainXP=Math.round(XP_WRONG + ratio*(XP_CORRECT-XP_WRONG));
     }
     syncWeak(r);
+    cw.gainXP=gainXP; cw.mult=mult; s.xpGained=(s.xpGained||0)+gainXP;
     const lvup=addXP(gainXP);
     scheduleSRS(r, rating, q.id); r.lastGrade=rating; if(cw.entry) cw.entry.graded=true;
     meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
@@ -6878,13 +7106,14 @@
     if(s.exam){ entries.forEach(cur=>{ if(cur.type==="constructed") restoreExamWritten(cur); });
     }
     updateQuizNavigation();
+    saveCurrentPractice();
     window.scrollTo({top:0,behavior:"auto"});
   }
   function renderChoiceBlock(cur){
     const s=session, els=cur.els;
     const keys=["A","B","C","D","E","F"], box=els.choices; box.innerHTML="";
     const need=cur.need||1, multi=need>1;
-    cur.picks=[];
+    cur.picks=cur.picks||[];
     cur.choices.forEach((ch,idx)=>{
       const b=document.createElement("button"); b.className="choice";
       b.innerHTML=`<span class="key">${keys[idx]}</span><span class="choiceBody"><span class="choiceText">${esc(ch.text)}</span></span>`;
@@ -6898,6 +7127,10 @@
       mc.textContent=`${need}つ選んでください（0/${need}）`;
       mc.onclick=()=>{ if((cur.picks||[]).length===need) answer(cur,cur.picks.slice()); };
     } else mc.classList.add("hidden");
+    const initialPicks=cur.picks.slice();
+    box.querySelectorAll(".choice").forEach((b,i)=>b.classList.toggle("selected",initialPicks.includes(i)));
+    if(multi) updateMultiConfirm(cur);
+    if(cur.revealed&&cur.feedback){ renderChoiceFeedback(cur); return; }
     if(s.exam||s.batch){
       const sel=s.answers[cur.qi];
       if(sel!==undefined){
@@ -6908,6 +7141,7 @@
     }
   }
   function updateMultiConfirm(cur){
+    schedulePracticeSave();
     const need=cur.need||1, n=(cur.picks||[]).length, mc=cur.els&&cur.els.multiConfirm;
     if(!mc) return;
     mc.disabled = n!==need;
@@ -6923,22 +7157,25 @@
     if(s.exam||s.batch){
       s.answers[cur.qi]=cur.picks.slice();
       updateMultiConfirm(cur);
+      saveCurrentPractice();
       return;
     }
-    if(cur.deferred){ updateGroupSubmit(); return; }
+    if(cur.deferred){ updateGroupSubmit(); saveCurrentPractice(); return; }
     updateMultiConfirm(cur);
+    saveCurrentPractice();
   }
   /* ---------- 大問のまとめて採点 ---------- */
   function blockAnswered(cur){
-    if(cur.type==="constructed") return cur.cw ? (cur.cw.submitted || validateConstructedAnswers(cur.cw)) : false;
+    if(cur.type==="constructed") return cur.cw ? (cur.cw.submitted || validateConstructedAnswers(cur.cw)) : !!(cur.savedWritten&&cur.savedWritten.submitted);
     return (cur.picks||[]).length===(cur.need||1);
   }
   function blockDone(cur){
     // 選択問題は正誤と解説が出た時点で先へ進める（手ごたえは任意。未選択なら「できた」扱い）
-    if(cur.type==="constructed") return !!(cur.cw && cur.cw.finalized);
+    if(cur.type==="constructed") return !!(cur.cw ? cur.cw.finalized : cur.savedWritten&&cur.savedWritten.finalized);
     return !!cur.revealed;
   }
   function updateGroupSubmit(){
+    schedulePracticeSave();
     const btn=$("#qGroupSubmit"), entries=pageEntries();
     if(!btn || !entries.length) return;
     const left=entries.filter(c=>!blockAnswered(c)).length;
@@ -6957,12 +7194,14 @@
   }
   // ページの小問がすべて片付いたら「次の問題」を出す
   function updatePageDone(){
+    saveCurrentPractice();
     const s=session; if(!s||s.exam) return;
     const entries=pageEntries(); if(!entries.length) return;
     if(!$("#qGroupFoot").classList.contains("hidden")) updateGroupSubmit();
     if(!pageDone(currentPage())){ updateQuizNavigation(); return; }
     const page=currentPage();
     page.deferred=false;
+    saveCurrentPractice();
     updateQuizNavigation();
     $("#quizNav").scrollIntoView({behavior:"smooth",block:"nearest"});
   }
@@ -6981,19 +7220,44 @@
       cur.picks=picks.slice();
       [...cur.els.choices.querySelectorAll(".choice")].forEach((b,i)=>b.classList.toggle("selected",picks.indexOf(i)>=0));
       updateGroupSubmit();
+      saveCurrentPractice();
       return;
     }
     // 複数正解のときは「選んだ集合が正解の集合と完全一致」したときだけ正解
     cur.picks=picks.slice(); cur.revealed=true;
     const correctPos=cur.choices.map((c,i)=>c.correct?i:-1).filter(i=>i>=0);
     const isCorrect=sameSet(picks,correctPos);
-    const chosen=cur.choices[picks[0]];
+    const r=rec(q.id); recordAnswerCounters(r,q.id,isCorrect);
+    let lvup=0, gainXP=0, mult=1;
+    if(isCorrect){ r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
+    else { r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0;
+      s.wrongList.push({q,chosen:picks.map(i=>cur.choices[i].text).join(" ／ ")});
+      r.miss=r.miss||{};   // どの誤答を選んだかを記録（誤答分析用）
+      picks.forEach(i=>{ const c=cur.choices[i]; if(!c.correct) r.miss[c.idx]=(r.miss[c.idx]||0)+1; });
+      gainXP=XP_WRONG; lvup=addXP(gainXP); }
+    // 不正解は自動で「もう一度(Again)」。正解は下の手ごたえボタンで4段階評価をFSRSへ渡す。
+    if(!isCorrect){ scheduleSRS(r, 1, q.id); cur.graded=true; cur.rating=1; }
+    meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
+    markStudied(); saveProgress(); saveMeta(); maybePublishRank(); maybeAutoSync();
+    if(lvup){ s.leveledUp=lvup; toast(`🎉 レベルアップ！ Lv.${lvup} に到達`); }
+    const ach=checkAch(); if(ach) setTimeout(()=>toast(`🏅 実績解除：${ach.n}`),lvup?1400:0);
+
+    s.xpGained=(s.xpGained||0)+gainXP;
+    cur.feedback={isCorrect,gainXP,mult};
+    renderChoiceFeedback(cur);
+  }
+  function renderChoiceMarks(cur){
+    const q=cur.q,picks=cur.picks||[];
     const mcx=cur.els.multiConfirm; if(mcx) mcx.classList.add("hidden");
     const hasNotes=Array.isArray(q.choiceNotes)&&q.choiceNotes.length>0;
     const btns=[...cur.els.choices.querySelectorAll(".choice")], notes=[...cur.els.choices.querySelectorAll(".choiceNote")];
     btns.forEach((b,i)=>{
       b.classList.remove("selected");
-      if(cur.choices[i].correct) b.classList.add("correct"); else if(picks.indexOf(i)>=0) b.classList.add("wrong");
+      const correct=cur.choices[i].correct,mine=picks.includes(i);
+      if(correct) b.classList.add("correct"); else if(mine) b.classList.add("wrong");
+      const status=document.createElement("span"); status.className="choiceStatus";
+      status.textContent=(correct?"✓ 正答":"✕ 不正解")+(mine?" · あなたの回答":"");
+      b.querySelector(".choiceBody").appendChild(status);
       const noteText=hasNotes?q.choiceNotes[cur.choices[i].idx]:null;
       if(noteText){
         const hint=document.createElement("span"); hint.className="revealHint"; hint.textContent="▾ 解説を見る";
@@ -7007,21 +7271,11 @@
         };
       } else { b.disabled=true; }
     });
-    const r=rec(q.id); recordAnswerCounters(r,q.id,isCorrect);
-    let lvup=0, gainXP=0, mult=1;
-    if(isCorrect){ r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
-    else { r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0;
-      s.wrongList.push({q,chosen:picks.map(i=>cur.choices[i].text).join(" ／ ")});
-      r.miss=r.miss||{};   // どの誤答を選んだかを記録（誤答分析用）
-      picks.forEach(i=>{ const c=cur.choices[i]; if(!c.correct) r.miss[c.idx]=(r.miss[c.idx]||0)+1; });
-      gainXP=XP_WRONG; lvup=addXP(gainXP); }
-    // 不正解は自動で「もう一度(Again)」。正解は下の手ごたえボタンで4段階評価をFSRSへ渡す。
-    if(!isCorrect){ scheduleSRS(r, 1, q.id); cur.graded=true; }
-    meta.bestRunStreak=Math.max(meta.bestRunStreak,s.maxStreak);
-    markStudied(); saveProgress(); saveMeta(); maybePublishRank(); maybeAutoSync();
-    if(lvup){ s.leveledUp=lvup; toast(`🎉 レベルアップ！ Lv.${lvup} に到達`); }
-    const ach=checkAch(); if(ach) setTimeout(()=>toast(`🏅 実績解除：${ach.n}`),lvup?1400:0);
-
+  }
+  function renderChoiceFeedback(cur){
+    const s=session,q=cur.q,picks=cur.picks||[],r=rec(q.id);
+    const {isCorrect,gainXP,mult}=cur.feedback;
+    renderChoiceMarks(cur);
     const correctText=cur.choices.filter(c=>c.correct).map(c=>c.text).join(" ／ "), remain=Math.max(0,MASTER_HITS-r.streak);
     let note="";
     if(!isCorrect){
@@ -7076,6 +7330,11 @@
         };
       });
     }
+    if(isCorrect&&cur.graded){
+      const row=eb.querySelector('[data-el="confRow"]');
+      if(row){ row.classList.add("done"); row.querySelectorAll(".confBtn").forEach(b=>b.classList.toggle("sel",Number(b.dataset.g)===cur.rating));
+        const rc=row.querySelector('[data-el="confResult"]'); rc.classList.remove("hidden"); rc.textContent="📅 次の復習："+reviewText(progress[q.id]); }
+    }
     wirePathButtons(eb); wireMoreExpl(eb);
     const sp=$("#streakPill"); sp.textContent=mult>1?`🔥 ${s.streak} ×${mult}`:`🔥 ${s.streak}`; sp.classList.toggle("combo", mult>1);
     updatePageDone();
@@ -7125,7 +7384,7 @@
     }
     const completed=completedPracticeEntries(s), unanswered=s.queue.length-completed.length;
     if(!completed.length){
-      if(confirm("まだ採点できる回答がありません。演習を終了してホームに戻りますか？")) renderHome();
+      if(confirm("まだ採点できる回答がありません。演習を終了してホームに戻りますか？")){ finishSavedPractice(); renderHome(); }
       return;
     }
     const msg=unanswered>0
@@ -7408,9 +7667,10 @@
   $("#countChips").querySelectorAll(".countChip").forEach(c=>{ c.onclick=()=>{ if(c.classList.contains("disabled")||!pendingSel) return; const n=c.dataset.n==="all"?pendingSel.total:parseInt(c.dataset.n,10); $("#countInput").value=clampCount(n, pendingSel.total); }; });
 
   /* ---------- 結果 ---------- */
-  function renderBatchResult(){
+  async function renderBatchResult(){
+    await finishSavedPractice();
     const s=session,items=s.resultQueue||s.queue,total=items.length,unanswered=s.queue.length-total;
-    const pct=total?Math.round(s.correct/total*100):0,gained=meta.xp-s.xpStart;
+    const pct=total?Math.round(s.correct/total*100):0,gained=s.xpGained==null?meta.xp-s.xpStart:s.xpGained;
     $("#quiz").classList.add("hidden");
     const msg=pct===100?(unanswered?"🎉 解いた問題は全問正解！":"🏆 全問正解！完璧です！"):pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
     const review=items.map((cur,i)=>{
@@ -7450,9 +7710,10 @@
     $("#rRetry").onclick=()=>startQuiz(s.queue.map(x=>x.q),s.label,null,{batch:true});
     const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),s.label+"（復習）");
   }
-  function renderResult(){
+  async function renderResult(){
+    await finishSavedPractice();
     const s=session,items=s.resultQueue||s.queue,total=items.length,unanswered=s.queue.length-total;
-    const pct=total?Math.round(s.correct/total*100):0,gained=meta.xp-s.xpStart;
+    const pct=total?Math.round(s.correct/total*100):0,gained=s.xpGained==null?meta.xp-s.xpStart:s.xpGained;
     $("#quiz").classList.add("hidden");
     const msg=pct===100?(unanswered?"🎉 解いた問題は全問正解！":"🏆 全問正解！完璧です！"):pct>=80?"🎉 素晴らしい！":pct>=50?"💪 その調子！":"📚 復習しよう！";
     const wrong=s.wrongList.map(w=>{ const ans=answerSummary(w.q), cw=questionType(w.q)==="constructed";
@@ -7609,6 +7870,40 @@
   }
 
   /* ---------- テーマ切替 ---------- */
+  const READING_KEY="quizReadability_v1";
+  let reading={fontSize:100,lineHeight:1};
+  function applyReadability(){
+    const root=document.documentElement;
+    root.style.setProperty("--reading-font-scale",reading.fontSize/100);
+    root.style.setProperty("--reading-line-scale",reading.lineHeight);
+    root.dataset.readingSize=String(reading.fontSize);
+    $("#readingFontSize").value=String(reading.fontSize);
+    $("#readingLineHeight").value=String(reading.lineHeight);
+    requestAnimationFrame(updateReadingNavHeight);
+  }
+  function updateReadingNavHeight(){
+    const nav=$("#primaryNav");
+    if(!nav||getComputedStyle(nav).display==="none") return;
+    const height=Math.ceil(nav.getBoundingClientRect().height);
+    if(height) document.documentElement.style.setProperty("--reading-nav-height",height+"px");
+  }
+  function saveReadability(){
+    applyReadability();
+    try{ localStorage.setItem(READING_KEY,JSON.stringify(reading)); $("#readabilityStatus").textContent="この端末に保存しました"; }
+    catch(e){ $("#readabilityStatus").textContent="設定を保存できませんでした。今回は画面への反映のみになります。"; }
+  }
+  (function(){
+    try{ const saved=JSON.parse(localStorage.getItem(READING_KEY));
+      if(saved){ if([100,125,150].includes(saved.fontSize)) reading.fontSize=saved.fontSize;
+        if([1,1.2,1.4].includes(saved.lineHeight)) reading.lineHeight=saved.lineHeight; }
+    }catch(e){}
+    applyReadability();
+    if(window.ResizeObserver) new ResizeObserver(updateReadingNavHeight).observe($("#primaryNav"));
+    window.addEventListener("resize",updateReadingNavHeight);
+  })();
+  $("#readingFontSize").onchange=()=>{ reading.fontSize=Number($("#readingFontSize").value); saveReadability(); };
+  $("#readingLineHeight").onchange=()=>{ reading.lineHeight=Number($("#readingLineHeight").value); saveReadability(); };
+  $("#resetReadabilityBtn").onclick=()=>{ reading={fontSize:100,lineHeight:1}; saveReadability(); };
   function applyTheme(mode){ if(mode) document.documentElement.setAttribute("data-theme",mode); else document.documentElement.removeAttribute("data-theme"); updateThemeColor(); }
   function updateThemeColor(){ try{ const cur=document.documentElement.getAttribute("data-theme"); const isDark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches; const m=document.getElementById("themeColorMeta"); if(m) m.setAttribute("content", isDark?"#0b1220":"#eaf2ff"); }catch(e){} }
   (function(){ try{ const t=localStorage.getItem(THEME_KEY); if(t) applyTheme(t); }catch(e){} })();
@@ -7641,14 +7936,17 @@
       }catch(err){ alert("読み込みに失敗しました:\n"+err.message); } };
     rd.readAsText(f,"utf-8"); e.target.value="";
   };
-  $("#resetBtn").onclick=()=>{
+  $("#resetBtn").onclick=async()=>{
     const ds=DS(), linked=!!(ds&&ds.isLinked&&ds.isLinked());
     const warn=linked
       ? "\n\n※ 同期コードでつながっているため、この端末だけ消しても次の同期でサーバーの記録から復元されます。完全に消すには先に「同期を解除」してください。"
       : "";
     if(!confirm("学習記録（正誤・苦手・見直したい問題・レベル・実績・記述問題の答案履歴・採点待ちの試験）をすべて削除しますか？"+warn)) return;
+    if(session) session.finished=true;
+    session=null; clearTimeout(practiceSaveTimer); clearWrittenDraftTimers();
+    try{ await practiceWrites.catch(()=>{}); if(PS()) await PS().clear(); }catch(e){ toast("途中の演習を削除できませんでした"); return; }
     progress={}; meta={}; loadMeta(); saveProgress(); saveMeta();
-    const wa=WA(); if(wa){ try{ wa.deleteAll(); }catch(e){} }
+    const wa=WA(); if(wa){ try{ await wa.deleteAll(); }catch(e){ toast("記述の学習記録を削除できませんでした"); return; } }
     renderHome(); toast("🗑 記録をリセットしました"); };
 
   function parseCSV(text){

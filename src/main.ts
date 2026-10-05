@@ -1,4 +1,5 @@
 import "./modern.css";
+import { savePracticeSession, getPracticeSession, deletePracticeSession, clearPracticeSessions } from "./practice-session";
 import { registerSW } from "virtual:pwa-register";
 import { installCardManager, openCardManager } from "./card-manager";
 import { migrateLegacyStorage, mirrorCustomCardsToLegacy } from "./migration";
@@ -186,6 +187,7 @@ async function syncAccountWrittenAttempts(userId: string): Promise<{ ok: boolean
 }
 
 window.STUDY_CORE = {
+  practiceSessions: { save: savePracticeSession, get: getPracticeSession, delete: deletePracticeSession, clear: clearPracticeSessions },
   ui: {
     learningDestination,
     primaryNavKey,
@@ -299,6 +301,8 @@ window.STUDY_CORE = {
     syncAccountData,
   },
 };
+
+window.dispatchEvent(new Event("study:core-ready"));
 
 registerSW({
   immediate: true,

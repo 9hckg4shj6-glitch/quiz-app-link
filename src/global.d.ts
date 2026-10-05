@@ -5,6 +5,7 @@ import type { LeaderboardView } from "./leaderboard";
 import type { BoardRow, PostRow } from "./community";
 import type { SyncPayload } from "./datasync";
 import type { CardHomeSnapshot } from "./card-home";
+import type { PracticeSessionSnapshot } from "./practice-session";
 
 declare global {
   interface Window {
@@ -24,6 +25,12 @@ declare global {
     /** 新版の Service Worker が有効化されたときに呼ぶ。再読み込みのタイミングは旧UI側が決める。 */
     __studyAppUpdateReady?: () => void;
     STUDY_CORE?: {
+      practiceSessions: {
+        save: (snapshot: unknown) => Promise<void>;
+        get: (subjectId: string) => Promise<PracticeSessionSnapshot | null>;
+        delete: (subjectId: string) => Promise<void>;
+        clear: () => Promise<void>;
+      };
       ui: {
         learningDestination: (mode: unknown) => "cardsView" | "inputView";
         primaryNavKey: (screenId: string) => "home" | "learn" | "practice" | "questions" | "search" | "review" | null;
