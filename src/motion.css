@@ -1,0 +1,81 @@
+/* ===== Motion =====
+   ゲノム対戦の「弾む押し込み・追従グロー・せり上がり」とは分けて、
+   この演習アプリは「触れた点から広がるインク」と「向きのある横方向の画面遷移」を軸にする。 */
+:root{
+  --ease-emph:cubic-bezier(.2,0,0,1);
+  --ease-accel:cubic-bezier(.3,0,1,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+
+/* 1. 押した点から広がるインク（要素は motion.ts が足す） */
+.ink{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.ink>i{position:absolute;border-radius:50%;background:currentColor;opacity:.14;transform:scale(0);animation:inkGrow .55s var(--ease-emph) forwards}
+.ink.out>i{opacity:0;transition:opacity .38s ease}
+.choice .ink,.hubBtn .ink,.spCard .ink,.cat .ink,.qbtn .ink,.reviewQuestion .ink,.memoryDeckOpen .ink{color:var(--subject-accent,var(--brand))}
+@keyframes inkGrow{to{transform:scale(1)}}
+
+/* 押し込みは縮めずに「紙に沈む」：1px 下がって影が消える */
+.choice:active:not(:disabled),.hubBtn:active,.cat:active,.reviewQuestion:active{transform:translateY(1px);box-shadow:none}
+
+/* 2. 正誤判定 */
+.choice.correct{animation:choiceRing .6s var(--ease-emph)}
+.choice.correct .key{animation:keyStamp .46s var(--ease-spring) backwards}
+.choice.wrong{animation:choiceShake .42s var(--ease-emph)}
+.choice .choiceStatus{animation:statusIn .32s .12s var(--ease-emph) backwards}
+@keyframes choiceRing{from{box-shadow:0 0 0 0 color-mix(in srgb,var(--good) 50%,transparent)}to{box-shadow:0 0 0 12px transparent}}
+@keyframes keyStamp{0%{opacity:0;transform:scale(1.8) rotate(-16deg)}55%{opacity:1}}
+@keyframes choiceShake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+@keyframes statusIn{from{opacity:0;transform:translateX(-6px)}}
+
+.lsReadBtn[aria-pressed="true"]{animation:readStamp .4s var(--ease-spring) backwards}
+@keyframes readStamp{0%{transform:scale(.88)}}
+
+/* 進捗バーは減速しながら伸びる */
+.qtop .prog i{transition:width .55s var(--ease-emph)}
+
+/* 3. 画面遷移：進む＝右から、戻る＝左から、タブ＝その場で差し替え（data-vt は transitionToScreen が付ける） */
+section.screen-enter-forward{animation:axisInFwd var(--motion-screen) var(--ease-emph) both}
+section.screen-enter-back{animation:axisInBack var(--motion-screen) var(--ease-emph) both}
+section.screen-enter-tab{animation:fadeThrough var(--motion-ui) var(--ease-emph) both}
+
+::view-transition-old(root){animation:axisOutFwd 150ms var(--ease-accel) both}
+::view-transition-new(root){animation:axisInFwd 320ms var(--ease-emph) both}
+:root[data-vt="back"]::view-transition-old(root){animation-name:axisOutBack}
+:root[data-vt="back"]::view-transition-new(root){animation-name:axisInBack}
+:root[data-vt="tab"]::view-transition-old(root){animation:fadeOut 110ms var(--ease-accel) both}
+:root[data-vt="tab"]::view-transition-new(root){animation:fadeThrough 260ms 50ms var(--ease-emph) both}
+@keyframes axisOutFwd{to{opacity:0;transform:translateX(-28px)}}
+@keyframes axisInFwd{from{opacity:0;transform:translateX(36px)}}
+@keyframes axisOutBack{to{opacity:0;transform:translateX(28px)}}
+@keyframes axisInBack{from{opacity:0;transform:translateX(-36px)}}
+@keyframes fadeOut{to{opacity:0}}
+@keyframes fadeThrough{from{opacity:0;transform:scale(.985)}}
+
+/* ヘッダーと下部ナビは流さず、選択中の丸だけがタブ間を滑る */
+header.app{view-transition-name:app-header}
+.primaryNav{view-transition-name:primary-nav}
+.primaryNav button.active .pnIcon{view-transition-name:nav-active}
+::view-transition-group(nav-active){animation-duration:420ms;animation-timing-function:var(--ease-spring)}
+
+/* 4. ホーム・科目えらびのカードは、ピントが合うように順に現れる */
+.hubGrid>*,.spGrid>*,.result .stat{animation:focusIn .44s var(--ease-emph) backwards}
+.hubGrid>:nth-child(2),.spGrid>:nth-child(2),.result .stat:nth-child(2){animation-delay:45ms}
+.hubGrid>:nth-child(3),.spGrid>:nth-child(3),.result .stat:nth-child(3){animation-delay:90ms}
+.hubGrid>:nth-child(4),.spGrid>:nth-child(4),.result .stat:nth-child(4){animation-delay:135ms}
+.hubGrid>:nth-child(5),.spGrid>:nth-child(5){animation-delay:180ms}
+.hubGrid>:nth-child(n+6),.spGrid>:nth-child(n+6){animation-delay:220ms}
+@keyframes focusIn{from{opacity:0;filter:blur(6px);transform:scale(.97)}}
+
+/* 5. 結果の点数は着地するように大きさが落ち着く（数字は countUp が数える） */
+.result .score{animation:scoreSettle .6s var(--ease-spring) backwards}
+@keyframes scoreSettle{from{opacity:0;transform:scale(.7)}}
+
+/* トーストは弾んで入り、表示時間（--ttl）の終わりに静かに消える */
+.toast{animation:toastIn .42s var(--ease-spring) backwards,toastOut .2s var(--ease-accel) calc(var(--ttl,1700ms) - 200ms) forwards}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,16px) scale(.92)}}
+@keyframes toastOut{to{opacity:0;transform:translate(-50%,8px) scale(.96)}}
+
+@media(prefers-reduced-motion:reduce){
+  .ink{display:none}
+  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
+}

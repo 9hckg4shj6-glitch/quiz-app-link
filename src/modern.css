@@ -413,16 +413,7 @@ body:not(.has-subject) #subjectPicker{max-width:980px;margin-inline:auto}
 body.focus-mode .wrap{padding-left:18px;max-width:840px}
 body.focus-mode header.app{display:none}
 
-/* Screen motion */
-section.screen-enter-forward{animation:screenForward var(--motion-screen) var(--ease-out) both}
-section.screen-enter-back{animation:screenBack var(--motion-screen) var(--ease-out) both}
-section.screen-enter-tab{animation:screenTab var(--motion-ui) ease both}
-@keyframes screenForward{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@keyframes screenBack{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
-@keyframes screenTab{from{opacity:0}to{opacity:1}}
-::view-transition-old(root){animation:screenOld 120ms ease both}
-::view-transition-new(root){animation:screenTab var(--motion-screen) ease both}
-@keyframes screenOld{to{opacity:.72}}
+/* Screen motion は motion.css */
 
 @media(max-width:700px){
   header.app{min-height:58px;margin-bottom:12px}

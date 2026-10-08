@@ -2865,7 +2865,7 @@
   function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   // 解説・選択肢別解説の **語句** だけを太字にする。先に全体をエスケープするので任意のHTMLは入らない。
   function richText(s){ return esc(s).replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>"); }
-  function toast(msg,ms){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),ms||1700); }
+  function toast(msg,ms){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; t.style.setProperty("--ttl",(ms||1700)+"ms"); document.body.appendChild(t); setTimeout(()=>t.remove(),ms||1700); }
   function dstr(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
   function todayStr(){ return dstr(new Date()); }
 
@@ -3364,6 +3364,7 @@
       window.scrollTo(0,0);
     };
     const reduce=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.documentElement.dataset.vt=direction||"forward";
     if(document.startViewTransition&&!reduce){ document.startViewTransition(()=>change(false)); }
     else change(true);
   }
@@ -4565,6 +4566,7 @@
       ${writtenRows?`<div class="review"><h4>記述問題の部分点</h4>${writtenRows}</div>`:''}
       ${wrong?`<div class="review"><h4>間違えた問題（${s.wrongList.length}問）</h4>${wrong}</div>`:''}`;
     transitionToScreen("result","forward");
+    countUp($("#result"));
     if(pct>=90||s.leveledUp) confetti();
     $("#rHome").onclick=renderHome;
     $("#rRetry").onclick=startExam;
@@ -5202,6 +5204,7 @@
         ${s.ng?`<button class="btn ghost" id="rNg" style="margin-top:10px">👎 微妙だけ もう一周</button>`:''}
       </div>`;
     transitionToScreen("result","forward");
+    countUp($("#result"));
     if(certified||pct>=90) confetti();
     const deckCopy=s.deck.slice(), ngCopy=s.ngList.slice(), lbl=s.label;
     $("#rHome").onclick=renderHome;
@@ -7741,6 +7744,7 @@
       </div>
       <div class="review"><h4>${unanswered?"回答した問題":"全問題"}の採点結果（${total}問）</h4><div class="batchReview">${review}</div></div>`;
     transitionToScreen("result","forward");
+    countUp($("#result"));
     wireMoreExpl($("#result"));
     window.scrollTo({top:0,behavior:"smooth"});
     if(pct===100||s.leveledUp) confetti();
@@ -7772,6 +7776,7 @@
       </div>
       ${wrong?`<div class="review"><h4>間違えた問題（${s.wrongList.length}問）</h4>${wrong}</div>`:''}`;
     transitionToScreen("result","forward");
+    countUp($("#result"));
     maybePublishRank(true);
     if(pct===100||s.leveledUp) confetti();
     $("#rHome").onclick=renderHome;
@@ -7780,6 +7785,17 @@
   }
 
   /* ---------- 演出 ---------- */
+  // 結果画面の点数と集計の数字を 0 から数え上げる
+  function countUp(root){
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const score=root.querySelector(".score");
+    [...root.querySelectorAll(".stat b"),score&&score.firstChild].forEach(node=>{
+      const m=node&&/^(\d+)([\s\S]*)$/.exec(node.textContent); if(!m) return;
+      const to=Number(m[1]), rest=m[2], dur=Math.min(900,320+to*30), t0=performance.now();
+      const tick=now=>{ const p=Math.min(1,(now-t0)/dur); node.textContent=Math.round(to*(1-Math.pow(1-p,3)))+rest; if(p<1) requestAnimationFrame(tick); };
+      node.textContent="0"+rest; requestAnimationFrame(tick);
+    });
+  }
   function confetti(){
     const cols=["#147d8f","#1f6feb","#2fd27a","#ffce54","#ff5d6c","#3d8ae8"];
     for(let i=0;i<60;i++){ const p=document.createElement("div"); p.className="confetti";
