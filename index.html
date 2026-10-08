@@ -178,6 +178,15 @@
     border:1px solid var(--line);background:color-mix(in srgb,var(--brand) 12%,var(--card2));
     border-radius:999px;padding:3px 9px}
   .lsSectName{font-size:1.03125rem;font-weight:900;line-height:calc(1.5 * var(--reading-line-scale,1))}
+  .lsSect.isRead .lsSectNo{color:var(--good);border-color:var(--good);background:var(--good-bg)}
+  .lsSect.isRead .lsSectNo::after{content:" ✓"}
+  .lsReadRow{display:flex;justify-content:flex-end;margin:10px 2px 0}
+  .lsReadBtn{min-height:40px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card2);
+    color:var(--text);font-size:0.8125rem;font-weight:900;cursor:pointer}
+  .lsReadBtn:hover{border-color:var(--good)}
+  .lsReadBtn[aria-pressed="true"]{color:var(--good);border-color:var(--good);background:var(--good-bg)}
+  .liItem.isRead .liNo{color:var(--good)}
+  .liItem.isRead .liNo::after{content:" ✓"}
   .lsBody{padding:15px 17px;font-size:0.90625rem;line-height:calc(2.0 * var(--reading-line-scale,1));white-space:pre-wrap;word-break:break-word}
   /* 対比・一覧は文章より表のほうが速く読める。列が多い表はモバイルで潰れるので横スクロールで包む。 */
   .lsTableWrap{margin-top:11px;overflow-x:auto;-webkit-overflow-scrolling:touch;
@@ -6032,8 +6041,21 @@
     const items=[...new Map(g.decks.flatMap(d=>d.items).map(q=>[q.id,q])).values()];
     return { stats:catStats(items), pages:g.decks.reduce((n,d)=>n+d.pages.length,0) };
   }
-  function lessonMetaHTML(s,pages){
-    return `${s.total?`<span>問題 ${s.total}問</span>`:""}${pages?`<span>スライド ${pages}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}`;
+  function lessonMetaHTML(s,pages,read){
+    return `${s.total?`<span>問題 ${s.total}問</span>`:""}${pages?`<span>スライド ${pages}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}${read&&read.total?`<span>読了 ${read.done}/${read.total}項目</span>`:""}`;
+  }
+  /* 解説の各項目に付ける「学習済み」印。この端末だけに保存する（アカウント同期はしない）。
+     見出しで識別するので、項目の追加・並べ替えでは印がずれない。まずゲノム編だけで試す。 */
+  const LESSON_READ_KEY="lessonRead_v1";
+  let lessonRead={};
+  try{ lessonRead=JSON.parse(localStorage.getItem(LESSON_READ_KEY))||{}; }catch(e){ lessonRead={}; }
+  function lessonReadEnabled(){ return currentSubjectId==="genome"; }
+  function lessonSects(ls){ return (ls&&Array.isArray(ls.sections)?ls.sections:[]).filter(x=>x && (x.heading||x.body||x.table)); }
+  function lessonReadKey(deck,sc,i){ return `${currentSubjectId}|${deck}|${sc.heading||i+1}`; }
+  function lessonReadStats(decks){
+    if(!lessonReadEnabled()) return null;
+    const keys=decks.flatMap(d=>lessonSects(d.lesson).map((sc,i)=>lessonReadKey(d.deck,sc,i)));
+    return { done:keys.filter(k=>lessonRead[k]).length, total:keys.length };
   }
   function lessonCardHTML(o){
     return `<button type="button" class="cat cat-field" ${o.attr}
@@ -6052,14 +6074,14 @@
     return lessonCardHTML({ attr:`data-deck="${esc(d.deck)}"`, accent:ACCENTS[i%ACCENTS.length],
       pct:s.total?Math.round(s.seen/s.total*100):0,
       kicker:`${lessonKicker(d)}${written?" ・ 要点あり":" ・ 要点は準備中"}`,
-      title:d.name, meta:lessonMetaHTML(s,d.pages.length), badge:written?"読む":"図で確認" });
+      title:d.name, meta:lessonMetaHTML(s,d.pages.length,lessonReadStats([d])), badge:written?"読む":"図で確認" });
   }
   function lessonGroupCardHTML(g,i){
     const {stats,pages}=lessonGroupStats(g);
     return lessonCardHTML({ attr:`data-group="${esc(g.name)}"`, accent:ACCENTS[i%ACCENTS.length],
       pct:stats.total?Math.round(stats.seen/stats.total*100):0,
       kicker:`まとめ ・ 全${g.decks.length}章`,
-      title:g.name, meta:lessonMetaHTML(stats,pages), badge:"ひらく" });
+      title:g.name, meta:lessonMetaHTML(stats,pages,lessonReadStats(g.decks)), badge:"ひらく" });
   }
   function renderLessonList(){
     const list=$("#lessonList"); if(!list) return;
@@ -6270,7 +6292,8 @@
         <span class="liActionIcon">${r.icon}</span><span class="liActionBody"><span class="liActionTitle">${esc(r.title)}</span><span class="liActionSub">${r.items.length}問から出題</span></span></button>`).join("")}
       ${d.pages.length?`<button type="button" class="liAction" data-lesson-index-action="slides">
         <span class="liActionIcon">📘</span><span class="liActionBody"><span class="liActionTitle">スライドをすべて見る</span><span class="liActionSub">${d.pages.length}ページ</span></span></button>`:""}`;
-    $("#lessonIndexList").innerHTML=sects.map((sc,i)=>`<button type="button" class="liItem" data-section="${i+1}">
+    const readOn=lessonReadEnabled();
+    $("#lessonIndexList").innerHTML=sects.map((sc,i)=>`<button type="button" class="liItem${readOn&&lessonRead[lessonReadKey(d.deck,sc,i)]?" isRead":""}" data-section="${i+1}">
       <span class="liNo">${i+1}</span><span class="liText">${esc(sc.heading||`項目 ${i+1}`)}</span></button>`).join("");
     $("#lessonIndexList").querySelectorAll(".liItem").forEach(btn=>{ btn.onclick=()=>jumpToLessonSection(Number(btn.dataset.section)); });
     $("#lessonIndexActions").querySelectorAll("[data-lesson-round]").forEach(b=>{
@@ -6285,16 +6308,28 @@
   ["wheel","touchmove"].forEach(type=>window.addEventListener(type,()=>{
     if(lessonQuickState){ lessonQuickState.jumpTarget=null; clearTimeout(lessonQuickState.jumpTimer); lessonQuickState.jumpTimer=null; }
   },{passive:true}));
+  function toggleLessonRead(i){
+    const st=lessonQuickState, sc=st&&st.sections[i]; if(!sc) return;
+    const key=lessonReadKey(st.d.deck,sc,i), on=!lessonRead[key];
+    if(on) lessonRead[key]=Date.now(); else delete lessonRead[key];
+    try{ localStorage.setItem(LESSON_READ_KEY, JSON.stringify(lessonRead)); }catch(e){}
+    const el=st.elements[i], btn=el.querySelector(".lsReadBtn");
+    el.classList.toggle("isRead",on);
+    btn.setAttribute("aria-pressed",String(on)); btn.textContent=on?"✓ 学習済み":"学習済みにする";
+    $("#lessonIndexList").querySelector(`[data-section="${i+1}"]`)?.classList.toggle("isRead",on);
+    const r=lessonReadStats([st.d]), c=$("#lessonReadCount");
+    if(c) c.textContent=`読了 ${r.done}/${r.total}項目`;
+  }
   function renderLesson(d){
     const body=$("#lessonBody"); if(!body) return;
     const s=catStats(d.items), ls=d.lesson||{};
-    const sects=(Array.isArray(ls.sections)?ls.sections:[]).filter(x=>x && (x.heading||x.body||x.table));
+    const sects=lessonSects(ls), read=lessonReadStats([d]);
     const figs=(pages)=>lessonFigsHTML(d.deck, d.name, pages);
 
     const head=`<div class="homeSection"><div class="panel lsHead">
         <div class="lsHeadKicker">${esc(lessonKicker(d))} ・ 学習</div>
         <div class="lsHeadTitle">${esc(d.name)}</div>
-        <div class="lsHeadMeta">${s.total?`<span>問題 ${s.total}問</span>`:""}${d.pages.length?`<span>スライド ${d.pages.length}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}</div>
+        <div class="lsHeadMeta">${s.total?`<span>問題 ${s.total}問</span>`:""}${d.pages.length?`<span>スライド ${d.pages.length}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}${read&&read.total?`<span id="lessonReadCount">読了 ${read.done}/${read.total}項目</span>`:""}</div>
         ${ls.intro?`<div class="lsIntro">${lessonBodyHTML(ls.intro)}</div>`:""}
       </div></div>`;
     const keyFigs=figs(ls.keySlides);
@@ -6304,13 +6339,15 @@
           <span class="lqCurrent" id="lessonQuickCurrent">章のはじめ</span></span>
         <span class="lqProgress" id="lessonQuickCount">0 / ${sects.length}</span><span class="lqChev" aria-hidden="true">⌄</span>
       </button></div>`:"";
-    const sectHTML=sects.map((sc,i)=>`<div class="lsSect" id="${lessonSectionId(d.deck,i)}" tabindex="-1">
+    const sectHTML=sects.map((sc,i)=>{ const done=!!(read&&lessonRead[lessonReadKey(d.deck,sc,i)]);
+      return `<div class="lsSect${done?" isRead":""}" id="${lessonSectionId(d.deck,i)}" tabindex="-1">
         <div class="lsSectHead"><span class="lsSectNo">${i+1}</span><span class="lsSectName">${esc(sc.heading||"")}</span></div>
         ${sc.body?`<div class="panel lsBody">${lessonBodyHTML(sc.body)}</div>`:""}
         ${lessonTableHTML(sc.table)}
         ${sc.note?`<div class="panel lsBody">${lessonBodyHTML(sc.note)}</div>`:""}
         ${figs(sc.slides)}
-      </div>`).join("");
+        ${read?`<div class="lsReadRow"><button type="button" class="lsReadBtn" data-read="${i}" aria-pressed="${done}">${done?"✓ 学習済み":"学習済みにする"}</button></div>`:""}
+      </div>`; }).join("");
     const soon=sects.length?"":`<div class="lsSoon">この回の要点テキストはまだ準備中です。授業スライドの図を見ながら、下のボタンで問題を解いてみてください。</div>`;
     // 章末の従来導線も残し、索引内と同じ専用ビューを開く
     const all=d.pages.length?`<div class="lsSolve"><button type="button" class="lsSolveBtn" id="lessonAllBtn">
@@ -6331,6 +6368,7 @@
     wireLessonFigs(body);
     body.querySelectorAll(".lsSolve [data-lesson-round]").forEach(b=>{ b.onclick=()=>startLessonRound(d, rounds[Number(b.dataset.lessonRound)]); });
     const allBtn=$("#lessonAllBtn"); if(allBtn) allBtn.onclick=()=>openLessonSlides(d,allBtn);
+    body.querySelectorAll(".lsReadBtn").forEach(b=>{ b.onclick=()=>toggleLessonRead(Number(b.dataset.read)); });
     setupLessonQuickIndex(d,sects,s);
   }
 
