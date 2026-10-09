@@ -151,7 +151,9 @@ window.SUBJECTS = [
     emoji: "🔬",
     accent: "#0891b2",
     learningMode: "lessons",
-    draft: true,
+    questions: "subjects/virology/questions.js",
+    // 令和7年度 60問・100点（選択60。問1〜40各2点・問41〜60各1点、公式解答あり）
+    expectQuestions: 60,
     hideCards: true,
     hideExamDay: true,
   },
