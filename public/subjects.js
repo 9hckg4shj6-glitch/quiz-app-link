@@ -154,8 +154,9 @@ window.SUBJECTS = [
     questions: "subjects/virology/questions.js",
     // 令和7年度 60問・100点（問1〜40各2点・問41〜60各1点）
     // 令和6年度 80問・120点（問1〜40各2点・問41〜80各1点）
+    // 令和5年度 80問・120点（問1〜40各2点・問41〜80各1点）
     // いずれも全問マーク式・公式解答あり
-    expectQuestions: 140,
+    expectQuestions: 220,
     hideCards: true,
     hideExamDay: true,
   },
