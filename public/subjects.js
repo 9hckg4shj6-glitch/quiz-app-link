@@ -152,6 +152,7 @@ window.SUBJECTS = [
     accent: "#0891b2",
     learningMode: "lessons",
     questions: "subjects/virology/questions.js",
+    lessons: "subjects/virology/lessons.js",   // 「📖 学習」画面の要点テキスト
     // 令和7年度 60問・100点（問1〜40各2点・問41〜60各1点）
     // 令和6年度 80問・120点（問1〜40各2点・問41〜80各1点）
     // 令和5年度 80問・120点（問1〜40各2点・問41〜80各1点）
