@@ -46,6 +46,8 @@ declare global {
         render: (root: HTMLElement, subject: { id: string; name: string; emoji?: string }) => Promise<void>;
       };
       syncNow: () => Promise<SyncStatus>;
+      /** 管理画面の利用状況（src/usage.ts）。開いている科目と解答・カードの数を知らせる。 */
+      usage: { setSubject: (id: string | null) => void; count: (kind: "answer" | "card") => void };
       account: {
         state: () => AccountState;
         refresh: () => Promise<AccountState>;

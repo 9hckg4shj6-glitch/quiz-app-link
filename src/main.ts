@@ -107,6 +107,7 @@ import { getAccountEntryChoice, saveAccountEntryChoice } from "./account-choice"
 import { getCardHomeSnapshot } from "./card-home";
 import { renderMemoryCards } from "./memory-cards";
 import { syncAccountIdentity } from "./account-profile";
+import { countUsage, setUsageSubject, startUsagePing } from "./usage";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
@@ -116,6 +117,7 @@ async function bootstrap(): Promise<void> {
   await installCardManager();
   startAccountAuth();
   startAutomaticSync();
+  startUsagePing();
 }
 
 // 同期完了ごとに、取り込んだ復習予定・学習状態を旧UI(localStorage)へ反映する
@@ -224,6 +226,7 @@ window.STUDY_CORE = {
     },
   },
   undoLastReview,
+  usage: { setSubject: setUsageSubject, count: countUsage },
   memory: {
     retrievability: (progress, atMs) =>
       retrievabilityAt(progress as LegacyProgress, atMs == null ? new Date() : new Date(atMs)),

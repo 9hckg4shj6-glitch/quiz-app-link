@@ -2396,6 +2396,8 @@
   function subjectFlag(key){ const s=currentSubject(); return !!(s && s[key]); }
   // category:"予想問題" の欄の表示名。科目ごとに subjects.js の predictionLabel で上書きできる（例：ゲノム＝予想・定着問題）
   function predictionLabel(fallback="予想問題"){ const s=currentSubject(); return (s && s.predictionLabel) || fallback; }
+  // 管理画面の利用状況（src/usage.ts）。モジュールの読み込み前は null。
+  function usageCore(){ return window.STUDY_CORE && window.STUDY_CORE.usage; }
   function savedSubjectId(){ try{ return localStorage.getItem(SUBJECT_KEY); }catch(e){ return null; } }
   function saveSubjectId(id){ try{ localStorage.setItem(SUBJECT_KEY, id); }catch(e){} }
 
@@ -2435,6 +2437,7 @@
     window.MEMORY_DECKS = data.memoryDecks;
     currentSubjectId = sub.id;
     saveSubjectId(sub.id);
+    usageCore() && usageCore().setSubject(sub.id);
     document.documentElement.style.setProperty("--subject-accent", sub.accent || "");
     loadData();
     return true;
@@ -2537,6 +2540,7 @@
     renderBadge();
     $("#subtitle").textContent="科目をえらんでください";
     currentSubjectId=null; renderSubjectUI();
+    usageCore() && usageCore().setSubject(null);
     renderSubjectPicker();
     transitionToScreen("subjectPicker","back");
   }
@@ -2751,6 +2755,7 @@
   // G-Counter方式。既存値は共通baseline、以後の増分は端末別に保持するため再同期で二重計上しない。
   function recordAnswerCounters(r,questionId,isCorrect){
     const isQuestion=DATA.some(q=>q.id===questionId);
+    usageCore() && usageCore().count(isQuestion?"answer":"card");
     if(!isQuestion){ r.seen=(r.seen||0)+1; return; }
     const map=(r._deviceCounts&&typeof r._deviceCounts==="object")?r._deviceCounts:{};
     r._legacySeen=Math.max(0,Number(r._legacySeen!=null?r._legacySeen:(r.seen||0)-counterSum(map,"seen"))||0);

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+    <script>
+      // アプリと同じ保存済みテーマを初回描画前に当てる（未設定なら端末の設定に従う）。
+      try { const t = localStorage.getItem('quizTheme_v1'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch {}
+    </script>
+    <title>ログイン</title>
+  </head>
+  <body>
+    <main id="admin"></main>
+    <!-- 科目の名前・絵文字（アプリと同じマニフェスト） -->
+    <script src="subjects.js"></script>
+    <script type="module" src="/src/admin.ts"></script>
+  </body>
+</html>

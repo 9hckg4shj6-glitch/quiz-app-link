@@ -6,6 +6,8 @@ export default defineConfig({
   build: {
     target: "es2022",
     sourcemap: true,
+    // 管理画面（admin.html）は別ページ。アプリからはリンクしない。
+    rollupOptions: { input: { index: "index.html", admin: "admin.html" } },
   },
   plugins: [
     VitePWA({
@@ -34,7 +36,9 @@ export default defineConfig({
         // Service Worker が入れ替わるまで、追加した科目が「準備中」のまま出たり
         // 更新履歴が古いまま出たりする。どちらも数十KBなので、オンラインなら
         // 必ずネットワークから取り直し、オフラインのときだけキャッシュへ落とす。
-        globIgnores: ["images/**", "subjects.js", "updates.js"],
+        globIgnores: ["images/**", "subjects.js", "updates.js", "admin.html"],
+        // 管理画面はオフライン用のアプリ画面（index.html）へ差し替えず、常にネットワークから開く。
+        navigateFallbackDenylist: [/admin\.html$/],
         // 既定の2MiBでは、ゲノム編の questions.js（2.1MB）がプリキャッシュから外れてビルドが失敗する。
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
