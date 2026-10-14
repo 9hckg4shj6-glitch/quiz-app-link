@@ -95,7 +95,8 @@ begin
       'total',count(*),
       'new_today',count(*) filter(where first_seen>=v_today),
       'new_d7',count(*) filter(where first_seen>now()-interval '7 days')) from usage_devices),
-    'subjects',(select coalesce(jsonb_agg(jsonb_build_object(
+    'subjects',(select coalesce(jsonb_agg(x.subject_row),'[]'::jsonb) from (
+      select jsonb_build_object(
         'subject',d.subject,
         'online',(select count(*) from usage_devices u where u.subject=d.subject and u.last_seen>now()-v_online),
         'today',count(*) filter(where d.day=v_day),
@@ -105,8 +106,8 @@ begin
         'answers_today',coalesce(sum(d.answers) filter(where d.day=v_day),0),
         'answers_d7',coalesce(sum(d.answers) filter(where d.day>v_day-7),0),
         'cards_today',coalesce(sum(d.cards) filter(where d.day=v_day),0),
-        'cards_d7',coalesce(sum(d.cards) filter(where d.day>v_day-7),0))),'[]'::jsonb)
-      from usage_subject_days d group by d.subject),
+        'cards_d7',coalesce(sum(d.cards) filter(where d.day>v_day-7),0)) subject_row
+      from usage_subject_days d group by d.subject) x),
     'daily',(select coalesce(jsonb_agg(jsonb_build_object('day',day,'subject',subject,'users',n)),'[]'::jsonb) from (
       select day,subject,count(*) n from usage_subject_days where day>v_day-14 group by 1,2) x),
     'daily_total',(select coalesce(jsonb_agg(jsonb_build_object('day',day,'users',n)),'[]'::jsonb) from (

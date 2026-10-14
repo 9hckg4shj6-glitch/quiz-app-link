@@ -14,7 +14,7 @@ const supabase = url && key
 
 interface SubjectRow { subject: string; online: number; today: number; d7: number; d30: number; total: number; answers_today: number; answers_d7: number; cards_today: number; cards_d7: number; }
 interface UserSubject { subject: string; last_day: string; answers: number; cards: number; }
-interface User { id: string; name: string | null; account: boolean; subject: string | null; online: boolean; last_seen: string; first_seen: string; answers_today: number; answers: number; subjects: UserSubject[]; }
+interface User { id: string; device_id: string; blocked: boolean; name: string | null; account: boolean; subject: string | null; online: boolean; last_seen: string; first_seen: string; answers_today: number; answers: number; subjects: UserSubject[]; }
 interface Dashboard {
   online: number;
   active: { h1: number; today: number; d7: number; total: number; new_today: number; new_d7: number };
@@ -43,7 +43,7 @@ let loadError = "";
 let loading = false;
 let loginError = "";
 let busy = false;
-let filter: "online" | "today" | "d7" | "all" = "today";
+let filter: "online" | "today" | "d7" | "all" | "blocked" = "today";
 let subjectFilter = "";
 let query = "";
 
@@ -258,7 +258,7 @@ function filteredUsers(d: Dashboard): User[] {
   const fromDay = filter === "today" ? dayKey(new Date()) : filter === "d7" ? dayKey(lastDays(7)[0]) : "";
   const q = query.trim().toLowerCase();
   return d.users.filter(u =>
-    (filter === "all" || (filter === "online" ? u.online : filter === "today" ? Date.parse(u.last_seen) >= todayStart : Date.parse(u.last_seen) >= weekAgo))
+    (filter === "all" || (filter === "blocked" ? u.blocked : filter === "online" ? u.online : filter === "today" ? Date.parse(u.last_seen) >= todayStart : Date.parse(u.last_seen) >= weekAgo))
     && (!subjectFilter || (filter === "online" ? u.subject === subjectFilter : u.subjects.some(s => s.subject === subjectFilter && s.last_day >= fromDay)))
     && (!q || (u.name ?? "").toLowerCase().includes(q) || u.id.includes(q)));
 }
@@ -266,15 +266,16 @@ function renderUsers(d: Dashboard): string {
   const list = filteredUsers(d);
   const shown = list.slice(0, 500);
   const rows = shown.map(u => `<tr>
-      <td class="name"><strong>${u.name ? esc(u.name) : '<span class="muted">名前なし</span>'}${u.account ? '<span class="badge">アカウント</span>' : ""}</strong><small>${esc(u.id)}</small></td>
+      <td class="name"><strong>${u.name ? esc(u.name) : '<span class="muted">名前なし</span>'}${u.account ? '<span class="badge">アカウント</span>' : ""}${u.blocked ? '<span class="badge stop">停止中</span>' : ""}</strong><small>${esc(u.id)}</small></td>
       <td><span class="state ${u.online ? "on" : ""}"><i></i>${u.online ? (u.subject ? esc(subjectLabel(u.subject)) : "科目えらび") : "オフライン"}</span></td>
       <td data-label="最終利用">${esc(ago(u.last_seen))}</td>
       <td data-label="初回">${esc(fmtTime.format(new Date(u.first_seen)))}</td>
       <td data-label="使った科目"><span class="subj-list">${u.subjects.map(s => `<span title="${esc(`${subjectLabel(s.subject)}：解答${s.answers}問・カード${s.cards}枚・最終${s.last_day}`)}">${esc(subjectEmoji(s.subject))}</span>`).join("") || "—"}</span></td>
       <td data-label="今日の解答" class="n">${num(u.answers_today)}</td>
-      <td data-label="累計の解答" class="n">${num(u.answers)}</td></tr>`).join("");
+      <td data-label="累計の解答" class="n">${num(u.answers)}</td>
+      <td>${u.device_id ? `<button class="btn small ${u.blocked ? "" : "danger"}" data-block="${esc(u.device_id)}" data-name="${esc(u.name ?? u.id)}" data-blocked="${u.blocked}">${u.blocked ? "停止を解除" : "利用を停止"}</button>` : ""}</td></tr>`).join("");
   return `<p class="muted users-count">${num(list.length)}人${list.length > shown.length ? `（先頭${shown.length}人を表示）` : ""}</p>
-    ${shown.length ? `<div class="table-wrap"><table class="users"><thead><tr><th>名前</th><th>状態</th><th>最終利用</th><th>初回</th><th>使った科目</th><th class="n">今日の解答</th><th class="n">累計の解答</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    ${shown.length ? `<div class="table-wrap"><table class="users"><thead><tr><th>名前</th><th>状態</th><th>最終利用</th><th>初回</th><th>使った科目</th><th class="n">今日の解答</th><th class="n">累計の解答</th><th>利用</th></tr></thead><tbody>${rows}</tbody></table></div>`
       : '<p class="empty">該当する利用者はいません。</p>'}`;
 }
 
@@ -315,25 +316,42 @@ function render(): void {
     </section>
     <section class="card" id="users-card"><h2>利用者一覧</h2>
       <div class="user-tools">
-        <div class="chips" role="group" aria-label="期間">${(["online", "today", "d7", "all"] as const).map(f => `<button class="chip ${filter === f ? "on" : ""}" data-filter="${f}" aria-pressed="${filter === f}">${{ online: "オンライン", today: "今日", d7: "7日以内", all: "すべて" }[f]}</button>`).join("")}</div>
+        <div class="chips" role="group" aria-label="期間">${(["online", "today", "d7", "all", "blocked"] as const).map(f => `<button class="chip ${filter === f ? "on" : ""}" data-filter="${f}" aria-pressed="${filter === f}">${{ online: "オンライン", today: "今日", d7: "7日以内", all: "すべて", blocked: "停止中" }[f]}</button>`).join("")}</div>
         <select id="user-subject" aria-label="科目"><option value="">すべての科目</option>${rows.map(r => `<option value="${esc(r.subject)}" ${r.subject === subjectFilter ? "selected" : ""}>${esc(subjectLabel(r.subject))}</option>`).join("")}</select>
         <input id="user-search" type="search" placeholder="名前・端末IDで検索" value="${esc(query)}" />
       </div>
       <div id="users">${renderUsers(d)}</div>
-      <p class="muted">名前はアカウントの表示名か、ランキングに参加したときの名前です（どちらもなければ「名前なし」）。1台の端末を1人として数えるため、スマホとPCを使い分ける人は2人と数えます。この記録は管理画面の公開（2026年10月）以降のものです。</p>
+      <p class="muted">名前はアカウントの表示名か、ランキングに参加したときの名前です（どちらもなければ「名前なし」）。1台の端末を1人として数えるため、スマホとPCを使い分ける人は2人と数えます。「利用を停止」した端末は、次にアプリを開いたとき（開いている端末は1分以内）に「利用は停止されています」の画面になり、操作できなくなります。その端末がアカウントにログインしていれば、そのアカウントも別の端末で止まります。ただし、ゲストが端末のサイトデータを消すと、新しい端末として使えてしまいます。この記録は管理画面の公開（2026年10月）以降のものです。</p>
     </section>
     <div class="tip" id="tip" role="tooltip" hidden></div>`;
   if (focused) { const s = document.querySelector<HTMLInputElement>("#user-search"); s?.focus(); s?.setSelectionRange(s.value.length, s.value.length); }
 }
 
 // ---------- 操作 ----------
+async function setBlocked(deviceId: string, blocked: boolean, name: string): Promise<void> {
+  if (!supabase) return;
+  const ask = blocked
+    ? `「${name}」の端末のアプリ利用を停止しますか？\nこの端末（とログイン中のアカウント）では、アプリを開けなくなります。`
+    : `「${name}」の端末の停止を解除しますか？`;
+  if (!confirm(ask)) return;
+  const { error } = await supabase.rpc("admin_set_device_blocked", { p_device_id: deviceId, p_blocked: blocked });
+  if (error) {
+    alert(/admin_set_device_blocked|could not find the function/i.test(error.message)
+      ? "サーバーの準備がまだです。supabase/migrations/015_device_block.sql を SQL Editor で適用してください。"
+      : "変更できませんでした。通信を確認して、もう一度お試しください。");
+    return;
+  }
+  await load();
+}
+
 root.addEventListener("submit", e => {
   const form = e.target as HTMLFormElement;
   if (form.id === "login-form") { e.preventDefault(); void submitLogin(form); }
 });
 root.addEventListener("click", async e => {
-  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-act],[data-filter],[data-subject],[data-mode]");
+  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-act],[data-filter],[data-subject],[data-mode],[data-block]");
   if (!el) return;
+  if (el.dataset.block) { void setBlocked(el.dataset.block, el.dataset.blocked !== "true", el.dataset.name ?? ""); return; }
   if (el.dataset.mode) { mode = el.dataset.mode as Mode; loginError = ""; notice = ""; renderLogin(); return; }
   if (el.dataset.filter) { filter = el.dataset.filter as typeof filter; render(); return; }
   if (el.dataset.subject) {

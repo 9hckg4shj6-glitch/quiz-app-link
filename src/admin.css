@@ -122,6 +122,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, .col:focus-visi
 
 .user-tools #user-subject { width: auto; padding: 8px 10px; }
 .subj-list { display: inline-flex; gap: 2px; font-size: 15px; }
+.btn.small { padding: 4px 10px; font-size: 12px; }
+.btn.danger { color: var(--ng); border-color: color-mix(in srgb, var(--ng) 40%, var(--line)); }
+.badge.stop { color: var(--ng); border-color: var(--ng); }
 .badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 99px; border: 1px solid var(--line); font-size: 10px; color: var(--muted); }
 
 @media (max-width: 720px) {
