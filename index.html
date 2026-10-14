@@ -4736,12 +4736,13 @@
   /* ---------- 端末間データ同期（同期コード） ---------- */
   function DS(){ return (window.STUDY_CORE && window.STUDY_CORE.datasync) || null; }
   function AC(){ return (window.STUDY_CORE && window.STUDY_CORE.account) || null; }
-  function syncSnapshot(){ return { app:"metabolism-quiz", v:1, exportedAt:new Date().toISOString(), progress:progress, meta:meta }; }
+  function syncSnapshot(){ return { app:"metabolism-quiz", v:1, exportedAt:new Date().toISOString(), progress:progress, meta:meta, lessonRead:lessonRead }; }
   // リモートの記録をこの端末へ統合する（最大値・和集合。どちらの記録も失わない）
   function mergeRemote(payload){
     if(!payload || typeof payload!=="object" || typeof payload.progress!=="object") return false;
     progress=mergeProgress(progress, payload.progress||{});
     meta=mergeMeta(meta, payload.meta||{});
+    mergeLessonRead(payload.lessonRead);
     Object.keys(progress).forEach(id=>{ if(progress[id]&&typeof progress[id]==="object") syncWeak(progress[id]); });
     saveProgress();
     localStorage.setItem(META_KEY, JSON.stringify(meta)); loadMeta(); saveMeta();
@@ -4923,7 +4924,7 @@
         if(session) session.finished=true;
         session=null; clearTimeout(practiceSaveTimer); clearWrittenDraftTimers();
         await practiceWrites.catch(()=>{});
-        progress={}; meta={}; saveProgress(); saveMeta();
+        progress={}; meta={}; lessonRead={}; saveProgress(); saveMeta(); saveLessonRead();
         const wa=WA(); if(wa) await wa.deleteAll();
         await ac.resolveSwitch("replace");
         toast("アカウントを切り替えました"); renderSyncBlock(); await doSync(false);
@@ -6053,18 +6054,27 @@
   function lessonMetaHTML(s,pages,read){
     return `${s.total?`<span>問題 ${s.total}問</span>`:""}${pages?`<span>スライド ${pages}枚</span>`:""}${s.seen?`<span>学習済 ${s.seen}問</span>`:""}${read&&read.total?`<span>読了 ${read.done}/${read.total}項目</span>`:""}`;
   }
-  /* 解説の各項目に付ける「学習済み」印。この端末だけに保存する（アカウント同期はしない）。
+  /* 解説の各項目に付ける「学習済み」印。アカウント同期で端末間に共有する。
+     値は操作時刻で、正＝学習済み・負＝外した（統合時に新しい操作が勝つよう残す）。
      見出しで識別するので、項目の追加・並べ替えでは印がずれない。まずゲノム編だけで試す。 */
   const LESSON_READ_KEY="lessonRead_v1";
   let lessonRead={};
   try{ lessonRead=JSON.parse(localStorage.getItem(LESSON_READ_KEY))||{}; }catch(e){ lessonRead={}; }
+  let lessonReadSyncTimer=0;
+  function isLessonRead(key){ return lessonRead[key]>0; }
+  function saveLessonRead(){ try{ localStorage.setItem(LESSON_READ_KEY, JSON.stringify(lessonRead)); }catch(e){} }
+  function mergeLessonRead(inc){
+    if(!inc || typeof inc!=="object") return;
+    Object.keys(inc).forEach(k=>{ const v=Number(inc[k]); if(v && Math.abs(v)>Math.abs(lessonRead[k]||0)) lessonRead[k]=v; });
+    saveLessonRead();
+  }
   function lessonReadEnabled(){ return currentSubjectId==="genome"; }
   function lessonSects(ls){ return (ls&&Array.isArray(ls.sections)?ls.sections:[]).filter(x=>x && (x.heading||x.body||x.table)); }
   function lessonReadKey(deck,sc,i){ return `${currentSubjectId}|${deck}|${sc.heading||i+1}`; }
   function lessonReadStats(decks){
     if(!lessonReadEnabled()) return null;
     const keys=decks.flatMap(d=>lessonSects(d.lesson).map((sc,i)=>lessonReadKey(d.deck,sc,i)));
-    return { done:keys.filter(k=>lessonRead[k]).length, total:keys.length };
+    return { done:keys.filter(isLessonRead).length, total:keys.length };
   }
   function lessonCardHTML(o){
     return `<button type="button" class="cat cat-field" ${o.attr}
@@ -6302,7 +6312,7 @@
       ${d.pages.length?`<button type="button" class="liAction" data-lesson-index-action="slides">
         <span class="liActionIcon">📘</span><span class="liActionBody"><span class="liActionTitle">スライドをすべて見る</span><span class="liActionSub">${d.pages.length}ページ</span></span></button>`:""}`;
     const readOn=lessonReadEnabled();
-    $("#lessonIndexList").innerHTML=sects.map((sc,i)=>`<button type="button" class="liItem${readOn&&lessonRead[lessonReadKey(d.deck,sc,i)]?" isRead":""}" data-section="${i+1}">
+    $("#lessonIndexList").innerHTML=sects.map((sc,i)=>`<button type="button" class="liItem${readOn&&isLessonRead(lessonReadKey(d.deck,sc,i))?" isRead":""}" data-section="${i+1}">
       <span class="liNo">${i+1}</span><span class="liText">${esc(sc.heading||`項目 ${i+1}`)}</span></button>`).join("");
     $("#lessonIndexList").querySelectorAll(".liItem").forEach(btn=>{ btn.onclick=()=>jumpToLessonSection(Number(btn.dataset.section)); });
     $("#lessonIndexActions").querySelectorAll("[data-lesson-round]").forEach(b=>{
@@ -6319,9 +6329,10 @@
   },{passive:true}));
   function toggleLessonRead(i){
     const st=lessonQuickState, sc=st&&st.sections[i]; if(!sc) return;
-    const key=lessonReadKey(st.d.deck,sc,i), on=!lessonRead[key];
-    if(on) lessonRead[key]=Date.now(); else delete lessonRead[key];
-    try{ localStorage.setItem(LESSON_READ_KEY, JSON.stringify(lessonRead)); }catch(e){}
+    const key=lessonReadKey(st.d.deck,sc,i), on=!isLessonRead(key);
+    lessonRead[key]=on?Date.now():-Date.now(); saveLessonRead();
+    // 続けて印を付けることが多いので、操作が止まってから1回だけ同期する
+    clearTimeout(lessonReadSyncTimer); lessonReadSyncTimer=setTimeout(()=>{ lastAutoSync=0; maybeAutoSync(); },3000);
     const el=st.elements[i], btn=el.querySelector(".lsReadBtn");
     el.classList.toggle("isRead",on);
     btn.setAttribute("aria-pressed",String(on)); btn.textContent=on?"✓ 学習済み":"学習済みにする";
@@ -6348,7 +6359,7 @@
           <span class="lqCurrent" id="lessonQuickCurrent">章のはじめ</span></span>
         <span class="lqProgress" id="lessonQuickCount">0 / ${sects.length}</span><span class="lqChev" aria-hidden="true">⌄</span>
       </button></div>`:"";
-    const sectHTML=sects.map((sc,i)=>{ const done=!!(read&&lessonRead[lessonReadKey(d.deck,sc,i)]);
+    const sectHTML=sects.map((sc,i)=>{ const done=!!(read&&isLessonRead(lessonReadKey(d.deck,sc,i)));
       return `<div class="lsSect${done?" isRead":""}" id="${lessonSectionId(d.deck,i)}" tabindex="-1">
         <div class="lsSectHead"><span class="lsSectNo">${i+1}</span><span class="lsSectName">${esc(sc.heading||"")}</span></div>
         ${sc.body?`<div class="panel lsBody">${lessonBodyHTML(sc.body)}</div>`:""}
