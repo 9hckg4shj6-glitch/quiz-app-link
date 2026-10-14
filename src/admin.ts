@@ -4,6 +4,8 @@
 import { createClient, type Session } from "@supabase/supabase-js";
 import "./admin.css";
 
+// メールのリンクから戻ったときの URL（#type=recovery や #error_code=…）。クライアントが消す前に読んでおく。
+const linkHash = new URLSearchParams(location.hash.slice(1));
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const supabase = url && key
@@ -67,33 +69,49 @@ function ago(iso: string): string {
   return fmtTime.format(new Date(iso));
 }
 
-// ---------- ログイン・新規登録 ----------
+// ---------- ログイン・新規登録・パスワード再設定 ----------
 // 登録は誰でもできるが、データを返すのはメール確認済みで admin_users に載ったアカウントだけ（014_admin_dashboard.sql）。
-let signup = false;
+// 再設定：メールのリンクでこのページへ戻ると一時的にログインした状態になるので、新しいパスワードを決めてもらう。
+type Mode = "login" | "signup" | "forgot" | "recovery";
+let mode: Mode = linkHash.get("type") === "recovery" ? "recovery" : linkHash.has("error_code") ? "forgot" : "login";
 let notice = "";
 let lastEmail = "";
+if (linkHash.has("error_code")) loginError = "メールのリンクが無効か、有効期限が切れています。もう一度メールを送ってください。";
+// 確認・再設定のメールのリンクはこのページへ戻す（Supabase の Redirect URLs にこのページの URL が必要）。
+const pageUrl = location.href.split(/[?#]/)[0];
 
 function renderLogin(): void {
-  const title = signup ? "管理者アカウントの作成" : "ログイン";
+  const title = { login: "ログイン", signup: "管理者アカウントの作成", forgot: "パスワードの再設定", recovery: "新しいパスワードの設定" }[mode];
+  const lead = {
+    login: "",
+    signup: "登録後に届く確認メールのリンクを開いてから、ログインしてください。",
+    forgot: "登録したメールアドレスに、パスワードを設定し直すためのリンクを送ります。",
+    recovery: "新しいパスワードを決めてください。設定するとそのままログインします。",
+  }[mode];
+  const newPassword = mode === "signup" || mode === "recovery";
   root.innerHTML = `<section class="login card">
     <h1>${title}</h1>
-    ${signup ? '<p class="muted">登録後に届く確認メールのリンクを開いてから、ログインしてください。</p>' : ""}
+    ${lead ? `<p class="muted">${lead}</p>` : ""}
     <form id="login-form" novalidate>
-      <label class="field"><span>メールアドレス</span><input name="email" type="email" autocomplete="username" value="${esc(lastEmail)}" required /></label>
-      <label class="field"><span>パスワード${signup ? "（8文字以上）" : ""}</span><input name="password" type="password" autocomplete="${signup ? "new-password" : "current-password"}" required /></label>
-      ${signup ? '<label class="field"><span>パスワード（確認）</span><input name="password2" type="password" autocomplete="new-password" required /></label>' : ""}
+      ${mode === "recovery" ? "" : `<label class="field"><span>メールアドレス</span><input name="email" type="email" autocomplete="username" value="${esc(lastEmail)}" required /></label>`}
+      ${mode === "forgot" ? "" : `<label class="field"><span>${mode === "recovery" ? "新しいパスワード" : "パスワード"}${newPassword ? "（8文字以上）" : ""}</span><input name="password" type="password" autocomplete="${newPassword ? "new-password" : "current-password"}" required /></label>`}
+      ${newPassword ? '<label class="field"><span>パスワード（確認）</span><input name="password2" type="password" autocomplete="new-password" required /></label>' : ""}
       <div role="status" class="error">${esc(loginError)}</div>
       ${notice ? `<p class="notice" role="status">${esc(notice)}</p>` : ""}
-      <button class="btn primary" ${busy ? "disabled" : ""}>${signup ? "アカウントを作成" : "ログイン"}</button>
+      <button class="btn primary" ${busy ? "disabled" : ""}>${{ login: "ログイン", signup: "アカウントを作成", forgot: "再設定のメールを送る", recovery: "パスワードを設定" }[mode]}</button>
     </form>
-    <button class="link" data-act="toggle-signup">${signup ? "アカウントをお持ちの方はログイン" : "管理者アカウントを作成する"}</button>
+    <div class="login-links">${(mode === "login"
+      ? [["forgot", "パスワードを忘れた・設定していない"], ["signup", "管理者アカウントを作成する"]]
+      : mode === "recovery" ? [] : [["login", "ログインに戻る"]]).map(([m, label]) => `<button class="link" data-mode="${m}">${label}</button>`).join("")}</div>
   </section>`;
 }
 
 const authMessage = (m: string): string =>
-  /invalid login credentials/i.test(m) ? "メールアドレスかパスワードが違います。"
+  /invalid login credentials/i.test(m) ? "メールアドレスかパスワードが違います。Googleで作ったアカウントなどパスワードが無い場合は「パスワードを忘れた・設定していない」から設定してください。"
   : /email not confirmed/i.test(m) ? "メールアドレスの確認がまだです。届いた確認メールのリンクを開いてください。"
-  : /already registered|already exists/i.test(m) ? "このメールアドレスは登録済みです。ログインしてください。"
+  : /already registered|already exists/i.test(m) ? "このメールアドレスは登録済みです。パスワードが分からなければ「パスワードを忘れた・設定していない」から設定してください。"
+  : /auth session missing|session.*(expired|missing)/i.test(m) ? "再設定のリンクの有効期限が切れています。もう一度メールを送ってください。"
+  : /different from the old/i.test(m) ? "以前と同じパスワードは使えません。"
   : /password/i.test(m) ? "パスワードが条件を満たしていません。8文字以上の、推測されにくいものにしてください。"
   : /signups? (not allowed|are disabled)|disabled/i.test(m) ? "新規登録が無効になっています（Supabase の Authentication → Providers → Email で有効にできます）。"
   : /rate limit|too many/i.test(m) ? "試行が多すぎます。しばらく待ってからやり直してください。"
@@ -102,34 +120,48 @@ const authMessage = (m: string): string =>
 async function submitLogin(form: HTMLFormElement): Promise<void> {
   if (!supabase) return;
   const f = new FormData(form);
-  const email = String(f.get("email") ?? "").trim().toLowerCase(), password = String(f.get("password") ?? "");
+  const email = String(f.get("email") ?? lastEmail).trim().toLowerCase(), password = String(f.get("password") ?? "");
+  const newPassword = mode === "signup" || mode === "recovery";
   lastEmail = email; loginError = ""; notice = "";
-  if (!email || !password) { loginError = "メールアドレスとパスワードを入力してください。"; renderLogin(); return; }
-  if (signup && password.length < 8) { loginError = "パスワードは8文字以上にしてください。"; renderLogin(); return; }
-  if (signup && password !== String(f.get("password2") ?? "")) { loginError = "確認用のパスワードが一致しません。"; renderLogin(); return; }
+  if ((mode !== "recovery" && !email) || (mode !== "forgot" && !password)) { loginError = mode === "forgot" ? "メールアドレスを入力してください。" : "メールアドレスとパスワードを入力してください。"; renderLogin(); return; }
+  if (newPassword && password.length < 8) { loginError = "パスワードは8文字以上にしてください。"; renderLogin(); return; }
+  if (newPassword && password !== String(f.get("password2") ?? "")) { loginError = "確認用のパスワードが一致しません。"; renderLogin(); return; }
   busy = true; renderLogin();
   try {
-    if (signup) {
-      // 確認メールのリンクはこのページへ戻す（Supabase の Redirect URLs に無いときはサイトURLへ戻るが、確認自体は済む）。
-      const { data: d, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.href.split(/[?#]/)[0] } });
+    if (mode === "signup") {
+      const { data: d, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: pageUrl } });
       if (error) throw error;
       // 確認済みのメールで登録し直すと、エラーにならず identities が空で返る。
       if (d.user && !d.user.identities?.length) throw new Error("already registered");
       session = d.session;
-      if (!session) { signup = false; notice = "確認メールを送りました。メールのリンクを開いてから、ここでログインしてください。"; }
+      if (!session) { mode = "login"; notice = "確認メールを送りました。メールのリンクを開いてから、ここでログインしてください。"; }
+    } else if (mode === "forgot") {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: pageUrl });
+      if (error) throw error;
+      // 登録の有無は伝えない（Supabase も区別しない）。
+      notice = "登録されているメールアドレスなら、再設定のメールを送りました。メールのリンクを開いてください。";
+    } else if (mode === "recovery") {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      mode = "login";
+      session = (await supabase.auth.getSession()).data.session;
     } else {
       const { data: d, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       session = d.session;
     }
-  } catch (e) { loginError = authMessage(e instanceof Error ? e.message : String(e)); }
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    loginError = authMessage(m);
+    if (mode === "recovery" && /session/i.test(m)) mode = "forgot";
+  }
   finally { busy = false; }
-  if (session) void load(); else renderLogin();
+  if (session && mode !== "recovery") void load(); else renderLogin();
 }
 
 // ---------- 集計の取得 ----------
 async function load(): Promise<void> {
-  if (!supabase || loading || !session) return;
+  if (!supabase || loading || !session || mode === "recovery") return;
   loading = true;
   if (!data) root.innerHTML = '<p class="loading">読み込み中…</p>';
   try {
@@ -248,7 +280,7 @@ function renderUsers(d: Dashboard): string {
 
 function render(): void {
   if (!supabase) { root.innerHTML = '<p class="loading">サーバーの設定がありません。</p>'; return; }
-  if (!session) { renderLogin(); return; }
+  if (!session || mode === "recovery") { renderLogin(); return; }
   if (loadError === "ADMIN_ONLY") {
     root.innerHTML = `<section class="login card"><h1>管理者として登録されていません</h1><p class="muted">ログインはできています。Supabase の SQL Editor で次の1行を実行してから、「再読み込み」を押してください。</p><pre class="sql">insert into public.admin_users(email) values('${esc((session.user.email ?? "").toLowerCase())}');</pre><div class="top-actions"><button class="btn primary" data-act="refresh">再読み込み</button><button class="btn ghost" data-act="logout">ログアウト</button></div></section>`;
     return;
@@ -300,8 +332,9 @@ root.addEventListener("submit", e => {
   if (form.id === "login-form") { e.preventDefault(); void submitLogin(form); }
 });
 root.addEventListener("click", async e => {
-  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-act],[data-filter],[data-subject]");
+  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-act],[data-filter],[data-subject],[data-mode]");
   if (!el) return;
+  if (el.dataset.mode) { mode = el.dataset.mode as Mode; loginError = ""; notice = ""; renderLogin(); return; }
   if (el.dataset.filter) { filter = el.dataset.filter as typeof filter; render(); return; }
   if (el.dataset.subject) {
     subjectFilter = el.dataset.subject;
@@ -311,7 +344,6 @@ root.addEventListener("click", async e => {
   }
   const act = el.dataset.act;
   if (act === "refresh") void load();
-  else if (act === "toggle-signup") { signup = !signup; loginError = ""; notice = ""; renderLogin(); }
   else if (act === "logout") { await supabase?.auth.signOut(); session = null; data = null; loadError = ""; renderLogin(); }
 });
 root.addEventListener("input", e => {
@@ -338,9 +370,13 @@ root.addEventListener("pointerleave", () => { const tip = document.querySelector
 if (supabase) {
   setInterval(() => { if (session && document.visibilityState === "visible") void load(); }, REFRESH_MS);
   document.addEventListener("visibilitychange", () => { if (session && document.visibilityState === "visible") void load(); });
-  supabase.auth.onAuthStateChange((_event, s) => { session = s; if (!s) { data = null; renderLogin(); } });
+  supabase.auth.onAuthStateChange((event, s) => {
+    session = s;
+    if (event === "PASSWORD_RECOVERY") { mode = "recovery"; loginError = ""; renderLogin(); }
+    else if (!s) { data = null; renderLogin(); }
+  });
   void (async () => {
     session = (await supabase.auth.getSession()).data.session;
-    if (session) void load(); else renderLogin();
+    if (session && mode !== "recovery") void load(); else renderLogin();
   })();
 } else render();

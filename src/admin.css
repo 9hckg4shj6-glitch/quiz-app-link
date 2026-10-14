@@ -38,7 +38,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, .col:focus-visi
 .login { max-width: 420px; margin: 8vh auto 0; }
 .login h1 { font-size: 22px; margin-bottom: 6px; }
 .login form { display: grid; gap: 12px; margin: 18px 0 6px; }
-.login .link { margin-top: 10px; border: 0; background: none; color: var(--accent); padding: 0; cursor: pointer; font-size: 13px; text-decoration: underline; }
+.login-links { display: grid; justify-items: start; gap: 6px; margin-top: 12px; }
+.login .link { border: 0; background: none; color: var(--accent); padding: 0; cursor: pointer; font-size: 13px; text-decoration: underline; }
 .notice { margin: 0; font-size: 13px; color: var(--ok); }
 .sql { margin: 12px 0 16px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font: 12px/1.5 ui-monospace, SFMono-Regular, monospace; white-space: pre-wrap; word-break: break-all; user-select: all; }
 .field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
