@@ -10,8 +10,9 @@ export { supabase } from "./backend";
 
 async function currentUser(): Promise<User | null> {
   if (!supabase) return null;
-  const { data } = await supabase.auth.getUser();
-  return data.user;
+  // getUser() は毎回認証サーバーへ問い合わせる。所有者の検証はRLSが行うので端末のセッションで足りる
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user ?? null;
 }
 
 export async function getSyncStatus(error: string | null = null): Promise<SyncStatus> {
@@ -120,13 +121,7 @@ async function attachOwner(userId: string): Promise<void> {
   await db.reviewEvents.filter((item) => !item.ownerId).modify({ ownerId: userId });
 }
 
-async function pushItem(item: OutboxRecord, user: User): Promise<void> {
-  if (!supabase) return;
-  if (item.table === "review_events" && item.operation === "delete") {
-    const { error } = await supabase.from("review_events").delete().eq("id", item.recordId).eq("owner_id", user.id);
-    if (error) throw error;
-    return;
-  }
+async function toRemoteRow(item: OutboxRecord, user: User): Promise<Record<string, unknown>> {
   let payload = item.payload;
   if (item.table === "cards") payload = await cardPayload(payload as unknown as StudyCard, user.id);
   if (item.table === "review_events") {
@@ -150,19 +145,100 @@ async function pushItem(item: OutboxRecord, user: User): Promise<void> {
       updated_at: payload.updatedAt, deleted_at: payload.deletedAt,
     };
   }
-  const { error } = await supabase.from(item.table).upsert(payload, { onConflict: item.table === "settings" ? "owner_id,key" : "id" });
-  if (error) throw error;
+  return payload;
+}
+
+function isReviewDelete(item: OutboxRecord): boolean {
+  return item.table === "review_events" && item.operation === "delete";
+}
+
+const PUSH_CHUNK = 500;
+
+/** 未送信の変更をテーブルごとにまとめて送る。まとめ送りが失敗したときだけ1件ずつ送り直して原因を切り分ける。 */
+async function pushOutbox(user: User): Promise<void> {
+  if (!supabase) return;
+  const client = supabase;
+  const pending = (await db.outbox.where("status").anyOf("pending", "failed").sortBy("createdAt"))
+    .filter((item) => item.seq != null);
+  if (!pending.length) return;
+  await db.outbox.where("seq").anyOf(pending.map((item) => item.seq!)).modify((item) => {
+    item.status = "syncing"; item.attempts += 1; item.lastError = null;
+  });
+
+  // カードより先にデッキを送る
+  for (const table of ["decks", "cards", "review_events", "settings"] as const) {
+    const items = pending.filter((item) => item.table === table);
+    if (!items.length) continue;
+    // どの操作もレコード全体の上書きなので、同じレコードは最新の1件だけ送れば足りる
+    const latest = [...new Map(items.map((item) => [item.recordId, item])).values()];
+    const sent = new Set<string>();
+    const failed = new Map<string, string>();
+    const fail = (item: OutboxRecord, error: unknown) =>
+      failed.set(item.recordId, error instanceof Error ? error.message : String(error));
+
+    const sendOne = async (item: OutboxRecord) => {
+      try {
+        const { error } = isReviewDelete(item)
+          ? await client.from("review_events").delete().eq("id", item.recordId).eq("owner_id", user.id)
+          : await client.from(table).upsert(await toRemoteRow(item, user), { onConflict: table === "settings" ? "owner_id,key" : "id" });
+        if (error) throw error;
+        sent.add(item.recordId);
+      } catch (error) {
+        fail(item, error);
+      }
+    };
+
+    const deletes = latest.filter(isReviewDelete);
+    const upserts = latest.filter((item) => !isReviewDelete(item));
+    for (let i = 0; i < upserts.length; i += PUSH_CHUNK) {
+      const chunk = upserts.slice(i, i + PUSH_CHUNK);
+      const rows: Record<string, unknown>[] = [];
+      const ready: OutboxRecord[] = [];
+      await Promise.all(chunk.map(async (item) => {
+        try { rows.push(await toRemoteRow(item, user)); ready.push(item); } catch (error) { fail(item, error); }
+      }));
+      if (!rows.length) continue;
+      const { error } = await client.from(table).upsert(rows, { onConflict: table === "settings" ? "owner_id,key" : "id" });
+      if (error) { for (const item of ready) await sendOne(item); } else ready.forEach((item) => sent.add(item.recordId));
+    }
+    for (let i = 0; i < deletes.length; i += PUSH_CHUNK) {
+      const chunk = deletes.slice(i, i + PUSH_CHUNK);
+      const { error } = await client.from("review_events").delete()
+        .in("id", chunk.map((item) => item.recordId)).eq("owner_id", user.id);
+      if (error) { for (const item of chunk) await sendOne(item); } else chunk.forEach((item) => sent.add(item.recordId));
+    }
+
+    const done = items.filter((item) => sent.has(item.recordId));
+    await db.outbox.bulkDelete(done.map((item) => item.seq!));
+    for (const item of items.filter((entry) => !sent.has(entry.recordId))) {
+      await db.outbox.update(item.seq!, { status: "failed", lastError: failed.get(item.recordId) ?? "送信できませんでした" });
+    }
+    if (table === "review_events") {
+      const syncedAt = nowIso();
+      await db.reviewEvents.where("id").anyOf(done.filter((item) => !isReviewDelete(item)).map((item) => item.recordId))
+        .modify({ ownerId: user.id, syncedAt });
+    }
+  }
 }
 
 async function pullCards(user: User): Promise<void> {
   if (!supabase) return;
   const { data, error } = await supabase.from("cards").select("*").eq("owner_id", user.id);
   if (error) throw error;
-  for (const row of data ?? []) {
-    const remote = await hydrateRemoteImage(remoteToCard(row as Record<string, unknown>));
-    const local = await db.cards.get(remote.id);
-    const hasPending = (await db.outbox.where("recordId").equals(remote.id).filter((item) => item.status !== "syncing").count()) > 0;
-    if (local && hasPending && local.updatedAt !== remote.updatedAt && local.version >= remote.version) {
+  const remotes = (data ?? []).map((row) => remoteToCard(row as Record<string, unknown>));
+  const ids = remotes.map((card) => card.id);
+  const locals = await db.cards.bulkGet(ids);
+  const pendingIds = new Set((await db.outbox.where("recordId").anyOf(ids).filter((item) => item.status !== "syncing").toArray())
+    .map((item) => item.recordId));
+  // DBの時刻表記（+00:00）と端末の表記（Z）が違うので時刻値で比べる
+  const sameTime = (a: string, b: string) => Date.parse(a) === Date.parse(b);
+  for (const [index, fetched] of remotes.entries()) {
+    const local = locals[index];
+    // 変化のないカードは画像の再ダウンロードも保存もしない（取り込み済みの画像はdata URL）
+    if (local && local.version === fetched.version && sameTime(local.updatedAt, fetched.updatedAt)
+      && (!local.image || local.image.startsWith("data:") || local.image.startsWith("http"))) continue;
+    const remote = await hydrateRemoteImage(fetched);
+    if (local && pendingIds.has(remote.id) && !sameTime(local.updatedAt, remote.updatedAt) && local.version >= remote.version) {
       await saveCard({ ...remote, id: uuid(), front: `${remote.front}（競合コピー）`, version: 1, createdAt: nowIso(), updatedAt: nowIso() }, false);
       continue;
     }
@@ -170,15 +246,34 @@ async function pullCards(user: User): Promise<void> {
   }
 }
 
+const REVIEW_CURSOR_KEY = "reviewEventsPulledAt";
+const REVIEW_PAGE = 1000;
+
+/** 前回取り込んだ位置より後にサーバーへ届いた復習履歴だけを、1000件ずつ全件取る。 */
+async function pullNewReviewEvents(user: User): Promise<Record<string, unknown>[]> {
+  if (!supabase) return [];
+  const cursor = await db.settings.get(REVIEW_CURSOR_KEY);
+  // 送信が遅れてコミットされた行を取りこぼさないよう、10分さかのぼって取り直す（既知の行は捨てる）
+  const since = typeof cursor?.value === "string" ? new Date(Date.parse(cursor.value) - 10 * 60_000).toISOString() : null;
+  const rows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += REVIEW_PAGE) {
+    let query = supabase.from("review_events").select("*").eq("owner_id", user.id);
+    if (since) query = query.gt("server_created_at", since);
+    const { data, error } = await query.order("server_created_at").order("id").range(from, from + REVIEW_PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if ((data ?? []).length < REVIEW_PAGE) return rows;
+  }
+}
+
 async function pullSupportingData(user: User): Promise<void> {
   if (!supabase) return;
-  const [decksResult, reviewsResult, settingsResult] = await Promise.all([
+  const [decksResult, reviewRows, settingsResult] = await Promise.all([
     supabase.from("decks").select("*").eq("owner_id", user.id),
-    supabase.from("review_events").select("*").eq("owner_id", user.id),
+    pullNewReviewEvents(user),
     supabase.from("settings").select("*").eq("owner_id", user.id),
   ]);
   if (decksResult.error) throw decksResult.error;
-  if (reviewsResult.error) throw reviewsResult.error;
   if (settingsResult.error) throw settingsResult.error;
 
   await db.decks.bulkPut((decksResult.data ?? []).map((row) => ({
@@ -193,19 +288,16 @@ async function pullSupportingData(user: User): Promise<void> {
     updatedAt: String(row.updated_at), deletedAt: row.deleted_at == null ? null : String(row.deleted_at),
   })));
 
-  const changedCardIds = new Set<string>();
-  for (const row of reviewsResult.data ?? []) {
-    const id = String(row.id);
-    if (await db.reviewEvents.get(id)) continue;
-    const cardId = String(row.card_id);
-    await db.reviewEvents.put({
-      id, ownerId: user.id, cardId, deviceId: String(row.device_id),
-      rating: Number(row.rating) as 1 | 2 | 3 | 4, reviewedAt: String(row.reviewed_at),
-      durationMs: row.duration_ms == null ? null : Number(row.duration_ms), syncedAt: nowIso(),
-    });
-    changedCardIds.add(cardId);
-  }
-  for (const cardId of changedCardIds) await rebuildScheduleFromEvents(cardId);
+  const known = await db.reviewEvents.bulkGet(reviewRows.map((row) => String(row.id)));
+  const added = reviewRows.filter((_, index) => !known[index]).map((row) => ({
+    id: String(row.id), ownerId: user.id, cardId: String(row.card_id), deviceId: String(row.device_id),
+    rating: Number(row.rating) as 1 | 2 | 3 | 4, reviewedAt: String(row.reviewed_at),
+    durationMs: row.duration_ms == null ? null : Number(row.duration_ms), syncedAt: nowIso(),
+  }));
+  await db.reviewEvents.bulkPut(added);
+  for (const cardId of new Set(added.map((event) => event.cardId))) await rebuildScheduleFromEvents(cardId);
+  const newest = reviewRows.at(-1);
+  if (newest) await saveSetting({ key: REVIEW_CURSOR_KEY, ownerId: user.id, value: String(newest.server_created_at), updatedAt: nowIso() }, false);
 
   for (const row of settingsResult.data ?? []) {
     const remoteUpdatedAt = String(row.updated_at);
@@ -227,22 +319,8 @@ export async function syncNow(): Promise<SyncStatus> {
 
   try {
     await attachOwner(user.id);
-    const pending = await db.outbox.where("status").anyOf("pending", "failed").sortBy("createdAt");
-    const priority: Record<OutboxRecord["table"], number> = { decks: 0, cards: 1, review_events: 2, settings: 3 };
-    pending.sort((a, b) => priority[a.table] - priority[b.table] || a.createdAt.localeCompare(b.createdAt));
-    for (const item of pending) {
-      if (item.seq == null) continue;
-      await db.outbox.update(item.seq, { status: "syncing", attempts: item.attempts + 1, lastError: null });
-      try {
-        await pushItem(item, user);
-        await db.outbox.delete(item.seq);
-        if (item.table === "review_events") await db.reviewEvents.update(item.recordId, { ownerId: user.id, syncedAt: nowIso() });
-      } catch (error) {
-        await db.outbox.update(item.seq, { status: "failed", lastError: error instanceof Error ? error.message : String(error) });
-      }
-    }
-    await pullCards(user);
-    await pullSupportingData(user);
+    await pushOutbox(user);
+    await Promise.all([pullCards(user), pullSupportingData(user)]);
     await saveSetting({ key: "lastSyncedAt", ownerId: user.id, value: nowIso(), updatedAt: nowIso() }, false);
     window.dispatchEvent(new Event("study:sync-changed"));
     return getSyncStatus();

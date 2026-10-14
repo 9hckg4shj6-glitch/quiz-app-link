@@ -110,23 +110,24 @@ export async function syncAccountData(
     }
   }
 
+  // 答案は保存先が独立しているので並行させる。カード同期の後処理は旧進捗(localStorage)を
+  // 書き換えるため、学習記録の統合が終わってから始める。
+  const writtenTask = operations.syncWritten();
   const snapshot = await operations.syncSnapshot();
+  const cards = snapshot.ok ? await operations.syncCards() : { error: null };
+  const written = await writtenTask;
   if (!snapshot.ok) {
     return {
       ok: false, migratedLegacy: false, legacyPending,
       error: snapshot.error ?? "学習記録を同期できませんでした", legacyError,
     };
   }
-
-  const written = await operations.syncWritten();
   if (!written.ok) {
     return {
       ok: false, migratedLegacy: false, legacyPending,
       error: written.error ?? "答案を同期できませんでした", legacyError,
     };
   }
-
-  const cards = await operations.syncCards();
   if (cards.error) {
     return {
       ok: false, migratedLegacy: false, legacyPending,
