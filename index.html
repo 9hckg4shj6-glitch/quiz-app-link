@@ -492,6 +492,7 @@
   /* 「2つ選べ」問題の決定ボタン */
   .multiConfirm{width:100%;margin-top:4px}
   .multiConfirm:disabled{opacity:.55;cursor:not-allowed}
+  .choiceGiveUp{display:block;margin:6px auto 0}
 
   /* ===== 記述問題（論述・数値・作図） =====
      仕様：IMMUNOLOGY_WRITTEN_QUESTION_IMPLEMENTATION_PLAN.md §14 */
@@ -7088,6 +7089,8 @@
     const choices=document.createElement("div"); choices.className="choices"; wrap.appendChild(choices);
     const multiConfirm=document.createElement("button");
     multiConfirm.type="button"; multiConfirm.className="btn primary multiConfirm hidden"; wrap.appendChild(multiConfirm);
+    const choiceGiveUpBtn=document.createElement("button");
+    choiceGiveUpBtn.type="button"; choiceGiveUpBtn.className="btn ghost small choiceGiveUp hidden"; choiceGiveUpBtn.textContent="わからない（解答を見る）"; wrap.appendChild(choiceGiveUpBtn);
     const constructedAnswer=document.createElement("div"); constructedAnswer.className="constructedAnswer hidden"; wrap.appendChild(constructedAnswer);
     const constructedActions=document.createElement("div"); constructedActions.className="cwActions hidden";
     const submitBtn=document.createElement("button"); submitBtn.type="button"; submitBtn.className="btn primary"; submitBtn.textContent="答案を確定";
@@ -7095,7 +7098,7 @@
     constructedActions.appendChild(submitBtn); constructedActions.appendChild(giveUpBtn); wrap.appendChild(constructedActions);
     const explainBox=document.createElement("div"); explainBox.className="explainBox"; wrap.appendChild(explainBox);
 
-    cur.els={root:wrap,qtext,figure:fig,figureImg:figImg,choices,multiConfirm,constructedAnswer,constructedActions,submitBtn,giveUpBtn,explainBox};
+    cur.els={root:wrap,qtext,figure:fig,figureImg:figImg,choices,multiConfirm,choiceGiveUpBtn,constructedAnswer,constructedActions,submitBtn,giveUpBtn,explainBox};
     return wrap;
   }
   function renderQuestion(){
@@ -7173,6 +7176,10 @@
       mc.textContent=`${need}つ選んでください（0/${need}）`;
       mc.onclick=()=>{ if((cur.picks||[]).length===need) answer(cur,cur.picks.slice()); };
     } else mc.classList.add("hidden");
+    // 「わからない」は未選択のまま不正解（Again）として採点し、正解と解説を出す
+    const gu=els.choiceGiveUpBtn;
+    gu.classList.toggle("hidden", !!(s.exam||s.batch||cur.revealed));
+    gu.onclick=()=>{ cur.deferred=false; answer(cur,[]); };
     const initialPicks=cur.picks.slice();
     box.querySelectorAll(".choice").forEach((b,i)=>b.classList.toggle("selected",initialPicks.includes(i)));
     if(multi) updateMultiConfirm(cur);
@@ -7213,7 +7220,7 @@
   /* ---------- 大問のまとめて採点 ---------- */
   function blockAnswered(cur){
     if(cur.type==="constructed") return cur.cw ? (cur.cw.submitted || validateConstructedAnswers(cur.cw)) : !!(cur.savedWritten&&cur.savedWritten.submitted);
-    return (cur.picks||[]).length===(cur.need||1);
+    return !!cur.revealed || (cur.picks||[]).length===(cur.need||1);
   }
   function blockDone(cur){
     // 選択問題は正誤と解説が出た時点で先へ進める（手ごたえは任意。未選択なら「できた」扱い）
@@ -7277,7 +7284,7 @@
     let lvup=0, gainXP=0, mult=1;
     if(isCorrect){ r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
     else { r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0;
-      s.wrongList.push({q,chosen:picks.map(i=>cur.choices[i].text).join(" ／ ")});
+      s.wrongList.push({q,chosen:picks.length?picks.map(i=>cur.choices[i].text).join(" ／ "):"（わからない）"});
       r.miss=r.miss||{};   // どの誤答を選んだかを記録（誤答分析用）
       picks.forEach(i=>{ const c=cur.choices[i]; if(!c.correct) r.miss[c.idx]=(r.miss[c.idx]||0)+1; });
       gainXP=XP_WRONG; lvup=addXP(gainXP); }
@@ -7295,6 +7302,7 @@
   function renderChoiceMarks(cur){
     const q=cur.q,picks=cur.picks||[];
     const mcx=cur.els.multiConfirm; if(mcx) mcx.classList.add("hidden");
+    cur.els.choiceGiveUpBtn.classList.add("hidden");
     const hasNotes=Array.isArray(q.choiceNotes)&&q.choiceNotes.length>0;
     const btns=[...cur.els.choices.querySelectorAll(".choice")], notes=[...cur.els.choices.querySelectorAll(".choiceNote")];
     btns.forEach((b,i)=>{
@@ -7345,7 +7353,7 @@
       </div>`:"";
     const eb=cur.els.explainBox;
     eb.innerHTML=`<div class="explain ${isCorrect?'ok':'ng'}">
-        <div class="head">${isCorrect?`⭕ 正解！ +${gainXP}XP${mult>1?` <span style="color:var(--warn)">🔥コンボ×${mult}</span>`:''}`:'❌ 不正解 +'+XP_WRONG+'XP'}</div>
+        <div class="head">${isCorrect?`⭕ 正解！ +${gainXP}XP${mult>1?` <span style="color:var(--warn)">🔥コンボ×${mult}</span>`:''}`:(picks.length?'❌ 不正解':'🤔 わからない（不正解として記録）')+' +'+XP_WRONG+'XP'}</div>
         ${note}
         ${!isCorrect?`<div class="body" style="margin-bottom:8px"><b>正解：</b>${esc(correctText)}</div>`:''}
         <div class="body">${renderExplainBody(q,cur,picks)}</div>
