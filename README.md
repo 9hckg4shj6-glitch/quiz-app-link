@@ -116,9 +116,9 @@ update public.app_secrets set value = '任意の管理者トークン' where key
 
 `admin.html`（公開URLの`/quiz-app-link/admin.html`）で、いまのオンライン人数・**科目ごとの利用者**（いま／今日／7日／30日／累計と解答数）・科目別の日ごとの利用者（過去14日）・最大同時人数・利用者一覧を見られます。アプリのどこからもリンクせず、検索エンジンにも載せない設定です。
 
-- **有効化**：`supabase/migrations/014_admin_dashboard.sql`を適用し（`npm run db:bundle`の一括SQLでも可）、Supabaseのダッシュボード（Authentication → Users → Add user）で管理者のメールアドレス＋パスワードのアカウントを作成（確認済みにする）してから、SQL Editorで`insert into public.admin_users(email) values('<メールアドレス（小文字）>');`を実行します。メールアドレスは公開リポジトリに載せないため、マイグレーションには書きません。
+- **有効化**：`supabase/migrations/014_admin_dashboard.sql`を適用し（`npm run db:bundle`の一括SQLでも可）、管理画面の「管理者アカウントを作成する」でメールアドレス＋パスワードを登録して確認メールのリンクを開き（Supabaseのダッシュボードの Authentication → Users → Add user でも可）、SQL Editorで`insert into public.admin_users(email) values('<メールアドレス（小文字）>');`を実行します。メールアドレスは公開リポジトリに載せないため、マイグレーションには書きません。
 - **記録のしかた**：アプリは表示中、1分ごとと科目を切り替えたときに`usage_ping`を送ります（[src/usage.ts](src/usage.ts)）。送るのは端末ID・開いている科目ID・前回からの解答数／カード枚数だけです。1台の端末を1人と数えます。記録は014の適用後から始まります。
-- **守り方**：画面のプログラムは公開されているため、サーバーで守ります。`get_admin_dashboard()`はログイン中のアカウントのメールが確認済みで`admin_users`に載っているときだけデータを返し（それ以外は`ADMIN_ONLY`）、利用記録のテーブルはアプリから直接読めません。ログイン状態はアプリのログインと混ざらないよう、このページ用の鍵（`quiz-admin-auth`）で保存します。
+- **守り方**：画面のプログラムは公開されているため、サーバーで守ります。`get_admin_dashboard()`はログイン中のアカウントのメールが確認済みで`admin_users`に載っているときだけデータを返し（それ以外は`ADMIN_ONLY`。画面には登録用のSQLを表示）、利用記録のテーブルはアプリから直接読めません。ログイン状態はアプリのログインと混ざらないよう、このページ用の鍵（`quiz-admin-auth`）で保存します。
 
 ## 教材の編集
 

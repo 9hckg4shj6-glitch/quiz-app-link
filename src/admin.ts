@@ -7,7 +7,7 @@ import "./admin.css";
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const supabase = url && key
-  ? createClient(url, key, { auth: { persistSession: true, storageKey: "quiz-admin-auth", autoRefreshToken: true, detectSessionInUrl: false } })
+  ? createClient(url, key, { auth: { persistSession: true, storageKey: "quiz-admin-auth", autoRefreshToken: true, detectSessionInUrl: true } })
   : null;
 
 interface SubjectRow { subject: string; online: number; today: number; d7: number; d30: number; total: number; answers_today: number; answers_d7: number; cards_today: number; cards_d7: number; }
@@ -67,37 +67,61 @@ function ago(iso: string): string {
   return fmtTime.format(new Date(iso));
 }
 
-// ---------- ログイン ----------
-// ログイン前は普通のログイン欄だけを出す（登録の入口や「管理」の表示は出さない）。
+// ---------- ログイン・新規登録 ----------
+// 登録は誰でもできるが、データを返すのはメール確認済みで admin_users に載ったアカウントだけ（014_admin_dashboard.sql）。
+let signup = false;
+let notice = "";
+let lastEmail = "";
+
 function renderLogin(): void {
+  const title = signup ? "管理者アカウントの作成" : "ログイン";
   root.innerHTML = `<section class="login card">
-    <h1>ログイン</h1>
+    <h1>${title}</h1>
+    ${signup ? '<p class="muted">登録後に届く確認メールのリンクを開いてから、ログインしてください。</p>' : ""}
     <form id="login-form" novalidate>
-      <label class="field"><span>メールアドレス</span><input name="email" type="email" autocomplete="username" required /></label>
-      <label class="field"><span>パスワード</span><input name="password" type="password" autocomplete="current-password" required /></label>
+      <label class="field"><span>メールアドレス</span><input name="email" type="email" autocomplete="username" value="${esc(lastEmail)}" required /></label>
+      <label class="field"><span>パスワード${signup ? "（8文字以上）" : ""}</span><input name="password" type="password" autocomplete="${signup ? "new-password" : "current-password"}" required /></label>
+      ${signup ? '<label class="field"><span>パスワード（確認）</span><input name="password2" type="password" autocomplete="new-password" required /></label>' : ""}
       <div role="status" class="error">${esc(loginError)}</div>
-      <button class="btn primary" ${busy ? "disabled" : ""}>ログイン</button>
+      ${notice ? `<p class="notice" role="status">${esc(notice)}</p>` : ""}
+      <button class="btn primary" ${busy ? "disabled" : ""}>${signup ? "アカウントを作成" : "ログイン"}</button>
     </form>
+    <button class="link" data-act="toggle-signup">${signup ? "アカウントをお持ちの方はログイン" : "管理者アカウントを作成する"}</button>
   </section>`;
 }
 
 const authMessage = (m: string): string =>
   /invalid login credentials/i.test(m) ? "メールアドレスかパスワードが違います。"
-  : /email not confirmed/i.test(m) ? "メールアドレスの確認がまだです。"
+  : /email not confirmed/i.test(m) ? "メールアドレスの確認がまだです。届いた確認メールのリンクを開いてください。"
+  : /already registered|already exists/i.test(m) ? "このメールアドレスは登録済みです。ログインしてください。"
+  : /password/i.test(m) ? "パスワードが条件を満たしていません。8文字以上の、推測されにくいものにしてください。"
+  : /signups? (not allowed|are disabled)|disabled/i.test(m) ? "新規登録が無効になっています（Supabase の Authentication → Providers → Email で有効にできます）。"
   : /rate limit|too many/i.test(m) ? "試行が多すぎます。しばらく待ってからやり直してください。"
-  : "ログインできませんでした。通信を確認して、もう一度お試しください。";
+  : "うまくいきませんでした。通信を確認して、もう一度お試しください。";
 
 async function submitLogin(form: HTMLFormElement): Promise<void> {
   if (!supabase) return;
   const f = new FormData(form);
   const email = String(f.get("email") ?? "").trim().toLowerCase(), password = String(f.get("password") ?? "");
-  loginError = "";
+  lastEmail = email; loginError = ""; notice = "";
   if (!email || !password) { loginError = "メールアドレスとパスワードを入力してください。"; renderLogin(); return; }
+  if (signup && password.length < 8) { loginError = "パスワードは8文字以上にしてください。"; renderLogin(); return; }
+  if (signup && password !== String(f.get("password2") ?? "")) { loginError = "確認用のパスワードが一致しません。"; renderLogin(); return; }
   busy = true; renderLogin();
   try {
-    const { data: d, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    session = d.session;
+    if (signup) {
+      // 確認メールのリンクはこのページへ戻す（Supabase の Redirect URLs に無いときはサイトURLへ戻るが、確認自体は済む）。
+      const { data: d, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.href.split(/[?#]/)[0] } });
+      if (error) throw error;
+      // 確認済みのメールで登録し直すと、エラーにならず identities が空で返る。
+      if (d.user && !d.user.identities?.length) throw new Error("already registered");
+      session = d.session;
+      if (!session) { signup = false; notice = "確認メールを送りました。メールのリンクを開いてから、ここでログインしてください。"; }
+    } else {
+      const { data: d, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      session = d.session;
+    }
   } catch (e) { loginError = authMessage(e instanceof Error ? e.message : String(e)); }
   finally { busy = false; }
   if (session) void load(); else renderLogin();
@@ -114,7 +138,9 @@ async function load(): Promise<void> {
     data = d as Dashboard; loadError = "";
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
-    loadError = /ADMIN_ONLY/.test(m) ? "ADMIN_ONLY" : "最新の状況を取得できませんでした。前回の値を表示しています。";
+    loadError = /ADMIN_ONLY/.test(m) ? "ADMIN_ONLY"
+      : /get_admin_dashboard|could not find the function/i.test(m) ? "サーバーの準備がまだです。supabase/migrations/014_admin_dashboard.sql を SQL Editor で適用してください。"
+      : "最新の状況を取得できませんでした。前回の値を表示しています。";
   } finally { loading = false; }
   render();
 }
@@ -224,7 +250,7 @@ function render(): void {
   if (!supabase) { root.innerHTML = '<p class="loading">サーバーの設定がありません。</p>'; return; }
   if (!session) { renderLogin(); return; }
   if (loadError === "ADMIN_ONLY") {
-    root.innerHTML = `<section class="login card"><h1>表示できるページがありません</h1><p class="muted">このアカウントでは利用できません。</p><button class="btn" data-act="logout">ログアウト</button></section>`;
+    root.innerHTML = `<section class="login card"><h1>管理者として登録されていません</h1><p class="muted">ログインはできています。Supabase の SQL Editor で次の1行を実行してから、「再読み込み」を押してください。</p><pre class="sql">insert into public.admin_users(email) values('${esc((session.user.email ?? "").toLowerCase())}');</pre><div class="top-actions"><button class="btn primary" data-act="refresh">再読み込み</button><button class="btn ghost" data-act="logout">ログアウト</button></div></section>`;
     return;
   }
   const d = data;
@@ -285,6 +311,7 @@ root.addEventListener("click", async e => {
   }
   const act = el.dataset.act;
   if (act === "refresh") void load();
+  else if (act === "toggle-signup") { signup = !signup; loginError = ""; notice = ""; renderLogin(); }
   else if (act === "logout") { await supabase?.auth.signOut(); session = null; data = null; loadError = ""; renderLogin(); }
 });
 root.addEventListener("input", e => {
