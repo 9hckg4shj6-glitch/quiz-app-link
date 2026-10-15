@@ -90,6 +90,22 @@ describe("解く→分かる の導線", () => {
     expect(win.document.querySelector("#qBlocks").textContent).toContain("問題one");
   });
 
+  it("学習編から始めた演習は、結果画面から学習編へ戻れる", async () => {
+    const win = await boot();
+    click(win, '#primaryNav [data-primary="learn"]');
+    await until(() => !!win.document.querySelector('[data-deck="01"]'));
+    click(win, '[data-deck="01"]');
+    await until(() => shown(win, "#lessonView") && !!win.document.querySelector("#lesson-section-01-2"));
+    click(win, "#lesson-section-01-2 [data-sect-practice]");
+    await until(() => shown(win, "#quiz"));
+    choose(win, "正しい答え");
+    click(win, "#quitBtn");
+    await until(() => shown(win, "#result"));
+    click(win, "#rLesson");
+    expect(shown(win, "#lessonView")).toBe(true);
+    expect(win.document.querySelector("#lesson-section-01-2")).toBeTruthy();
+  });
+
   it("勘で当たった正解はAgainで記録し、苦手克服の連続正解に数えない", async () => {
     const win = await boot(); await start(win);
     choose(win, "正しい答え");

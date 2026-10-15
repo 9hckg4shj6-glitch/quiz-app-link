@@ -5751,6 +5751,10 @@
   async function startQuiz(items,label,catRef,opts){
     opts=opts||{};
     if(startingPractice) return;
+    // 学習編から始めた演習は、結果画面から読んでいた位置へ戻れるようにする（「もう一度」でも引き継ぐ）
+    const lst=lessonQuickState, returnLesson=opts.returnLesson
+      || (lst&&!$("#lessonView").classList.contains("hidden")
+        ? {deck:lst.d.deck, section:lst.active, top:lst.active>0?lst.elements[lst.active-1].getBoundingClientRect().top:0} : null);
     startingPractice=true;
     const subjectId=currentSubjectId;
     try{
@@ -5780,7 +5784,7 @@
       return {q,qi,fingerprint:JSON.stringify(q),type:"choice",choices:ch,need:ok.size,picks:[],els:null,graded:false}; });
     const pages=buildPages(queue);
     session={label,practiceId:"practice-"+Date.now()+"-"+Math.random().toString(36).slice(2),subjectId,queue,pages,p:0,i:pages[0]?pages[0].idxs[0]:0,correct:0,streak:0,maxStreak:0,wrongList:[],xpGained:0,
-      xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,batch,batchSubmitted:false,answers:[],startedAt:Date.now(),
+      xpStart:meta.xp,leveledUp:0,exam:!!opts.exam,batch,batchSubmitted:false,answers:[],startedAt:Date.now(),returnLesson,
       examSessionId: opts.exam ? ("exam-"+Date.now()+"-"+Math.random().toString(36).slice(2,8)) : null, written:{}};
     showPracticeSession();
     }catch(e){ toast("⚠️ 演習を開始できませんでした",3000); }
@@ -6176,13 +6180,20 @@
       lessonGroupOpen=el.dataset.group; renderLessonList(); window.scrollTo({top:0,behavior:"smooth"});
     }; });
   }
-  function openLesson(deck){
+  /* at（演習から戻るとき）: 演習を始めたときに読んでいた項目と、その画面上の位置。
+     遅延読み込みの図で位置がずれるので、項目を基準にスクロールを合わせ続ける（スライド一覧を閉じるときと同じ）。 */
+  function openLesson(deck,at){
     const d=lessonDecks().find(x=>x.deck===String(deck));
     if(!d){ openView("inputView"); return; }
     lessonGroupOpen=d.group||null;   // 戻ったときに元のフォルダを開いておく
     stopExamTimer(); closeFcLightbox();
     lessonReturnTarget=null; $("#lessonBack").textContent="← 授業回一覧";
-    transitionToScreen("lessonView","forward",()=>renderLesson(d));
+    transitionToScreen("lessonView",at?"back":"forward",()=>{
+      renderLesson(d);
+      const anchor=at&&at.section>0&&lessonQuickState.elements[at.section-1]; if(!anchor) return;
+      Object.assign(lessonQuickState,{jumpTarget:anchor, jumpOffset:at.top, jumpUntil:Date.now()+8000});
+      requestAnimationFrame(alignLessonJumpTarget);
+    });
   }
   /* 問題の解説から学習編の該当項目へ飛ぶ。根拠スライド画面と同じく、元の画面は隠すだけで
      演習の状態を保ち、「← 問題にもどる」で同じスクロール位置へ戻す。 */
@@ -7537,7 +7548,8 @@
     }
     const completed=completedPracticeEntries(s), unanswered=s.queue.length-completed.length;
     if(!completed.length){
-      if(confirm("まだ採点できる回答がありません。演習を終了してホームに戻りますか？")){ finishSavedPractice(); renderHome(); }
+      const back=s.returnLesson;
+      if(confirm(`まだ採点できる回答がありません。演習を終了して${back?"学習編":"ホーム"}に戻りますか？`)){ finishSavedPractice(); back?openLesson(back.deck,back):renderHome(); }
       return;
     }
     const msg=unanswered>0
@@ -7853,6 +7865,7 @@
           ${unanswered?`<div class="stat"><b style="color:var(--muted)">${unanswered}</b><span>未回答</span></div>`:""}
         </div>
         <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度</button></div>
+        ${s.returnLesson?`<button class="btn ghost" id="rLesson" style="margin-top:10px">📖 学習編にもどる</button>`:""}
         ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:""}
       </div>
       <div class="review"><h4>${unanswered?"回答した問題":"全問題"}の採点結果（${total}問）</h4><div class="batchReview">${review}</div></div>`;
@@ -7862,8 +7875,9 @@
     window.scrollTo({top:0,behavior:"smooth"});
     if(pct===100||s.leveledUp) confetti();
     $("#rHome").onclick=renderHome;
-    $("#rRetry").onclick=()=>startQuiz(s.queue.map(x=>x.q),s.label,null,{batch:true});
-    const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),s.label+"（復習）");
+    $("#rRetry").onclick=()=>startQuiz(s.queue.map(x=>x.q),s.label,null,{batch:true,returnLesson:s.returnLesson});
+    const rl=$("#rLesson"); if(rl) rl.onclick=()=>openLesson(s.returnLesson.deck,s.returnLesson);
+    const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),s.label+"（復習）",null,{returnLesson:s.returnLesson});
   }
   async function renderResult(){
     await finishSavedPractice();
@@ -7885,6 +7899,7 @@
           ${unanswered?`<div class="stat"><b style="color:var(--muted)">${unanswered}</b><span>未回答</span></div>`:""}
         </div>
         <div class="row"><button class="btn ghost" id="rHome">🏠 ホーム</button><button class="btn" id="rRetry">🔁 もう一度</button></div>
+        ${s.returnLesson?`<button class="btn ghost" id="rLesson" style="margin-top:10px">📖 学習編にもどる</button>`:''}
         ${s.wrongList.length?`<button class="btn ghost" id="rWrong" style="margin-top:10px">🔥 間違えた問題だけ復習</button>`:''}
       </div>
       ${wrong?`<div class="review"><h4>間違えた問題（${s.wrongList.length}問）</h4>${wrong}</div>`:''}`;
@@ -7893,8 +7908,10 @@
     maybePublishRank(true);
     if(pct===100||s.leveledUp) confetti();
     $("#rHome").onclick=renderHome;
-    $("#rRetry").onclick=()=>startQuiz(s.queue.map(x=>x.q),s.label);
-    const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),s.label+"（復習）");
+    const back={returnLesson:s.returnLesson};
+    $("#rRetry").onclick=()=>startQuiz(s.queue.map(x=>x.q),s.label,null,back);
+    const rl=$("#rLesson"); if(rl) rl.onclick=()=>openLesson(s.returnLesson.deck,s.returnLesson);
+    const rw=$("#rWrong"); if(rw) rw.onclick=()=>startQuiz(s.wrongList.map(w=>w.q),s.label+"（復習）",null,back);
   }
 
   /* ---------- 演出 ---------- */
