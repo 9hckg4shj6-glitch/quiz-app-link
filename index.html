@@ -180,10 +180,14 @@
   .lsSectName{font-size:1.03125rem;font-weight:900;line-height:calc(1.5 * var(--reading-line-scale,1))}
   .lsSect.isRead .lsSectNo{color:var(--good);border-color:var(--good);background:var(--good-bg)}
   .lsSect.isRead .lsSectNo::after{content:" ✓"}
-  .lsReadRow{display:flex;justify-content:flex-end;margin:10px 2px 0}
-  .lsReadBtn{min-height:40px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card2);
+  .lsReadRow{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin:10px 2px 0}
+  .lsReadBtn,.lsPracticeBtn{min-height:40px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card2);
     color:var(--text);font-size:0.8125rem;font-weight:900;cursor:pointer}
   .lsReadBtn:hover{border-color:var(--good)}
+  .lsPracticeBtn:hover{border-color:var(--brand);color:var(--brand)}
+  /* 問題の解説から飛んできた項目。番号と見出しを強調色にして、どこを読めばよいかを示す */
+  .lsSect.lsLinked .lsSectNo{background:var(--brand);border-color:var(--brand);color:#fff}
+  .lsSect.lsLinked .lsSectName{color:var(--brand)}
   .lsReadBtn[aria-pressed="true"]{color:var(--good);border-color:var(--good);background:var(--good-bg)}
   .liItem.isRead .liNo{color:var(--good)}
   .liItem.isRead .liNo::after{content:" ✓"}
@@ -271,6 +275,10 @@
     font-family:inherit;font-size:0.84375rem;font-weight:900;padding:10px 15px;border-radius:12px;cursor:pointer;transition:.15s}
   .moreExpl:hover{border-color:var(--brand);color:var(--brand)}
   .moreExpl .meChev{color:var(--muted);font-weight:800}
+  .moreExpl .meLabel{white-space:nowrap}
+  /* 学習編へのリンクは章名が長いので、ラベルの下に章名を置く */
+  .moreExpl.lessonLink{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;text-align:left}
+  .moreExpl.lessonLink+.moreExpl{margin-top:8px}
   /* 解説の補足図（授業スライドからの切り抜き） */
   .explFig{margin:12px 0 4px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--card2)}
   .explFig figcaption{font-size:0.71875rem;font-weight:900;color:var(--muted);margin-bottom:8px;letter-spacing:.02em}
@@ -1004,10 +1012,13 @@
   .confRow{margin-top:12px;padding:12px 14px;border-radius:14px;border:1px dashed color-mix(in srgb,var(--brand) 42%,var(--line));background:color-mix(in srgb,var(--brand) 6%,var(--card2))}
   .confLabel{display:block;font-size:0.78125rem;font-weight:900;color:var(--text);margin-bottom:8px}
   .confLabel small{font-weight:700;color:var(--muted);font-size:0.6875rem;margin-left:6px}
-  .confBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .confBtns{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
+  /* 4択（勘だった〜かんたん）はスマホ幅だと語の途中で折り返すので 2×2 にする */
+  @media (max-width:520px){ .confBtns:has(>:nth-child(4)){grid-auto-flow:row;grid-template-columns:1fr 1fr} }
   .confBtn{font-family:inherit;font-size:0.8125rem;font-weight:800;padding:10px 6px;border-radius:12px;
     border:1.5px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;transition:.15s}
   .confBtn:hover{border-color:var(--brand);transform:translateY(-1px)}
+  .confBtn[data-g="1"].sel{background:var(--bad);border-color:var(--bad);color:#fff}
   .confBtn[data-g="2"].sel{background:var(--warn);border-color:var(--warn);color:#fff}
   .confBtn[data-g="3"].sel{background:var(--brand);border-color:var(--brand);color:#fff}
   .confBtn[data-g="4"].sel{background:var(--good);border-color:var(--good);color:#fff}
@@ -5871,7 +5882,9 @@
   function moreExplHTML(q){
     if(!hasSlides(q)) return "";
     const n=q.slideRefs.reduce((s,r)=>s+(r.pages?r.pages.length:0),0);
-    return `<button type="button" class="moreExpl" data-more="${esc(q.id)}">📖 解説をさらに見る<span class="meChev">・根拠スライド ${n}枚 ›</span></button>`;
+    // 同じスライドを扱う学習編の項目（1問が2つの論点にまたがることがあるので2件まで）
+    const lessons=lessonSectsForQuestion(q).slice(0,2).map(h=>`<button type="button" class="moreExpl lessonLink" data-lesson-link="${esc(h.d.deck)}" data-lesson-sect="${h.i}"><span class="meLabel">📗 学習編で読む</span><span class="meChev">${esc(lessonKicker(h.d))}「${esc(h.sc.heading||`項目 ${h.i+1}`)}」 ›</span></button>`).join("");
+    return lessons+`<button type="button" class="moreExpl" data-more="${esc(q.id)}"><span class="meLabel">📖 解説をさらに見る</span><span class="meChev">・根拠スライド ${n}枚 ›</span></button>`;
   }
   // 「解説をさらに見る」ボタンを配線する（描画のたびに呼ぶ）
   function wireMoreExpl(root){
@@ -5882,6 +5895,9 @@
     });
     root.querySelectorAll("[data-more]").forEach(el=>{
       el.onclick=(e)=>{ e.stopPropagation(); const q=DATA.find(x=>x.id===el.dataset.more); if(q) openSlideView(q); };
+    });
+    root.querySelectorAll("[data-lesson-link]").forEach(el=>{
+      el.onclick=(e)=>{ e.stopPropagation(); openLessonFromQuestion(el.dataset.lessonLink, Number(el.dataset.lessonSect)); };
     });
   }
   /* スライドの全画面ビューア。
@@ -6070,6 +6086,45 @@
   }
   function lessonReadEnabled(){ return currentSubjectId==="genome"; }
   function lessonSects(ls){ return (ls&&Array.isArray(ls.sections)?ls.sections:[]).filter(x=>x && (x.heading||x.body||x.table)); }
+
+  /* 問題と学習編の項目を、根拠スライドのページが重なるかで対応づける。
+     問題の slideRefs と項目の slides は同じスライドを指すので、対応表は別に持たない。
+     キーは "08a:15" の形（枝番デッキのページも区別できる）。科目を切り替えると DATA と LESSONS が差し替わるので作り直す。 */
+  let lessonLinkCache=null;
+  function questionSlideKeys(q){ return (q.slideRefs||[]).flatMap(r=>(r.pages||[]).map(p=>`${r.deck}:${Number(p)}`)); }
+  function lessonSectSlideKeys(d,sc){ return (sc.slides||[]).map(e=>{ const r=lessonSlideRef(d.deck,e); return `${r.deck}:${r.page}`; }); }
+  function lessonLinks(){
+    if(lessonLinkCache && lessonLinkCache.data===DATA && lessonLinkCache.lessons===window.LESSONS) return lessonLinkCache;
+    const sectsBySlide=new Map(), qsBySlide=new Map();
+    const add=(m,k,v)=>{ const a=m.get(k); if(a) a.push(v); else m.set(k,[v]); };
+    lessonDecks().forEach(d=>lessonSects(d.lesson).forEach((sc,i)=>new Set(lessonSectSlideKeys(d,sc)).forEach(k=>add(sectsBySlide,k,{d,sc,i}))));
+    DATA.forEach(q=>new Set(questionSlideKeys(q)).forEach(k=>add(qsBySlide,k,q)));
+    return lessonLinkCache={data:DATA, lessons:window.LESSONS, sectsBySlide, qsBySlide};
+  }
+  // 問題 → 項目。問題と同じ回の章を用語編などの横断章より先に、その中では重なるページが多い順
+  function lessonSectsForQuestion(q){
+    const own=new Set((q.slideRefs||[]).map(r=>lessonBaseDeck(String(r.deck)))), hits=new Map();
+    new Set(questionSlideKeys(q)).forEach(k=>(lessonLinks().sectsBySlide.get(k)||[]).forEach(h=>{
+      const id=h.d.deck+"#"+h.i, e=hits.get(id);
+      if(e) e.n++; else hits.set(id,{...h,n:1});
+    }));
+    return [...hits.values()].sort((a,b)=>own.has(b.d.deck)-own.has(a.d.deck) || b.n-a.n);
+  }
+  // 項目 → 問題
+  function questionsForLessonSect(d,sc){
+    const found=new Map();
+    lessonSectSlideKeys(d,sc).forEach(k=>(lessonLinks().qsBySlide.get(k)||[]).forEach(q=>found.set(q.id,q)));
+    return [...found.values()];
+  }
+  /* 項目の「この論点を3問解く」。直近で間違えた・勘だった問題（連続正解が0）と苦手 → 未学習 → それ以外 の順。
+     同じ順位の中はランダムにして、押すたびに違う問題が出るようにする。 */
+  function startLessonSectPractice(d,i){
+    const sc=lessonSects(d.lesson)[i]; if(!sc) return;
+    const rank=q=>{ const r=progress[q.id]; return !r||!r.seen ? 1 : (r.weak||!r.streak) ? 0 : 2; };
+    const items=shuffle(questionsForLessonSect(d,sc)).sort((a,b)=>rank(a)-rank(b)).slice(0,3);
+    if(!items.length){ toast("この項目の問題が見つかりません"); return; }
+    startQuiz(items, `${lessonKicker(d)} ・ ${sc.heading||`項目 ${i+1}`}`, null, {keepOrder:true});
+  }
   function lessonReadKey(deck,sc,i){ return `${currentSubjectId}|${deck}|${sc.heading||i+1}`; }
   function lessonReadStats(decks){
     if(!lessonReadEnabled()) return null;
@@ -6126,7 +6181,31 @@
     if(!d){ openView("inputView"); return; }
     lessonGroupOpen=d.group||null;   // 戻ったときに元のフォルダを開いておく
     stopExamTimer(); closeFcLightbox();
+    lessonReturnTarget=null; $("#lessonBack").textContent="← 授業回一覧";
     transitionToScreen("lessonView","forward",()=>renderLesson(d));
+  }
+  /* 問題の解説から学習編の該当項目へ飛ぶ。根拠スライド画面と同じく、元の画面は隠すだけで
+     演習の状態を保ち、「← 問題にもどる」で同じスクロール位置へ戻す。 */
+  let lessonReturnTarget=null, lessonReturnScroll=0;
+  function openLessonFromQuestion(deck,index){
+    const d=lessonDecks().find(x=>x.deck===deck); if(!d) return;
+    lessonReturnTarget=SCREEN_IDS.map(id=>"#"+id).find(id=>{ const el=$(id); return el && !el.classList.contains("hidden"); }) || "#home";
+    lessonReturnScroll=window.scrollY;
+    closeFcLightbox(); hideAllScreens();
+    renderLesson(d);
+    $("#lessonBack").textContent="← 問題にもどる";
+    $("#lessonView").classList.remove("hidden");
+    const target=document.getElementById(lessonSectionId(d.deck,index));
+    // 章全体を流してスクロールすると時間がかかるので、まず瞬時に該当項目へ移り、位置の微調整だけ既存のジャンプに任せる
+    if(target){ target.classList.add("lsLinked"); target.scrollIntoView({block:"start",behavior:"instant"}); }
+    jumpToLessonSection(index+1);
+  }
+  function closeLessonToQuestion(){
+    $("#lessonView").classList.add("hidden");
+    const el=$(lessonReturnTarget); if(el) el.classList.remove("hidden");
+    lessonReturnTarget=null; $("#lessonBack").textContent="← 授業回一覧";
+    // html は scroll-behavior:smooth なので、明示しないと問題画面が流れて見える
+    window.scrollTo({top:lessonReturnScroll,behavior:"instant"});
   }
   // 図のかたまりを組み立てる（根拠スライド画面と同じ .svPage を使う）
   // キャプションは章名だと長くなるので「第1回 ・ p30」の形にする
@@ -6360,13 +6439,16 @@
         <span class="lqProgress" id="lessonQuickCount">0 / ${sects.length}</span><span class="lqChev" aria-hidden="true">⌄</span>
       </button></div>`:"";
     const sectHTML=sects.map((sc,i)=>{ const done=!!(read&&isLessonRead(lessonReadKey(d.deck,sc,i)));
+      const qn=questionsForLessonSect(d,sc).length;
+      const practice=qn?`<button type="button" class="lsPracticeBtn" data-sect-practice="${i}">✏️ この論点を${Math.min(3,qn)}問解く</button>`:"";
+      const readBtn=read?`<button type="button" class="lsReadBtn" data-read="${i}" aria-pressed="${done}">${done?"✓ 学習済み":"学習済みにする"}</button>`:"";
       return `<div class="lsSect${done?" isRead":""}" id="${lessonSectionId(d.deck,i)}" tabindex="-1">
         <div class="lsSectHead"><span class="lsSectNo">${i+1}</span><span class="lsSectName">${esc(sc.heading||"")}</span></div>
         ${sc.body?`<div class="panel lsBody">${lessonBodyHTML(sc.body)}</div>`:""}
         ${lessonTableHTML(sc.table)}
         ${sc.note?`<div class="panel lsBody">${lessonBodyHTML(sc.note)}</div>`:""}
         ${figs(sc.slides)}
-        ${read?`<div class="lsReadRow"><button type="button" class="lsReadBtn" data-read="${i}" aria-pressed="${done}">${done?"✓ 学習済み":"学習済みにする"}</button></div>`:""}
+        ${practice||readBtn?`<div class="lsReadRow">${practice}${readBtn}</div>`:""}
       </div>`; }).join("");
     const soon=sects.length?"":`<div class="lsSoon">この回の要点テキストはまだ準備中です。授業スライドの図を見ながら、下のボタンで問題を解いてみてください。</div>`;
     // 章末の従来導線も残し、索引内と同じ専用ビューを開く
@@ -6389,6 +6471,7 @@
     body.querySelectorAll(".lsSolve [data-lesson-round]").forEach(b=>{ b.onclick=()=>startLessonRound(d, rounds[Number(b.dataset.lessonRound)]); });
     const allBtn=$("#lessonAllBtn"); if(allBtn) allBtn.onclick=()=>openLessonSlides(d,allBtn);
     body.querySelectorAll(".lsReadBtn").forEach(b=>{ b.onclick=()=>toggleLessonRead(Number(b.dataset.read)); });
+    body.querySelectorAll("[data-sect-practice]").forEach(b=>{ b.onclick=()=>startLessonSectPractice(d, Number(b.dataset.sectPractice)); });
     setupLessonQuickIndex(d,sects,s);
   }
 
@@ -7353,6 +7436,7 @@
     const confHTML=isCorrect?`<div class="confRow" data-el="confRow">
         <span class="confLabel">手ごたえは？<small>次の復習時期に反映されます</small></span>
         <div class="confBtns">
+          <button type="button" class="confBtn" data-g="1">勘だった</button>
           <button type="button" class="confBtn" data-g="2">むずかしい</button>
           <button type="button" class="confBtn" data-g="3">できた</button>
           <button type="button" class="confBtn" data-g="4">かんたん</button>
@@ -7383,7 +7467,11 @@
         btn.onclick=()=>{
           if(row.classList.contains("done")) return;
           row.classList.add("done"); btn.classList.add("sel");
-          gradeCard(parseInt(btn.dataset.g,10),cur);
+          const g=parseInt(btn.dataset.g,10);
+          // 勘で当たった正解は思い出せたわけではないので、FSRSには「もう一度(Again)」で渡し、
+          // 苦手克服の連続正解にも数えない（正答数とXPは採点どおり残す）
+          if(g===1 && !cur.graded){ r.streak=0; syncWeak(r); }
+          gradeCard(g,cur);
           const rc=row.querySelector('[data-el="confResult"]');
           if(rc){
             rc.classList.remove("hidden");
@@ -7593,7 +7681,8 @@
   /* 問題検索 */
   $("#slideBack").onclick=closeSlideView;
   $("#lessonGroupBack").onclick=()=>{ lessonGroupOpen=null; renderLessonList(); window.scrollTo({top:0,behavior:"smooth"}); };
-  $("#lessonBack").onclick=()=>{ closeLessonIndex(false); closeLessonSlides(false); lessonQuickState=null; openView("inputView"); };
+  $("#lessonBack").onclick=()=>{ closeLessonIndex(false); closeLessonSlides(false); lessonQuickState=null;
+    if(lessonReturnTarget) closeLessonToQuestion(); else openView("inputView"); };
   $("#lessonIndexClose").onclick=()=>closeLessonIndex();
   $("#lessonIndexBackdrop").onclick=()=>closeLessonIndex();
   $("#lessonSlidesBack").onclick=()=>closeLessonSlides();
@@ -7881,7 +7970,7 @@
     if(closeLessonSlides()) return;
     if(closeLessonIndex()) return;
     if(!$("#slideView").classList.contains("hidden")){ closeSlideView(); return; }
-    if(!$("#lessonView").classList.contains("hidden")){ openView("inputView"); return; }
+    if(!$("#lessonView").classList.contains("hidden")){ $("#lessonBack").click(); return; }
     if(!$("#browse").classList.contains("hidden")) browseBackStep();
     else if(!$("#qbrowse").classList.contains("hidden")) qbBackStep();
     else if(VIEWS.some(v=>!$("#"+v).classList.contains("hidden"))) renderHome();
