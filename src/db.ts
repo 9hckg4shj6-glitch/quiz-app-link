@@ -155,10 +155,20 @@ export async function saveSetting(setting: SettingRecord, queue = true): Promise
   if (queue) await enqueue("settings", setting.key, "upsert", setting as unknown as Record<string, unknown>);
 }
 
-export async function getDeviceId(): Promise<string> {
-  const existing = await db.settings.get("deviceId");
-  if (typeof existing?.value === "string") return existing.value;
-  const value = uuid();
-  await saveSetting({ key: "deviceId", ownerId: null, value, updatedAt: nowIso() }, false);
-  return value;
+// 初回起動では利用状況・アカウント連携などが同時に呼ぶため、1つの Promise を共有して
+// 別々の端末IDが作られないようにする（作られると管理画面で同じ端末が別人になる）。失敗したら次回やり直す。
+let deviceIdPromise: Promise<string> | null = null;
+
+export function getDeviceId(): Promise<string> {
+  deviceIdPromise ??= (async () => {
+    const existing = await db.settings.get("deviceId");
+    if (typeof existing?.value === "string") return existing.value;
+    const value = uuid();
+    await saveSetting({ key: "deviceId", ownerId: null, value, updatedAt: nowIso() }, false);
+    return value;
+  })().catch((error: unknown) => {
+    deviceIdPromise = null;
+    throw error;
+  });
+  return deviceIdPromise;
 }

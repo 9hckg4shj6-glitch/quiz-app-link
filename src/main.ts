@@ -111,13 +111,14 @@ import { countUsage, setUsageSubject, startUsagePing } from "./usage";
 import type { LegacyProgress, ReviewRating } from "./types";
 
 async function bootstrap(): Promise<void> {
+  // 管理画面の利用状況と利用停止は、後続の移行処理が失敗・停滞しても必ず動かす。
+  startUsagePing();
   await migrateLegacyStorage();
   await mirrorCustomCardsToLegacy();
   await mirrorSchedulesToLegacy(); // ホームの復習予定を Dexie/FSRS と一致させる
   await installCardManager();
   startAccountAuth();
   startAutomaticSync();
-  startUsagePing();
 }
 
 // 同期完了ごとに、取り込んだ復習予定・学習状態を旧UI(localStorage)へ反映する
