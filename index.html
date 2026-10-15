@@ -6076,7 +6076,7 @@
   }
   /* 解説の各項目に付ける「学習済み」印。アカウント同期で端末間に共有する。
      値は操作時刻で、正＝学習済み・負＝外した（統合時に新しい操作が勝つよう残す）。
-     見出しで識別するので、項目の追加・並べ替えでは印がずれない。まずゲノム編だけで試す。 */
+     見出しで識別するので、項目の追加・並べ替えでは印がずれない。ゲノム編とウイルス学編で出す。 */
   const LESSON_READ_KEY="lessonRead_v1";
   let lessonRead={};
   try{ lessonRead=JSON.parse(localStorage.getItem(LESSON_READ_KEY))||{}; }catch(e){ lessonRead={}; }
@@ -6088,7 +6088,7 @@
     Object.keys(inc).forEach(k=>{ const v=Number(inc[k]); if(v && Math.abs(v)>Math.abs(lessonRead[k]||0)) lessonRead[k]=v; });
     saveLessonRead();
   }
-  function lessonReadEnabled(){ return currentSubjectId==="genome"; }
+  function lessonReadEnabled(){ return currentSubjectId==="genome" || currentSubjectId==="virology"; }
   function lessonSects(ls){ return (ls&&Array.isArray(ls.sections)?ls.sections:[]).filter(x=>x && (x.heading||x.body||x.table)); }
 
   /* 問題と学習編の項目を、根拠スライドのページが重なるかで対応づける。
