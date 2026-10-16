@@ -107,7 +107,7 @@ import { getAccountEntryChoice, saveAccountEntryChoice } from "./account-choice"
 import { getCardHomeSnapshot } from "./card-home";
 import { renderMemoryCards } from "./memory-cards";
 import { getPublicName, saveStartName, syncAccountIdentity } from "./account-profile";
-import { mountStartModel } from "./start-model";
+import { START_MODELS, mountStartModel } from "./start-model";
 import { guideSeen, openGuide } from "./guide";
 import { countUsage, setUsageSubject, startUsagePing } from "./usage";
 import type { LegacyProgress, ReviewRating } from "./types";
@@ -230,7 +230,7 @@ window.STUDY_CORE = {
       return resolveAccountSwitch(action);
     },
   },
-  start: { mountModel: mountStartModel },
+  start: { models: START_MODELS, mountModel: mountStartModel },
   guide: { open: openGuide, seen: guideSeen },
   undoLastReview,
   usage: { setSubject: setUsageSubject, count: countUsage },

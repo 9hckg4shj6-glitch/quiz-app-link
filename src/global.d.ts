@@ -68,7 +68,7 @@ declare global {
         resolveSwitch: (action: "replace" | "cancel") => Promise<AccountState>;
       };
       /** スタート画面の動くモデル（src/start-model.ts）。戻り値で止める */
-      start: { mountModel: (canvas: HTMLCanvasElement) => () => void };
+      start: { models: readonly { id: string; label: string; note: string }[]; mountModel: (canvas: HTMLCanvasElement, id: string) => () => void };
       /** 使い方ガイド（src/guide.ts）。section で開く章を指定する */
       guide: { open: (section?: string) => void; seen: () => boolean };
       undoLastReview: (cardId: string) => Promise<StoredSchedule | null>;

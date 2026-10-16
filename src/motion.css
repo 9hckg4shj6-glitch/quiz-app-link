@@ -112,9 +112,9 @@ header.app{view-transition-name:app-header}
 
 /* 6. スタート画面：モデルがゆっくり現れ、文字と入力が順にせり上がる。閉じるときは加速して上へ抜ける */
 .startScreen:not(.hidden) .startStage{animation:fadeIn var(--motion-celebrate) var(--ease-emph) backwards}
-.startScreen:not(.hidden) :is(.startCopy,.startAction,.startModelNote){animation:riseIn var(--motion-screen) var(--ease-emph) backwards}
+.startScreen:not(.hidden) :is(.startCopy,.startAction,.startModels,.startModelNote){animation:riseIn var(--motion-screen) var(--ease-emph) backwards}
 .startScreen:not(.hidden) .startAction{animation-delay:90ms}
-.startScreen:not(.hidden) .startModelNote{animation-delay:180ms}
+.startScreen:not(.hidden) :is(.startModels,.startModelNote){animation-delay:180ms}
 .startScreen.leaving{animation:startLeave var(--motion-move) var(--ease-accel) forwards;pointer-events:none}
 .startForm input[aria-invalid="true"]{animation:nudge var(--motion-move) var(--ease-emph)}
 @keyframes startLeave{to{opacity:0;transform:translateY(-16px)}}
@@ -135,7 +135,7 @@ header.app{view-transition-name:app-header}
 @media(prefers-reduced-motion:reduce){
   .ink{display:none}
   .reveal .choice,.reveal .choice::before,.reveal .choice .key,.reveal .choice .choiceStatus,.qtop .streak b,.quizNav #nextBtn,.startForm input{animation:none!important}
-  .reveal .explain,.qcard.q-in-fwd,.qcard.q-in-back,.startScreen :is(.startCopy,.startAction,.startModelNote){animation-name:fadeIn}
+  .reveal .explain,.qcard.q-in-fwd,.qcard.q-in-back,.startScreen :is(.startCopy,.startAction,.startModels,.startModelNote){animation-name:fadeIn}
   .xpFloat{animation-name:savedFlash}
   ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
 }

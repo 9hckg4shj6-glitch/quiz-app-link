@@ -1502,7 +1502,7 @@
     font-family:inherit;font-weight:800;font-size:0.8125rem;padding:12px;border-radius:12px;cursor:pointer;transition:var(--motion-ui) var(--ease-emph)}
   .updatesModalDismiss:hover{border-color:var(--brand);color:var(--brand)}
 
-  /* ===== スタート画面（開くたびに1回。好中球の動き・名前・使い方ガイド） ===== */
+  /* ===== スタート画面（開くたびに1回。動くモデル・名前・使い方ガイド） ===== */
   .startScreen{position:fixed;inset:0;z-index:280;overflow-y:auto;display:flex;justify-content:center;
     padding:calc(env(safe-area-inset-top) + 12px) 20px calc(env(safe-area-inset-bottom) + 24px);color:var(--text);
     background:radial-gradient(900px 520px at 50% -12%,color-mix(in srgb,var(--brand) 18%,transparent),transparent 65%),
@@ -1512,6 +1512,13 @@
   .startModel{display:block;width:100%;height:100%}
   .startModelNote{margin:-14px 0 0;font-size:0.75rem;color:var(--muted);text-align:center;line-height:calc(1.6 * var(--reading-line-scale,1))}
   .startModelNote b{color:var(--brand)}
+  /* 動くモデルを選ぶボタン（選んだものは端末に覚える） */
+  .startModels{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:-10px 0 0}
+  .startModels button{min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:99px;background:var(--card);color:var(--muted);
+    font:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;transition:var(--motion-ui) var(--ease-emph);transition-property:border-color,color,background-color}
+  .startModels button[aria-pressed="true"]{border-color:var(--brand);color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,var(--card))}
+  .startModel.swap{animation:startSwap var(--motion-move) var(--ease-emph)}
+  @keyframes startSwap{from{opacity:0}}
   .startPanel{display:flex;flex-direction:column;gap:18px}
   .startEyebrow{margin:0 0 8px;font-size:0.75rem;font-weight:700;letter-spacing:.12em;color:var(--brand);font-variant-numeric:tabular-nums}
   .startTitle{margin:0;font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-.01em}
@@ -1552,8 +1559,9 @@
   @media(min-width:900px){
     .startInner{width:min(1040px,100%);display:grid;grid-template-columns:1.15fr 1fr;align-items:center;gap:8px 56px}
     .startStage{height:380px;margin:0}
-    .startModelNote{grid-column:1;margin:0}
-    .startPanel{grid-column:2;grid-row:1 / span 2}
+    .startModels,.startModelNote{grid-column:1;margin:0}
+    .startModels{justify-self:center;max-width:400px}
+    .startPanel{grid-column:2;grid-row:1 / span 3}
     .startTitle{font-size:3rem}
   }
 
@@ -1567,7 +1575,8 @@
 <div class="startScreen hidden" id="startScreen" role="dialog" aria-modal="true" aria-labelledby="startTitle">
   <div class="startInner">
     <div class="startStage" aria-hidden="true"><canvas class="startModel" id="startModel"></canvas></div>
-    <p class="startModelNote">いま動いているのは<b>好中球</b>。細菌が出すホルミルペプチドや補体C5aの濃い方へ這って追いかけ（走化性）、追いつくと仮足で包んで食べます（貪食）。</p>
+    <div class="startModels" id="startModels" role="group" aria-label="動くモデルを選ぶ"></div>
+    <p class="startModelNote" id="startModelNote"></p>
     <div class="startPanel">
       <div class="startCopy">
         <p class="startEyebrow">BASIC MEDICINE · <span id="startCount">過去問・予想問題</span></p>
@@ -5115,9 +5124,29 @@
       // 初めての人には、名前の入力より先に使い方ガイドを勧める
       const first=!!core.guide&&!core.guide.seen();
       $("#startAction").classList.toggle("first",first); $("#startGuideBtn").classList.toggle("first",first);
-      if(core.start&&!stopStartModel) stopStartModel=core.start.mountModel($("#startModel"));
+      if(core.start&&!stopStartModel){
+        $("#startModels").innerHTML=core.start.models.map(m=>`<button type="button" data-model="${m.id}" aria-pressed="false">${m.label}</button>`).join("");
+        let saved=""; try{ saved=localStorage.getItem(START_MODEL_KEY)||""; }catch(e){}
+        showStartModel(core.start,saved);
+      }
     });
   }
+  // 動くモデルを替える：説明とボタンの状態をそろえ、前のモデルを止めてから動かす。選んだものは端末に覚える
+  const START_MODEL_KEY="startModel_v1";
+  function showStartModel(start,id){
+    const model=start.models.find(m=>m.id===id)||start.models[0], canvas=$("#startModel"), swap=!!stopStartModel;
+    $("#startModelNote").innerHTML=model.note;
+    $("#startModels").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.model===model.id)));
+    if(stopStartModel) stopStartModel();
+    stopStartModel=start.mountModel(canvas,model.id);
+    if(swap){ canvas.classList.remove("swap"); void canvas.offsetWidth; canvas.classList.add("swap"); }
+  }
+  $("#startModels").onclick=e=>{
+    const b=e.target.closest("button[data-model]"), start=window.STUDY_CORE&&window.STUDY_CORE.start;
+    if(!b||!start) return;
+    try{ localStorage.setItem(START_MODEL_KEY,b.dataset.model); }catch(err){}
+    showStartModel(start,b.dataset.model);
+  };
   function closeStartScreen(then){
     try{ sessionStorage.setItem(START_SEEN_KEY,"1"); }catch(e){}
     const screen=$("#startScreen");
