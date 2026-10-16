@@ -35,6 +35,7 @@ describe("スタート画面", () => {
   it("開いたときに出て、名前が空なら先へ進まない", async () => {
     const { win, $, account } = boot();
     expect($("#startScreen").classList.contains("hidden")).toBe(false);
+    expect($("#startGo").textContent).toBe("スタートして科目を選ぶ");
     $("#startForm").dispatchEvent(new win.Event("submit", { cancelable: true }));
     await tick(300);
     expect($("#startScreen").classList.contains("hidden")).toBe(false);
