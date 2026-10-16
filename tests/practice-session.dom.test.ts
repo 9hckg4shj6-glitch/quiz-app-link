@@ -151,7 +151,7 @@ describe("通常演習の途中保存と復元", () => {
     expect(win.document.querySelectorAll(".choice.selected")).toHaveLength(1);
     expect(scheduled).not.toHaveBeenCalled();
     click(win, ".qBlock:last-child .choice"); click(win, "#qGroupSubmit");
-    expect(win.document.querySelectorAll(".choiceStatus")).toHaveLength(6);
+    expect(win.document.querySelectorAll(".choice.correct")).toHaveLength(2);
   });
   it("後で解くの並びと現在位置を復元する", async () => {
     let win = await boot(); await start(win);

@@ -1,7 +1,17 @@
 /* ===== Motion =====
    ゲノム対戦の「弾む押し込み・追従グロー・せり上がり」とは分けて、
-   この演習アプリは「触れた点から広がるインク」と「向きのある横方向の画面遷移」を軸にする。 */
+   この演習アプリは「触れた点から広がるインク」と「向きのある横方向の画面遷移」を軸にする。
+
+   動きのルール
+   - 時間は5段階だけ。回数の多い操作ほど短くする。数値の直書きはしない。
+   - 入ってくる動きは減速（--ease-emph）、出ていく動きは加速（--ease-accel）。
+   - 弾む動き（--ease-spring）はレベルアップ・連続日数・結果の点数だけに使う。 */
 :root{
+  --motion-press:90ms;      /* 押す */
+  --motion-ui:160ms;        /* 状態の切り替え（選択・トグル・ホバー） */
+  --motion-move:240ms;      /* 要素の出入り・問題送り */
+  --motion-screen:360ms;    /* 画面遷移・下から出るパネル */
+  --motion-celebrate:600ms; /* お祝い（これ以上の長さはお祝いにだけ使う） */
   --ease-emph:cubic-bezier(.2,0,0,1);
   --ease-accel:cubic-bezier(.3,0,1,1);
   --ease-spring:cubic-bezier(.34,1.56,.64,1);
@@ -9,45 +19,79 @@
 
 /* 1. 押した点から広がるインク（要素は motion.ts が足す） */
 .ink{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
-.ink>i{position:absolute;border-radius:50%;background:currentColor;opacity:.14;transform:scale(0);animation:inkGrow .55s var(--ease-emph) forwards}
-.ink.out>i{opacity:0;transition:opacity .38s ease}
+.ink>i{position:absolute;border-radius:50%;background:currentColor;opacity:.14;transform:scale(0);animation:inkGrow var(--motion-screen) var(--ease-emph) forwards}
+.ink.out>i{opacity:0;transition:opacity var(--motion-move) var(--ease-accel)}
 .choice .ink,.hubBtn .ink,.spCard .ink,.cat .ink,.qbtn .ink,.reviewQuestion .ink,.memoryDeckOpen .ink{color:var(--subject-accent,var(--brand))}
 @keyframes inkGrow{to{transform:scale(1)}}
 
 /* 押し込みは縮めずに「紙に沈む」：1px 下がって影が消える */
 .choice:active:not(:disabled),.hubBtn:active,.cat:active,.reviewQuestion:active{transform:translateY(1px);box-shadow:none}
 
-/* 2. 正誤判定 */
-.choice.correct{animation:choiceRing .6s var(--ease-emph)}
-.choice.correct .key{animation:keyStamp .46s var(--ease-spring) backwards}
-.choice.wrong{animation:choiceShake .42s var(--ease-emph)}
-.choice .choiceStatus{animation:statusIn .32s .12s var(--ease-emph) backwards}
-@keyframes choiceRing{from{box-shadow:0 0 0 0 color-mix(in srgb,var(--good) 50%,transparent)}to{box-shadow:0 0 0 12px transparent}}
-@keyframes keyStamp{0%{opacity:0;transform:scale(1.8) rotate(-16deg)}55%{opacity:1}}
-@keyframes choiceShake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+/* 2. 回答の振り付け。.reveal は answer() が回答した瞬間だけ付けるので、前の問題へ戻ったときや再開時には流れない。
+   0ms 押した選択肢が沈む → 80ms 判定 → 200ms 誤答なら正解へ視線を導く → 280ms 解説がせり上がる */
+.choice{position:relative;isolation:isolate}
+.reveal .choice.correct{--d:200ms;background:var(--card2);animation:guideRing var(--motion-screen) var(--d) var(--ease-emph) backwards}
+.reveal .choice.correct.mine{--d:80ms}
+.reveal .choice.correct::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--good-bg);
+  animation:fillFromKey var(--motion-move) var(--d) var(--ease-emph) backwards}
+.reveal .choice.wrong{--d:80ms;animation:wrongNudge var(--motion-move) var(--d) var(--ease-emph) backwards}
+.reveal .choice:is(.correct,.wrong) .key{animation:keyIn var(--motion-ui) var(--d) var(--ease-emph) backwards}
+.reveal .choice .choiceStatus{animation:statusIn var(--motion-ui) calc(var(--d) + 40ms) var(--ease-emph) backwards}
+.reveal .explain{animation:riseIn var(--motion-move) 280ms var(--ease-emph) backwards}
+@keyframes guideRing{
+  from{border-color:var(--line);box-shadow:0 0 0 0 color-mix(in srgb,var(--good) 45%,transparent)}
+  to{box-shadow:0 0 0 10px transparent}}
+@keyframes fillFromKey{from{clip-path:circle(0 at 29px 28px)}to{clip-path:circle(150% at 29px 28px)}}
+@keyframes wrongNudge{0%{border-color:var(--line);background:var(--card2)}35%{transform:translateX(-3px)}70%{transform:translateX(3px)}}
+@keyframes keyIn{from{background:var(--card);color:var(--muted);border-color:var(--line);transform:scale(.7)}}
 @keyframes statusIn{from{opacity:0;transform:translateX(-6px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(12px)}}
 
-.lsReadBtn[aria-pressed="true"]{animation:readStamp .4s var(--ease-spring) backwards}
+/* 正解のときだけ「+3 XP」が浮かんで消える（右下の札の行から。選択肢の文には重ねない） */
+.xpFloat{position:absolute;bottom:12px;right:14px;font-size:.8125rem;font-weight:800;color:var(--good);pointer-events:none;
+  font-variant-numeric:tabular-nums;animation:xpFloat calc(var(--motion-celebrate) + 300ms) 120ms var(--ease-emph) both}
+@keyframes xpFloat{0%{opacity:0;transform:translateY(4px)}25%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-8px)}}
+
+/* 🔥 は3問連続から現れ、正解のたびに数字が1つ下から繰り上がる */
+.qtop .streak:not(.hidden){animation:fadeThrough var(--motion-move) var(--ease-emph)}
+.qtop .streak b{display:inline-block}
+.qtop .streak.tick b{animation:numTick var(--motion-ui) var(--ease-emph)}
+@keyframes numTick{from{opacity:0;transform:translateY(60%)}}
+
+/* 保存した瞬間だけ「保存済み ✓」を出す（1.2秒は表示時間） */
+.practiceSaveStatus.saved::after{content:"保存済み ✓";content:"保存済み ✓" / "";animation:savedFlash 1.2s linear forwards}
+@keyframes savedFlash{0%{opacity:0}12%{opacity:1}80%{opacity:1}100%{opacity:0}}
+
+/* 回答すると「後で解く」の場所に「次の問題 →」が現れる */
+.quizNav #nextBtn:not(.hidden){animation:fadeThrough var(--motion-ui) var(--ease-emph)}
+.quizMenu:popover-open{animation:fadeThrough var(--motion-ui) var(--ease-emph)}
+
+.lsReadBtn[aria-pressed="true"]{animation:readStamp var(--motion-ui) var(--ease-emph) backwards}
 @keyframes readStamp{0%{transform:scale(.88)}}
 
-/* 進捗バーは減速しながら伸びる */
-.qtop .prog i{transition:width .55s var(--ease-emph)}
+/* 進捗バーは問題送りと同じ長さで伸びる */
+.qtop .prog i{transition:width var(--motion-move) var(--ease-emph)}
 
-/* 3. 画面遷移：進む＝右から、戻る＝左から、タブ＝その場で差し替え（data-vt は transitionToScreen が付ける） */
+/* 3. 問題送り：カードだけを進む向きから差し込む（上下のバーは動かさない） */
+.qcard.q-in-fwd{animation:axisInFwd var(--motion-move) var(--ease-emph)}
+.qcard.q-in-back{animation:axisInBack var(--motion-move) var(--ease-emph)}
+
+/* 4. 画面遷移：進む＝右から、戻る＝左から、タブ＝その場で差し替え（data-vt は transitionToScreen が付ける） */
 section.screen-enter-forward{animation:axisInFwd var(--motion-screen) var(--ease-emph) both}
 section.screen-enter-back{animation:axisInBack var(--motion-screen) var(--ease-emph) both}
 section.screen-enter-tab{animation:fadeThrough var(--motion-ui) var(--ease-emph) both}
 
-::view-transition-old(root){animation:axisOutFwd 150ms var(--ease-accel) both}
-::view-transition-new(root){animation:axisInFwd 320ms var(--ease-emph) both}
+::view-transition-old(root){animation:axisOutFwd var(--motion-ui) var(--ease-accel) both}
+::view-transition-new(root){animation:axisInFwd var(--motion-screen) var(--ease-emph) both}
 :root[data-vt="back"]::view-transition-old(root){animation-name:axisOutBack}
 :root[data-vt="back"]::view-transition-new(root){animation-name:axisInBack}
-:root[data-vt="tab"]::view-transition-old(root){animation:fadeOut 110ms var(--ease-accel) both}
-:root[data-vt="tab"]::view-transition-new(root){animation:fadeThrough 260ms 50ms var(--ease-emph) both}
+:root[data-vt="tab"]::view-transition-old(root){animation:fadeOut var(--motion-press) var(--ease-accel) both}
+:root[data-vt="tab"]::view-transition-new(root){animation:fadeThrough var(--motion-move) 50ms var(--ease-emph) both}
 @keyframes axisOutFwd{to{opacity:0;transform:translateX(-28px)}}
 @keyframes axisInFwd{from{opacity:0;transform:translateX(36px)}}
 @keyframes axisOutBack{to{opacity:0;transform:translateX(28px)}}
 @keyframes axisInBack{from{opacity:0;transform:translateX(-36px)}}
+@keyframes fadeIn{from{opacity:0}}
 @keyframes fadeOut{to{opacity:0}}
 @keyframes fadeThrough{from{opacity:0;transform:scale(.985)}}
 
@@ -55,10 +99,10 @@ section.screen-enter-tab{animation:fadeThrough var(--motion-ui) var(--ease-emph)
 header.app{view-transition-name:app-header}
 .primaryNav{view-transition-name:primary-nav}
 .primaryNav button.active .pnIcon{view-transition-name:nav-active}
-::view-transition-group(nav-active){animation-duration:420ms;animation-timing-function:var(--ease-spring)}
+::view-transition-group(nav-active){animation-duration:var(--motion-screen);animation-timing-function:var(--ease-emph)}
 
-/* 4. ホーム・科目えらびのカードは、ピントが合うように順に現れる */
-.hubGrid>*,.spGrid>*,.result .stat{animation:focusIn .44s var(--ease-emph) backwards}
+/* 5. ホーム・科目えらびのカードは、ピントが合うように順に現れる */
+.hubGrid>*,.spGrid>*,.result .stat{animation:focusIn var(--motion-move) var(--ease-emph) backwards}
 .hubGrid>:nth-child(2),.spGrid>:nth-child(2),.result .stat:nth-child(2){animation-delay:45ms}
 .hubGrid>:nth-child(3),.spGrid>:nth-child(3),.result .stat:nth-child(3){animation-delay:90ms}
 .hubGrid>:nth-child(4),.spGrid>:nth-child(4),.result .stat:nth-child(4){animation-delay:135ms}
@@ -66,16 +110,22 @@ header.app{view-transition-name:app-header}
 .hubGrid>:nth-child(n+6),.spGrid>:nth-child(n+6){animation-delay:220ms}
 @keyframes focusIn{from{opacity:0;filter:blur(6px);transform:scale(.97)}}
 
-/* 5. 結果の点数は着地するように大きさが落ち着く（数字は countUp が数える） */
-.result .score{animation:scoreSettle .6s var(--ease-spring) backwards}
+/* 6. お祝い：結果の点数は着地するように大きさが落ち着く（数字は countUp が数える） */
+.result .score{animation:scoreSettle var(--motion-celebrate) var(--ease-spring) backwards}
 @keyframes scoreSettle{from{opacity:0;transform:scale(.7)}}
 
-/* トーストは弾んで入り、表示時間（--ttl）の終わりに静かに消える */
-.toast{animation:toastIn .42s var(--ease-spring) backwards,toastOut .2s var(--ease-accel) calc(var(--ttl,1700ms) - 200ms) forwards}
-@keyframes toastIn{from{opacity:0;transform:translate(-50%,16px) scale(.92)}}
-@keyframes toastOut{to{opacity:0;transform:translate(-50%,8px) scale(.96)}}
+/* トーストは画面上部に入り、表示時間（--ttl）の終わりに静かに消える。
+   .celebrate（レベルアップ・連続日数）だけ弾んで入る */
+.toast{animation:toastIn var(--motion-move) var(--ease-emph) backwards,toastOut var(--motion-ui) var(--ease-accel) calc(var(--ttl,1700ms) - var(--motion-ui)) forwards}
+.toast.celebrate{animation-duration:var(--motion-celebrate),var(--motion-ui);animation-timing-function:var(--ease-spring),var(--ease-accel)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-14px) scale(.94)}}
+@keyframes toastOut{to{opacity:0;transform:translate(-50%,-8px) scale(.97)}}
 
+/* 動きを減らす設定では、位置の動きをやめて、必要なところだけフェードに置き換える */
 @media(prefers-reduced-motion:reduce){
   .ink{display:none}
+  .reveal .choice,.reveal .choice::before,.reveal .choice .key,.reveal .choice .choiceStatus,.qtop .streak b,.quizNav #nextBtn{animation:none!important}
+  .reveal .explain,.qcard.q-in-fwd,.qcard.q-in-back{animation-name:fadeIn}
+  .xpFloat{animation-name:savedFlash}
   ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
 }
