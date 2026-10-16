@@ -264,3 +264,14 @@ describe("読みやすさ設定", () => {
     expect(win.document.querySelector("#readingLineHeight").value).toBe("1");
   });
 });
+
+describe("演習のキーボード操作", () => {
+  it("矢印キーや Enter などの名前つきキーでは選択肢を選ばない", async () => {
+    const win = await boot(); await start(win);
+    for (const key of ["ArrowDown", "ArrowRight", "Enter", "Escape", "Delete"])
+      win.document.dispatchEvent(new win.KeyboardEvent("keydown", { key, bubbles: true }));
+    expect(win.document.querySelector("#qBlocks .explain")).toBeNull();
+    win.document.dispatchEvent(new win.KeyboardEvent("keydown", { key: "b", bubbles: true }));
+    expect(win.document.querySelector("#qBlocks .explain")).toBeTruthy();
+  });
+});

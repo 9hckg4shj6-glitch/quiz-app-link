@@ -7775,8 +7775,9 @@
       ? session.queue[session.pages[session.p].idxs[0]] : null;
     const choices=(one&&one.els&&one.els.choices) ? one.els.choices.querySelectorAll(".choice") : [];
     let idx=-1;
-    if(e.key>="1" && e.key<="9") idx=+e.key-1;
-    else { const k=e.key.toLowerCase(); if(k>="a" && k<="f") idx=k.charCodeAt(0)-97; }
+    // 1文字のキーだけ（"Enter" や "ArrowDown" を文字列比較で a〜f と取り違えない）
+    if(/^[1-9]$/.test(e.key)) idx=+e.key-1;
+    else if(/^[a-f]$/i.test(e.key)) idx=e.key.toLowerCase().charCodeAt(0)-97;
     if(idx>=0 && idx<choices.length){ e.preventDefault(); choices[idx].click(); return; }
     if(e.key==="Enter" || e.key===" " || e.key==="ArrowRight"){ const nb=$("#nextBtn"); if(nb && !nb.classList.contains("hidden")){ e.preventDefault(); nb.click(); } }
     else if(e.key==="ArrowLeft"){ const pb=$("#prevBtn"); if(pb&&!pb.disabled){ e.preventDefault(); pb.click(); } }
