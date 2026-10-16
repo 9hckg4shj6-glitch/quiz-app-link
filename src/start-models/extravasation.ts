@@ -1,172 +1,217 @@
-// スタート画面のモデル「好中球の血管外遊出」：上が血管の中、下が組織。赤血球は中心ほど速く流れ（層流）、
-// 好中球は血管の壁をセレクチンでゆるく捕まりながら転がる（ローリング）→ 内皮に出たケモカインで活性化した
-// インテグリン（LFA-1）が ICAM-1 に強く結合して止まり、平たく広がる（接着）→ 内皮細胞のすき間をくびれながら
-// すり抜け、組織の細菌の方へ這っていく（遊出）。約13秒で1周。動きを減らす設定では、すき間をくぐる途中の1枚を描く。
-import { bump, clamp, font, glow, ramp, rgba, smooth, type Palette, type StartModel } from "./common";
+// スタート画面のモデル「好中球の血管外遊出（接着カスケード）」：上が細静脈の中、下が組織。
+// 血液は中心ほど速く流れ（層流）、赤血球は転がるように流れる。好中球は
+// ① 微絨毛の先の PSGL-1 が内皮のセレクチンに結合しては切れ、転がる（ローリング：結合は前で生まれ、後ろで伸びて切れる）
+// ② 内皮に出たケモカイン（IL-8）でインテグリンが活性化 ③ LFA-1 が ICAM-1 に強く結合して止まり、平たく広がる
+// ④ 内皮の上を細胞のすき間まで這う ⑤ すき間（PECAM-1）をくびれながらすり抜ける（核は1葉ずつ） ⑥ 組織の細菌の方へ向かう。
+// 大事な瞬間ほどゆっくり見せる。動きを減らす設定では、すき間をくぐる途中の1枚を描く。
+import { cachedLayer, clamp, drawSteps, drawTag, glow, ramp, rgba, roundRect, smooth, stepOf, timeWarp, type Palette, type Pt, type StartModel } from "./common";
+import { cellPath, drawBacterium, drawGranules, drawNucleus, drawRbc, lobesAt, paintCell, type CellPose } from "./neutrophil";
 
-const LOOP = 13;
-const ROLL_END = 5.5, ARREST_END = 7, CROSS_END = 10.5, OUT_END = 12.4;
-const STILL_AT = 8.6;
-const STEPS = ["ローリング", "接着", "遊出"];
+const BOUNDS = [0, 0.3, 0.42, 0.54, 0.66, 0.86, 1];
+const SHOW_SEC = [3.4, 1.7, 1.5, 1.7, 2.8, 2.0];
+const STILL_U = 0.75;
+const STEPS = [
+  "ローリング：セレクチンに\nゆるく捕まって転がる",
+  "活性化：ケモカイン（IL-8）で\nインテグリンが活性化",
+  "接着：LFA-1がICAM-1に\n強く結合して止まる",
+  "這う：内皮の上を\nすき間まで這う",
+  "遊出：内皮細胞のすき間を\nすり抜ける（PECAM-1）",
+  "組織へ：細菌が出す物質の\n濃い方へ向かう",
+];
+const MICROVILLI = 16;
 
-interface Rbc { lane: number; x0: number; r: number; tilt: number }
+interface Rbc { lane: number; x0: number; phase: number; spin: number }
 
-// 好中球の輪郭：ゆらぐ膜に、lead の向きへ張り出す仮足を足す
-function cellOutline(g: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, t: number, lead: number, reach: number): void {
+// 内皮細胞：平たい細胞と、ふくらんだ核。内腔側（上）には糖衣（細い毛）
+function drawEndo(g: CanvasRenderingContext2D, a: number, b: number, top: number, th: number, p: Palette, flip = false): void {
+  if (b - a < 4) return;
+  const grad = g.createLinearGradient(0, top, 0, top + th);
+  grad.addColorStop(0, rgba(p.brand2, flip ? 0.24 : 0.14)); grad.addColorStop(1, rgba(p.brand2, flip ? 0.14 : 0.24));
+  roundRect(g, a, top, b - a, th, Math.min(th * 0.45, 6));
+  g.fillStyle = p.card; g.fill(); g.fillStyle = grad; g.fill();
+  g.strokeStyle = rgba(p.brand2, 0.45); g.lineWidth = 1; g.stroke();
+  const nx = (a + b) / 2, ny = top + th * 0.52, nr = Math.min((b - a) * 0.2, th * 1.1);
+  const ng = g.createRadialGradient(nx - nr * 0.3, ny - th * 0.15, 1, nx, ny, nr);
+  ng.addColorStop(0, rgba(p.brand2, 0.25)); ng.addColorStop(1, rgba(p.brand2, 0.55));
+  g.fillStyle = ng; g.beginPath(); g.ellipse(nx, ny, nr, th * 0.3, 0, 0, Math.PI * 2); g.fill();
+  const surf = flip ? top + th : top, dir = flip ? 1 : -1;
+  g.strokeStyle = rgba(p.brand2, 0.28); g.lineWidth = 0.7;
   g.beginPath();
-  for (let i = 0; i <= 40; i++) {
-    const a = (i / 40) * Math.PI * 2;
-    const k = 1 + 0.04 * Math.sin(3 * a + t * 2.2) + 0.03 * Math.sin(5 * a - t * 2.9) + reach * Math.max(0, Math.cos(a - lead)) ** 3;
-    if (i) g.lineTo(x + Math.cos(a) * rx * k, y + Math.sin(a) * ry * k); else g.moveTo(x + Math.cos(a) * rx * k, y + Math.sin(a) * ry * k);
-  }
-  g.closePath();
-}
-
-// 分葉核（3葉）。spin で回す（転がっている間）
-function nucleus(g: CanvasRenderingContext2D, lobes: [number, number][], r: number, p: Palette): void {
-  g.strokeStyle = rgba(p.brand2, 0.5); g.lineWidth = 2;
-  g.beginPath(); lobes.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
-  g.fillStyle = rgba(p.brand2, 0.5);
-  for (const [x, y] of lobes) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
-}
-
-function lobesAt(x: number, y: number, R: number, spin: number): [number, number][] {
-  return ([[-0.34, 0.06], [0, -0.1], [0.34, 0.06]] as const).map(([u, v]): [number, number] =>
-    [x + (u * Math.cos(spin) - v * Math.sin(spin)) * R, y + (u * Math.sin(spin) + v * Math.cos(spin)) * R]);
+  for (let x = a + 2; x < b - 2; x += 2.6) { g.moveTo(x, surf); g.lineTo(x + Math.sin(x) * 0.8, surf + dir * (1.6 + (Math.sin(x * 3.7) + 1) * 0.7)); }
+  g.stroke();
 }
 
 export const extravasation: StartModel = {
   id: "extravasation",
   label: "血管外遊出",
-  note: "いま動いているのは<b>好中球の血管外遊出</b>。血管の壁をセレクチンでゆるく捕まりながら転がり（ローリング）、ケモカインで活性化したインテグリン（LFA-1）がICAM-1に強く結合して止まり、内皮細胞のすき間をすり抜けて組織へ出ます。",
+  note: "いま動いているのは<b>好中球の血管外遊出</b>。セレクチンでゆるく捕まって転がり（ローリング）、ケモカインで活性化したインテグリン（LFA-1）がICAM-1に強く結合して止まり、内皮細胞のすき間をすり抜けて組織へ出ます。",
   create(w, h, still) {
-    const top = h * 0.05, wall = h * 0.56, th = h * 0.07, floor = wall + th + 3;
-    const R = h * 0.085, jx = w * 0.6, cellLen = clamp(w * 0.2, 60, 110);
-    const xStart = -R * 1.5, xStop = jx - R * 0.5;
-    const bx = w * 0.86, by = floor + (h - floor) * 0.5;
-    const lumenMid = (top + wall) / 2, lumenHalf = (wall - top) / 2, vmax = w * 0.42;
-    const rbcs: Rbc[] = Array.from({ length: Math.round(w / 22) }, () => ({
-      lane: top + 8 + Math.random() * (wall - top - 18), x0: Math.random() * (w + 40), r: 6 + Math.random() * 2.5, tilt: Math.random() * Math.PI,
+    const fs = clamp(h * 0.035, 11, 13), R = h * 0.075, mv = R * 0.15;
+    const roof = h * 0.07, wall = h * 0.55, th = h * 0.06, bm = wall + th + 2.5;
+    const jx = w * 0.6, cellLen = clamp(w * 0.19, 60, 110);
+    const xStart = -R * 1.8, xArrest = jx - R * 2.2;
+    const bug: Pt = [w * 0.87, bm + (h - bm) * 0.42];
+    const lumenMid = (roof + wall) / 2, lumenHalf = (wall - roof) / 2, vmax = w * 0.45;
+    const flowAt = (y: number): number => vmax * (1 - ((y - lumenMid) / lumenHalf) ** 2) + 8;
+    const rbcs: Rbc[] = Array.from({ length: Math.round(w / 20) }, () => ({
+      lane: roof + R * 0.6 + Math.random() * (wall - roof - R * 1.4), x0: Math.random() * (w + 60), phase: Math.random() * 6, spin: 0.6 + Math.random() * 1.2,
     }));
-    const t0 = still ? STILL_AT : 0;
+    const junctions = Array.from({ length: Math.ceil(w / cellLen) + 3 }, (_, i) => jx + (i - Math.ceil(jx / cellLen) - 1) * cellLen);
+    const warp = timeWarp(BOUNDS, SHOW_SEC), t0 = still ? warp.timeOf(STILL_U) : 0;
+
+    // 動かない部分：血漿の色・向かいの壁・すき間の両隣以外の内皮・組織の線維と線維芽細胞
+    const base = cachedLayer(w, h, (g, p) => {
+      const plasma = g.createLinearGradient(0, roof, 0, wall);
+      plasma.addColorStop(0, rgba(p.bad, 0.1)); plasma.addColorStop(0.5, rgba(p.bad, 0.04)); plasma.addColorStop(1, rgba(p.bad, 0.1));
+      g.fillStyle = plasma; g.fillRect(0, roof, w, wall - roof);
+      for (let x = -cellLen * 0.4; x < w; x += cellLen) drawEndo(g, x + 1.5, x + cellLen - 1.5, roof - th, th, p, true);
+      for (let i = 0; i < junctions.length - 1; i++) {
+        if (Math.abs(junctions[i] - jx) < 1 || Math.abs(junctions[i + 1] - jx) < 1) continue;
+        drawEndo(g, junctions[i] + 1.5, junctions[i + 1] - 1.5, wall, th, p);
+      }
+      const ecm = g.createLinearGradient(0, bm, 0, h);
+      ecm.addColorStop(0, rgba(p.warn, 0.05)); ecm.addColorStop(1, rgba(p.warn, 0.02));
+      g.fillStyle = ecm; g.fillRect(0, bm, w, h - bm);
+      g.lineCap = "round";
+      [0.22, 0.5, 0.78].forEach((k, i) => {
+        for (let s = 0; s < 3; s++) {
+          g.strokeStyle = rgba(p.warn, 0.16 + s * 0.04); g.lineWidth = 1.1; g.beginPath();
+          for (let x = -10; x <= w + 10; x += 5) { const y = bm + (h - bm) * k + Math.sin(x * 0.04 + i * 2) * 4 + s * 2.2 + Math.sin(x * 0.11 + s) * 0.8; if (x > -10) g.lineTo(x, y); else g.moveTo(x, y); }
+          g.stroke();
+        }
+      });
+      // 線維芽細胞（紡錘形）
+      const fx = w * 0.36, fy = bm + (h - bm) * 0.24;
+      g.fillStyle = rgba(p.muted, 0.16); g.strokeStyle = rgba(p.muted, 0.4); g.lineWidth = 1;
+      g.beginPath(); g.moveTo(fx - R * 2.2, fy + 2); g.quadraticCurveTo(fx, fy - R * 0.55, fx + R * 2.2, fy - 2); g.quadraticCurveTo(fx, fy + R * 0.55, fx - R * 2.2, fy + 2); g.fill(); g.stroke();
+      g.fillStyle = rgba(p.muted, 0.35); g.beginPath(); g.ellipse(fx, fy, R * 0.5, R * 0.22, -0.05, 0, Math.PI * 2); g.fill();
+    });
 
     return (g, time, _dt, p) => {
-      const t = time + t0, tt = t % LOOP;
-      // 血管の中（向かいの壁と血漿）と、流れる赤血球。壁に近いほど遅い
-      g.fillStyle = rgba(p.bad, 0.04); g.fillRect(0, top, w, wall - top);
-      g.strokeStyle = rgba(p.brand2, 0.25); g.lineWidth = 1.5; g.beginPath(); g.moveTo(0, top); g.lineTo(w, top); g.stroke();
+      const t = time + t0, cyc = warp.at(t), u = cyc - Math.floor(cyc), now = stepOf(BOUNDS, u);
+      base(g, p);
+      // 層流：中心ほど速い筋と、転がるように流れる赤血球
+      g.setLineDash([10, 16]); g.lineWidth = 1;
+      for (let i = 1; i <= 5; i++) {
+        const y = roof + ((wall - roof) * i) / 6;
+        g.strokeStyle = rgba(p.bad, 0.12); g.lineDashOffset = -t * flowAt(y); g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+      }
+      g.setLineDash([]);
       for (const c of rbcs) {
-        const v = vmax * (1 - ((c.lane - lumenMid) / lumenHalf) ** 2) + 6;
-        const x = ((c.x0 + v * t) % (w + 40)) - 20;
-        g.save(); g.translate(x, c.lane); g.rotate(c.tilt + t * 0.4); g.scale(1, 0.62);
-        g.fillStyle = rgba(p.bad, 0.2); g.beginPath(); g.arc(0, 0, c.r, 0, Math.PI * 2); g.fill();
-        g.strokeStyle = rgba(p.bad, 0.3); g.lineWidth = c.r * 0.42; g.beginPath(); g.arc(0, 0, c.r * 0.74, 0, Math.PI * 2); g.stroke();
-        g.restore();
+        const x = ((c.x0 + flowAt(c.lane) * t) % (w + 60)) - 30;
+        drawRbc(g, x, c.lane, R * 0.5, c.phase + t * c.spin * 0.6, 0.3 + 0.7 * Math.abs(Math.cos(c.phase + t * c.spin)), p, 0.9);
       }
-      // 組織：コラーゲン線維と、その奥の細菌（好中球はここへ向かう）
-      g.strokeStyle = rgba(p.muted, 0.14); g.lineWidth = 1;
-      for (const [i, k] of [0.3, 0.62, 0.9].entries()) {
-        g.beginPath();
-        for (let x = 0; x <= w; x += 6) { const y = floor + (h - floor) * k + Math.sin(x * 0.045 + i * 2) * 3; if (x) g.lineTo(x, y); else g.moveTo(x, y); }
-        g.stroke();
+      // すき間：くぐる間だけ広がる。両隣の内皮細胞と基底膜も同じだけ開く
+      const open = 1.5 + R * 0.34 * (ramp(u, 0.64, 0.7) - ramp(u, 0.84, 0.9));
+      drawEndo(g, jx - cellLen + 1.5, jx - open, wall, th, p); drawEndo(g, jx + open, jx + cellLen - 1.5, wall, th, p);
+      g.strokeStyle = rgba(p.brand2, 0.35); g.lineWidth = 1.6; g.setLineDash([5, 2]);
+      g.beginPath(); g.moveTo(0, bm - 1); g.lineTo(jx - open, bm - 1); g.moveTo(jx + open, bm - 1); g.lineTo(w, bm - 1); g.stroke(); g.setLineDash([]);
+      // 接着分子：ICAM-1（内皮の表面）・PECAM-1（すき間の両側）
+      const icam = 0.35 + 0.65 * ramp(u, 0.4, 0.46) * (1 - ramp(u, 0.86, 0.9));
+      g.fillStyle = rgba(p.brand2, 0.7 * icam);
+      for (let x = jx - R * 3.6; x < jx + R * 1.2; x += R * 0.32) { if (Math.abs(x - jx) > open + 2) { g.beginPath(); g.arc(x, wall - 1.2, 1.3, 0, Math.PI * 2); g.fill(); } }
+      const pecam = 0.4 + 0.6 * ramp(u, 0.64, 0.68) * (1 - ramp(u, 0.86, 0.9));
+      g.fillStyle = rgba(p.warn, 0.8 * pecam);
+      for (let y = wall + 3; y < wall + th - 1; y += 3.5) for (const side of [-1, 1]) { g.beginPath(); g.arc(jx + side * (open + 0.5), y, 1.1, 0, Math.PI * 2); g.fill(); }
+      // ケモカイン：内皮の糖衣の上に現れる
+      const chemo = ramp(u, 0.18, 0.3) * (1 - ramp(u, 0.86, 0.92));
+      if (chemo > 0) {
+        g.fillStyle = rgba(p.good, 0.9 * chemo);
+        for (let x = xArrest - R * 1.4; x < jx + R; x += R * 0.36) { g.beginPath(); g.arc(x, wall - 3.4, 1.5, 0, Math.PI * 2); g.fill(); }
       }
-      glow(g, bx, by, R * 2.2, p.good, 0.14);
-      g.fillStyle = p.good;
-      for (const [dx, dy, a] of [[-8, -4, 0.4], [6, 3, -0.3], [-2, 8, 1.2]]) {
-        g.save(); g.translate(bx + dx, by + dy); g.rotate(a + Math.sin(t * 1.3 + dx) * 0.15);
-        g.beginPath(); g.ellipse(0, 0, 6, 2.8, 0, 0, Math.PI * 2); g.fill(); g.restore();
-      }
-      // 内皮細胞：すき間 jx は、くぐる間だけ広がる。基底膜も同じところが開く
-      const open = 1.5 + R * 0.32 * (ramp(tt, ARREST_END - 0.4, ARREST_END + 0.6) - ramp(tt, CROSS_END - 0.4, CROSS_END + 0.4));
-      for (let j = jx - Math.ceil(jx / cellLen + 1) * cellLen; j < w; j += cellLen) {
-        const a = j + (Math.abs(j - jx) < 1 ? open : 1.5), b = j + cellLen - (Math.abs(j + cellLen - jx) < 1 ? open : 1.5);
-        g.fillStyle = rgba(p.brand2, 0.12); g.fillRect(a, wall, b - a, th);
-        g.strokeStyle = rgba(p.brand2, 0.35); g.lineWidth = 1; g.strokeRect(a, wall, b - a, th);
-        g.fillStyle = rgba(p.brand2, 0.28); g.beginPath(); g.ellipse((a + b) / 2, wall + th / 2, (b - a) * 0.22, th * 0.3, 0, 0, Math.PI * 2); g.fill();
-      }
-      g.strokeStyle = rgba(p.brand2, 0.3); g.lineWidth = 1.2; g.beginPath();
-      g.moveTo(0, floor - 1.5); g.lineTo(jx - open, floor - 1.5); g.moveTo(jx + open, floor - 1.5); g.lineTo(w, floor - 1.5); g.stroke();
-      // ケモカイン：止まる少し前に内皮の表面に現れる
-      const chemokine = ramp(tt, 3.2, 5) * (1 - ramp(tt, CROSS_END, CROSS_END + 1));
-      if (chemokine > 0) {
-        g.fillStyle = rgba(p.good, 0.85 * chemokine);
-        for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(jx + (i - 5) * R * 0.35, wall - 1.6, 1.6, 0, Math.PI * 2); g.fill(); }
-      }
+      // 組織の細菌と、そこから広がる物質の輪
+      glow(g, bug[0], bug[1], R * 2.6, p.good, 0.14);
+      for (let i = 0; i < 3; i++) { const q = (t * 0.3 + i / 3) % 1; g.strokeStyle = rgba(p.good, 0.3 * (1 - q)); g.lineWidth = 1.1; g.beginPath(); g.arc(bug[0], bug[1], R * (0.5 + 2.4 * q), 0, Math.PI * 2); g.stroke(); }
+      ([[-9, -5, 0.4], [7, 3, -0.3], [-2, 9, 1.2]] as const).forEach(([dx, dy, a]) => drawBacterium(g, bug[0] + dx * R / 17, bug[1] + dy * R / 17, a + Math.sin(t * 1.3 + dx) * 0.15, R / 30, t, p));
 
-      const fade = 1 - ramp(tt, OUT_END - 0.7, OUT_END);
-      let tagX = 0, tagY = 0, tag = "";
+      // ---- 好中球 ----
+      const fade = 1 - ramp(u, 0.95, 1);
       g.save(); g.globalAlpha = fade;
-      if (tt < ARREST_END) {
-        // ローリング→接着：転がりながら遅くなり、止まるとすき間の上まで這って平たく広がる
-        const u = Math.min(1, tt / ROLL_END), spread = smooth(ramp(tt, ROLL_END, ARREST_END));
-        const x = spread > 0 ? xStop + (jx - xStop) * spread : xStart + (xStop - xStart) * u * (1.6 - 0.6 * u);
-        const rx = R * (1 + 0.22 * spread), ry = R * (0.96 - 0.16 * spread), y = wall - ry;
-        const spin = (Math.min(x, xStop) - xStart) / R;
-        const tether = 1 - ramp(tt, ROLL_END - 0.3, ROLL_END + 0.5);
-        if (tether > 0) {
-          // セレクチンの結合：前で結び、後ろでほどけるのをちらつきで見せる
-          g.strokeStyle = rgba(p.brand2, 0.75 * tether); g.fillStyle = rgba(p.brand2, 0.75 * tether); g.lineWidth = 1.2;
-          [-0.55, -0.2, 0.2, 0.55].forEach((off, i) => {
-            if (Math.sin(t * 5 + i * 1.7) < -0.3) return;
-            const a = Math.PI / 2 + off, sx = x + Math.cos(a) * rx, sy = y + Math.sin(a) * ry, ax = x + Math.cos(a) * rx * 1.35;
-            g.beginPath(); g.moveTo(sx, sy); g.lineTo(ax, wall); g.stroke();
-            g.beginPath(); g.arc(ax, wall - 0.5, 1.4, 0, Math.PI * 2); g.fill();
-          });
+      let tagAt: Pt = [jx, wall], cellTop = wall - R * 2;
+      if (u < 0.66) {
+        // ローリング→（止まって平たくなる）→這う
+        const roll = Math.min(1, u / 0.42), spread = smooth(ramp(u, 0.42, 0.54)), crawl = smooth(ramp(u, 0.54, 0.66));
+        const x = u < 0.42 ? xStart + (xArrest - xStart) * (1 - (1 - roll) ** 2.2) : xArrest + (jx - xArrest) * crawl;
+        const sx = 1 + 0.28 * spread, sy = 1 - 0.28 * spread, lift = mv * (1 - spread), y = wall - R * sy - lift;
+        const spin = (Math.min(x, xArrest) - xStart) / R;
+        const pose: CellPose = { x, y, r: R, heading: 0, reach: 0.22 * crawl, tail: 0.18 * crawl, sx, sy, ruffle: crawl };
+        cellTop = y - R * sy;
+        // 微絨毛と、その先の PSGL-1 がセレクチンにつくる結合
+        if (lift > 0.3) {
+          g.lineCap = "round";
+          let shown = false;
+          for (let k = 0; k < MICROVILLI; k++) {
+            const a = spin + (k * Math.PI * 2) / MICROVILLI, bx = x + Math.cos(a) * R * 0.98 * sx, by = y + Math.sin(a) * R * 0.98 * sy;
+            const tx = x + Math.cos(a) * (R * sx + lift), ty = y + Math.sin(a) * (R * sy + lift);
+            g.strokeStyle = rgba(p.brand, 0.7); g.lineWidth = 1.4; g.beginPath(); g.moveTo(bx, by); g.lineTo(tx, ty); g.stroke();
+            g.fillStyle = rgba(p.brand2, 0.9); g.beginPath(); g.arc(tx, ty, 1.3, 0, Math.PI * 2); g.fill();
+            const d = Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2));   // 真下を通り過ぎてからの角度
+            if (d >= 0 && d < 0.95 && u < 0.46) {
+              const ax = x - R * d, stretch = d / 0.95;
+              g.strokeStyle = rgba(p.brand2, 0.85 * (1 - stretch * 0.5)); g.lineWidth = 1.2 - stretch * 0.5;
+              g.beginPath(); g.moveTo(tx, ty); g.lineTo(ax, wall - 0.5); g.stroke();
+              g.fillStyle = rgba(p.brand2, 0.9); g.beginPath(); g.arc(ax, wall - 0.5, 1.5, 0, Math.PI * 2); g.fill();
+              if (!shown) { tagAt = [(tx + ax) / 2, (ty + wall) / 2]; shown = true; }
+            }
+          }
         }
-        cellOutline(g, x, y, rx, ry, t, 0, 0);
-        g.fillStyle = rgba(p.brand, 0.2); g.fill(); g.strokeStyle = rgba(p.brand, 0.65); g.lineWidth = 1.5; g.stroke();
-        nucleus(g, lobesAt(x, y, R, spread > 0 ? (xStop - xStart) / R : spin), R * 0.2, p);
-        const bond = ramp(tt, ROLL_END, ROLL_END + 0.5);
-        if (bond > 0) { g.fillStyle = rgba(p.warn, bond); for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(x + (i - 2) * rx * 0.32, wall - 1, 1.8, 0, Math.PI * 2); g.fill(); } }
-        [tagX, tagY, tag] = [x, y - ry - 10, spread > 0 ? "インテグリン（LFA-1）× ICAM-1" : "セレクチンでゆるく結合"];
-      } else if (tt < CROSS_END) {
-        // 遊出：上の部分が縮み、下の部分がふくらむ。間はすき間の幅にくびれる
-        const q = smooth(ramp(tt, ARREST_END, CROSS_END)), up = Math.sqrt(1 - q), down = Math.sqrt(q);
-        const rxU = R * 1.22 * up, ryU = R * 0.8 * up, yU = wall - ryU, rL = R * 0.95 * down, yL = floor + rL;
-        const neck = Math.max(2, open * 1.6);
-        const shape = new Path2D();
-        if (rxU > 0.5) shape.ellipse(jx, yU, rxU, ryU, 0, 0, Math.PI * 2);
-        shape.rect(jx - neck / 2, Math.min(yU, wall - 2), neck, Math.max(yL, floor + 2) - Math.min(yU, wall - 2));
-        if (rL > 0.5) { shape.moveTo(jx + rL * 1.05, yL); shape.ellipse(jx, yL, rL * 1.05, rL, 0, 0, Math.PI * 2); }
-        g.fillStyle = rgba(p.brand, 0.24); g.fill(shape);
-        // 輪郭はくびれの部分を切り抜いて描く
+        const path = cellPath(pose, t);
+        paintCell(g, path, pose, p);
+        drawGranules(g, path, pose, t, p);
+        drawNucleus(g, lobesAt(pose, u < 0.42 ? spin : undefined), R * 0.2, p);
+        // インテグリン：ケモカインの刺激で、細胞の下面が順に活性化（黄）する
+        const act = ramp(u, 0.3, 0.4);
+        if (act > 0) {
+          glow(g, x, wall - 1, R * 1.2, p.good, 0.25 * act * (1 - ramp(u, 0.42, 0.5)));
+          g.fillStyle = rgba(p.warn, act);
+          for (let i = -3; i <= 3; i++) { g.beginPath(); g.arc(x + i * R * 0.3 * sx, wall - 1.5 - lift * 0.4, 1.7, 0, Math.PI * 2); g.fill(); }
+        }
+        if (u >= 0.3) tagAt = [x, wall - 2];
+      } else if (u < 0.86) {
+        // 遊出：上の部分が縮み、組織側の部分がふくらむ。間はすき間の幅にくびれる
+        const q = smooth(ramp(u, 0.66, 0.86)), up = Math.sqrt(1 - q), down = Math.sqrt(q);
+        const upper: CellPose = { x: jx, y: wall - R * 0.72 * up, r: R * Math.max(up, 0.05), heading: Math.PI / 2, reach: 0, tail: 0, sx: 1.28, sy: 0.72, ruffle: 0 };
+        const lower: CellPose = { x: jx, y: bm + R * 0.95 * down, r: R * Math.max(down, 0.05), heading: Math.PI / 2, reach: 0.18, tail: 0, ruffle: 0.6 };
+        const neck = Math.max(2, open * 1.7), shape = new Path2D();
+        if (up > 0.08) shape.addPath(cellPath(upper, t));
+        shape.rect(jx - neck / 2, wall - 2, neck, bm - wall + 4);
+        if (down > 0.08) shape.addPath(cellPath(lower, t));
+        const look: CellPose = { x: jx, y: (upper.y + lower.y) / 2, r: R, heading: Math.PI / 2, reach: 0, tail: 0 };
+        g.fillStyle = p.card; g.fill(shape);
+        const grad = g.createLinearGradient(0, upper.y - R, 0, lower.y + R);
+        grad.addColorStop(0, rgba(p.brand, 0.3)); grad.addColorStop(0.5, rgba(p.brand, 0.14)); grad.addColorStop(1, rgba(p.brand, 0.3));
+        g.fillStyle = grad; g.fill(shape);
         g.save();
-        const outside = new Path2D(); outside.rect(0, 0, w, h); outside.rect(jx - neck / 2, 0, neck, h);
+        const outside = new Path2D(); outside.rect(0, 0, w, h); outside.rect(jx - neck / 2, wall - 3, neck, bm - wall + 6);
         g.clip(outside, "evenodd");
-        g.strokeStyle = rgba(p.brand, 0.65); g.lineWidth = 1.5; g.beginPath();
-        if (rxU > 0.5) g.ellipse(jx, yU, rxU, ryU, 0, 0, Math.PI * 2);
-        if (rL > 0.5) { g.moveTo(jx + rL * 1.05, yL); g.ellipse(jx, yL, rL * 1.05, rL, 0, 0, Math.PI * 2); }
-        g.stroke(); g.restore();
+        g.strokeStyle = rgba(p.brand, 0.85); g.lineWidth = 1.3;
+        if (up > 0.08) g.stroke(cellPath(upper, t));
+        if (down > 0.08) g.stroke(cellPath(lower, t));
+        g.restore();
+        drawGranules(g, shape, look, t, p);
         // 核は1葉ずつ、すき間で細くなりながら下へ移る
-        const lobes = [0, 1, 2].map((i): [number, number] => {
-          const k = smooth(clamp((q - 0.12 * i) / 0.64, 0, 1));
-          return [jx + (i - 1) * R * 0.3 * (1 - bump(k, 0, 1)), yU + (yL - yU) * k];
+        const lobes = [0, 1, 2].map((i): Pt => {
+          const k = smooth(clamp((q - 0.14 * i) / 0.62, 0, 1)), squeeze = Math.sin(k * Math.PI);
+          return [jx + (i - 1) * R * 0.3 * (1 - squeeze), upper.y + (lower.y - upper.y) * k];
         });
-        nucleus(g, lobes, R * 0.17, p);
-        const bond = 1 - ramp(tt, CROSS_END - 1.2, CROSS_END);
-        if (bond > 0 && rxU > 2) { g.fillStyle = rgba(p.warn, bond); for (const s of [-2, -1, 1, 2]) { g.beginPath(); g.arc(jx + s * rxU * 0.32, wall - 1, 1.8, 0, Math.PI * 2); g.fill(); } }
-        [tagX, tagY, tag] = [jx, Math.min(yU - ryU, wall - R) - 10, "内皮細胞のすき間をすり抜ける"];
+        drawNucleus(g, lobes, R * 0.18, p);
+        tagAt = [jx + open + 1, wall + th / 2]; cellTop = upper.y - R * 0.72 * up;
       } else {
-        // 組織の中を、細菌の出す物質の濃い方へ這う
-        const u = smooth(ramp(tt, CROSS_END, OUT_END)), sx = jx, sy = floor + R * 0.95;
-        const x = sx + (bx - sx) * 0.5 * u, y = sy + (by - sy) * 0.5 * u, lead = Math.atan2(by - y, bx - x);
-        cellOutline(g, x, y, R * 0.95, R * 0.95, t, lead, 0.3);
-        g.fillStyle = rgba(p.brand, 0.2); g.fill(); g.strokeStyle = rgba(p.brand, 0.65); g.lineWidth = 1.5; g.stroke();
-        nucleus(g, lobesAt(x, y, R, lead + Math.PI / 2), R * 0.2, p);
-      }
-      if (tag) {
-        g.font = font(10); g.textAlign = "center"; g.fillStyle = rgba(p.text, 0.75);
-        g.fillText(tag, clamp(tagX, 90, w - 90), Math.max(12, tagY));
+        // 組織の中を、細菌の方へ這う
+        const k = smooth(ramp(u, 0.86, 1)), sx0 = jx, sy0 = bm + R * 0.95;
+        const x = sx0 + (bug[0] - sx0) * 0.55 * k, y = sy0 + (bug[1] - sy0) * 0.55 * k, head = Math.atan2(bug[1] - y, bug[0] - x);
+        const pose: CellPose = { x, y, r: R, heading: head, reach: 0.3, tail: 0.3 };
+        const path = cellPath(pose, t);
+        paintCell(g, path, pose, p); drawGranules(g, path, pose, t, p); drawNucleus(g, lobesAt(pose), R * 0.2, p);
       }
       g.restore();
-      // いまの段階：ローリング → 接着 → 遊出
-      const now = tt < ROLL_END ? 0 : tt < ARREST_END ? 1 : 2;
-      g.font = font(11, 700); g.textAlign = "left";
-      let x = 12;
-      STEPS.forEach((s, i) => {
-        g.fillStyle = i === now ? p.brand : rgba(p.muted, 0.7); g.fillText(s, x, h - 9); x += g.measureText(s).width;
-        if (i < STEPS.length - 1) { g.fillStyle = rgba(p.muted, 0.6); g.fillText(" → ", x, h - 9); x += g.measureText(" → ").width; }
-      });
+      // 名札（細胞の上の血管の中に出す）
+      const box: Pt = [clamp(tagAt[0], 80, w - 80), Math.max(16, Math.min(cellTop, wall - R * 1.6) - R * 0.9)];
+      drawTag(g, "セレクチン ⇄ PSGL-1", box, [tagAt], ramp(u, 0.04, 0.07) * (1 - ramp(u, 0.26, 0.29)), fs, p);
+      drawTag(g, "ケモカイン（IL-8）", box, [tagAt], ramp(u, 0.3, 0.32) * (1 - ramp(u, 0.4, 0.42)), fs, p);
+      drawTag(g, "LFA-1 ⇄ ICAM-1", box, [tagAt], ramp(u, 0.43, 0.45) * (1 - ramp(u, 0.6, 0.63)), fs, p);
+      drawTag(g, "PECAM-1（すき間）", [clamp(jx + R * 3.2, 80, w - 80), box[1]], [tagAt], ramp(u, 0.68, 0.7) * (1 - ramp(u, 0.83, 0.86)), fs, p);
+      drawSteps(g, 14, h - fs * 4.1 - 4, Math.min(w * 0.5, 230), STEPS, now, still ? 1 : ramp(u, BOUNDS[now], BOUNDS[now] + 0.012), fs, p, true);
     };
   },
 };
