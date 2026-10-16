@@ -1003,6 +1003,9 @@
   .explain .head .verdictMark{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:currentColor}
   .explain .head .verdictMark::before{content:attr(data-mark);color:#fff;font-size:0.8125rem}
   .explain .head small{font-size:0.75rem;font-weight:700;color:var(--muted)}
+  .explain .head .cheer{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--good-bg);font-size:0.8125rem;font-weight:800}
+  .explain .head .cheer.t1{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+  .explain .head .cheer.t2{border:2px solid currentColor;border-radius:8px;padding:1px 9px;letter-spacing:.06em}
   .explainAnswer{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--good-bg);font-weight:600;line-height:calc(1.6 * var(--reading-line-scale,1))}
   .explainAnswer b{color:var(--good);margin-right:8px}
   .explainMeta{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:0.75rem;color:var(--muted)}
@@ -7558,9 +7561,12 @@
     cur.picks=picks.slice(); cur.revealed=true;
     const correctPos=cur.choices.map((c,i)=>c.correct?i:-1).filter(i=>i>=0);
     const isCorrect=sameSet(picks,correctPos);
-    const r=rec(q.id); recordAnswerCounters(r,q.id,isCorrect);
-    let lvup=0, gainXP=0, mult=1;
-    if(isCorrect){ r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP); }
+    const r=rec(q.id), hist=r.history||[];
+    const wasWeak=r.weak, firstTime=!r.seen, lastWrong=hist.length>0&&hist[hist.length-1].c===0;
+    recordAnswerCounters(r,q.id,isCorrect);
+    let lvup=0, gainXP=0, mult=1, cheer=null;
+    if(isCorrect){ r.streak++; syncWeak(r); s.correct++; s.streak++; s.maxStreak=Math.max(s.maxStreak,s.streak); mult=comboMult(s.streak); gainXP=Math.round(XP_CORRECT*mult); lvup=addXP(gainXP);
+      cheer=cheerFor(s.streak,wasWeak&&!r.weak,lastWrong,firstTime); }
     else { r.streak=0; r.lastWrong=todayStr(); syncWeak(r); s.streak=0;
       s.wrongList.push({q,chosen:picks.length?picks.map(i=>cur.choices[i].text).join(" ／ "):"（わからない）"});
       r.miss=r.miss||{};   // どの誤答を選んだかを記録（誤答分析用）
@@ -7574,7 +7580,7 @@
     const ach=checkAch(); if(ach) setTimeout(()=>toast(`🏅 実績解除：${ach.n}`),lvup?1400:0);
 
     s.xpGained=(s.xpGained||0)+gainXP;
-    cur.feedback={isCorrect,gainXP,mult};
+    cur.feedback={isCorrect,gainXP,mult,cheer};
     renderChoiceFeedback(cur,true);
     // 1問だけのページは、解説の先頭が下のボタンに隠れずに見えるところまで送る（選んだ選択肢は画面に残す）
     if(pageEntries().length===1) setTimeout(()=>{
@@ -7614,17 +7620,31 @@
       } else { b.disabled=true; }
     });
   }
-  // 🔥 は3問連続正解から出す（本番・まとめて採点では出さない）。bump で数字を1つ繰り上げる
-  function renderStreak(bump){
+  // 正解の一言。その問題の記録から言えることを優先し、無ければ汎用の文を前回と重ならないように選ぶ。
+  // tier: 0=毎回 1=コンボの節目（粒がはじける） 2=苦手撃破（スタンプ＋紙吹雪）
+  const CHEER_LINES=["ナイス！","いいね！","その調子！","キレてる！","冴えてる！","お見事！","やるじゃん！","さすが！","絶好調！","完璧！"];
+  let lastCheer="";
+  function cheerFor(streak,overcameWeak,lastWrong,firstTime){
+    if(overcameWeak) return {text:"苦手撃破！",tier:2};
+    if(streak===3||streak===5||streak===8) return {text:`${streak}コンボ！ XP×${comboMult(streak)}${streak===8?" MAX":""}`,tier:1};
+    if(streak>=10&&streak%10===0) return {text:`${streak}コンボ！ 止まらない！`,tier:1};
+    if(lastWrong) return {text:"リベンジ成功！",tier:0};
+    if(firstTime) return {text:"初見クリア！",tier:0};
+    const pool=CHEER_LINES.filter(t=>t!==lastCheer);
+    lastCheer=pool[Math.floor(Math.random()*pool.length)];
+    return {text:lastCheer,tier:0};
+  }
+  // 🔥 は3問連続正解から出す（本番・まとめて採点では出さない）。bump で数字を1つ繰り上げ、big ならコンボの節目として弾ませる
+  function renderStreak(bump,big){
     const s=session, sp=$("#streakPill"), mult=comboMult(s.streak), show=!s.exam&&!s.batch&&s.streak>=3;
     sp.innerHTML=`🔥 <b>${s.streak}</b>${mult>1?` ×${mult}`:""}`;
     sp.classList.toggle("combo",mult>1); sp.classList.toggle("hidden",!show);
-    if(bump&&show){ sp.classList.remove("tick"); void sp.offsetWidth; sp.classList.add("tick"); }
+    if(bump&&show){ sp.classList.remove("tick","big"); void sp.offsetWidth; sp.classList.add("tick"); sp.classList.toggle("big",!!big); }
   }
   // animate は回答した瞬間だけ true。再開や前後移動で描き直すときは演出を流さない
   function renderChoiceFeedback(cur,animate){
     const q=cur.q,picks=cur.picks||[],r=rec(q.id);
-    const {isCorrect,gainXP,mult}=cur.feedback;
+    const {isCorrect,gainXP,mult,cheer}=cur.feedback;
     renderChoiceMarks(cur);
     if(animate){
       const root=cur.els.root; root.classList.add("reveal");
@@ -7634,7 +7654,14 @@
         const xp=document.createElement("span"); xp.className="xpFloat"; xp.setAttribute("aria-hidden","true");
         xp.textContent=`+${gainXP} XP`+(mult>1?` ×${mult}`:"");
         mine.appendChild(xp); setTimeout(()=>xp.remove(),1100);
+        // コンボの節目と苦手撃破だけ、選択肢の記号から粒がはじける
+        if(cheer&&cheer.tier>=1){
+          const burst=document.createElement("span"); burst.className="burst"; burst.setAttribute("aria-hidden","true");
+          burst.innerHTML=Array.from({length:10},(_,i)=>`<i style="--a:${i*36}deg"></i>`).join("");
+          mine.appendChild(burst); setTimeout(()=>burst.remove(),1000);
+        }
       }
+      if(cheer&&cheer.tier===2&&!matchMedia("(prefers-reduced-motion: reduce)").matches) confetti();
     }
     const correctKeys=cur.choices.map((c,i)=>c.correct?"ABCDEF"[i]:"").filter(Boolean).join("・");
     const correctText=cur.choices.filter(c=>c.correct).map(c=>c.text).join(" ／ "), remain=Math.max(0,MASTER_HITS-r.streak);
@@ -7662,7 +7689,7 @@
     // 並びは「判定と正解 → 解説（根拠・各選択肢） → 手ごたえ・メモ → 記録」
     const eb=cur.els.explainBox;
     eb.innerHTML=`<div class="explain ${isCorrect?'ok':'ng'}">
-        <div class="head"><span class="verdictMark" data-mark="${isCorrect?'✓':'✕'}" aria-hidden="true"></span>${isCorrect?'正解':(picks.length?'不正解':'わからない<small>不正解として記録</small>')}</div>
+        <div class="head"><span class="verdictMark" data-mark="${isCorrect?'✓':'✕'}" aria-hidden="true"></span>${isCorrect?'正解'+(cheer?`<span class="cheer t${cheer.tier}">${esc(cheer.text)}</span>`:''):(picks.length?'不正解':'わからない<small>不正解として記録</small>')}</div>
         ${!isCorrect?`<p class="explainAnswer"><b>正解 ${correctKeys}</b>${esc(correctText)}</p>`:''}
         <div class="body">${renderExplainBody(q,cur,picks)}</div>
         ${pathwayHTML(q)}
@@ -7701,7 +7728,7 @@
         const rc=row.querySelector('[data-el="confResult"]'); rc.classList.remove("hidden"); rc.textContent="📅 次の復習："+reviewText(progress[q.id]); }
     }
     wirePathButtons(eb); wireMoreExpl(eb);
-    renderStreak(!!animate&&isCorrect);
+    renderStreak(!!animate&&isCorrect,!!(animate&&cheer&&cheer.tier===1));
     updatePageDone();
   }
   function updateBookmarkBtn(id){
