@@ -1,7 +1,7 @@
 // スタート画面の動くモデルで共通に使う型と小さな関数。
 // 色は CSS 変数から読むので、ライト／ダークの切り替えに追従する。
 
-export interface Palette { brand: string; brand2: string; good: string; bad: string; warn: string; text: string; muted: string }
+export interface Palette { brand: string; brand2: string; good: string; bad: string; warn: string; text: string; muted: string; card: string }
 
 // 1コマ描く関数。t は動き始めからの秒数、dt は前のコマからの秒数（止め絵では 0）
 export type Frame = (g: CanvasRenderingContext2D, t: number, dt: number, p: Palette) => void;
@@ -19,7 +19,7 @@ export function readPalette(): Palette {
   const v = (name: string, fallback: string): string => css.getPropertyValue(name).trim() || fallback;
   return {
     brand: v("--brand", "#147d8f"), brand2: v("--brand2", "#1f6feb"), good: v("--good", "#12a559"), bad: v("--bad", "#e23b52"),
-    warn: v("--warn", "#c98a00"), text: v("--text", "#141931"), muted: v("--muted", "#5b6488"),
+    warn: v("--warn", "#c98a00"), text: v("--text", "#141931"), muted: v("--muted", "#5b6488"), card: v("--card", "#ffffff"),
   };
 }
 
