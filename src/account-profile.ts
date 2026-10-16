@@ -95,6 +95,21 @@ export async function syncAccountIdentity(fallbackName = ""): Promise<{ ok: bool
   return { ok: true };
 }
 
+/**
+ * スタート画面の名前。公開名として端末に保存し、管理画面の利用者一覧に出るよう端末の名前としても送る。
+ * ログイン中ならアカウントの表示名にもする。通信に失敗しても端末の名前は残る。
+ */
+export async function saveStartName(raw: string): Promise<string> {
+  const name = setPublicNameLocal(raw);
+  if (!name || !supabase) return name;
+  const client = supabase;
+  await Promise.allSettled([
+    getDeviceId().then((deviceId) => client.rpc("set_device_name", { p_device_id: deviceId, p_name: name })),
+    savePublicName(name),
+  ]);
+  return name;
+}
+
 export async function savePublicName(raw: string): Promise<string> {
   const name = setPublicNameLocal(raw);
   if (!name) throw new Error("名前を入力してください");
