@@ -1289,7 +1289,7 @@
     --bad-bg:#fde8ec; --warn:#b86b00; --gold:#b88300;
     --shadow:0 18px 46px rgba(29,45,68,.12);
     --glow:0 1px 0 rgba(255,255,255,.8), 0 1px 2px rgba(29,45,68,.05);
-    --surface-blur:rgba(255,255,255,.82);
+    --surface-blur:rgba(255,255,255,.82); --on-fill:#fff;
     --h0:#eef2f6; --h1:#b7dce3; --h2:#74c3d1; --h3:#259eb4; --h4:#0c6f82;
   }
   @media (prefers-color-scheme: dark){
@@ -1300,7 +1300,7 @@
       --bad-bg:#3a1720; --warn:#ffd17a; --gold:#ffd36b;
       --shadow:0 18px 46px rgba(0,0,0,.34);
       --glow:0 0 0 1px rgba(255,255,255,.04);
-      --surface-blur:rgba(24,34,45,.82);
+      --surface-blur:rgba(24,34,45,.82); --on-fill:#0d1118;
       --h0:#202c38; --h1:#1c5260; --h2:#267487; --h3:#35a3bd; --h4:#7ed6e5;
     }
   }
@@ -1310,7 +1310,7 @@
     --brand2:#1f6feb; --good:#178a58; --good-bg:#e6f6ee; --bad:#cf334b;
     --bad-bg:#fde8ec; --warn:#b86b00; --gold:#b88300;
     --shadow:0 18px 46px rgba(29,45,68,.12); --glow:0 1px 0 rgba(255,255,255,.8), 0 1px 2px rgba(29,45,68,.05);
-    --surface-blur:rgba(255,255,255,.82);
+    --surface-blur:rgba(255,255,255,.82); --on-fill:#fff;
     --h0:#eef2f6; --h1:#b7dce3; --h2:#74c3d1; --h3:#259eb4; --h4:#0c6f82;
   }
   :root[data-theme="dark"]{
@@ -1319,7 +1319,7 @@
     --brand2:#76a9ff; --good:#55d892; --good-bg:#123323; --bad:#ff6678;
     --bad-bg:#3a1720; --warn:#ffd17a; --gold:#ffd36b;
     --shadow:0 18px 46px rgba(0,0,0,.34); --glow:0 0 0 1px rgba(255,255,255,.04);
-    --surface-blur:rgba(24,34,45,.82);
+    --surface-blur:rgba(24,34,45,.82); --on-fill:#0d1118;
     --h0:#202c38; --h1:#1c5260; --h2:#267487; --h3:#35a3bd; --h4:#7ed6e5;
   }
   html{scroll-behavior:smooth}
@@ -1502,30 +1502,60 @@
     font-family:inherit;font-weight:800;font-size:0.8125rem;padding:12px;border-radius:12px;cursor:pointer;transition:var(--motion-ui) var(--ease-emph)}
   .updatesModalDismiss:hover{border-color:var(--brand);color:var(--brand)}
 
-  /* ===== 初回のアカウント選択 ===== */
-  .accountChoiceBackdrop{position:fixed;inset:0;z-index:280;background:rgba(8,15,30,.68);backdrop-filter:blur(10px);
-    display:grid;place-items:center;padding:20px}
-  .accountChoiceCard{position:relative;width:min(460px,100%);overflow:hidden;background:var(--card);
-    border:1px solid color-mix(in srgb,var(--brand) 35%,var(--line));border-radius:26px;padding:28px;
-    box-shadow:0 28px 80px rgba(5,15,35,.28);animation:pop var(--motion-move) var(--ease-emph)}
-  .accountChoiceGlow{position:absolute;width:220px;height:220px;border-radius:50%;right:-85px;top:-105px;
-    background:radial-gradient(circle,rgba(50,184,255,.28),rgba(50,104,255,0));pointer-events:none}
-  .accountChoiceMark{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;margin-bottom:18px;
-    background:linear-gradient(145deg,rgba(43,178,255,.18),rgba(55,82,232,.2));border:1px solid rgba(61,158,255,.28);
-    color:var(--brand);font-size:1.6875rem;box-shadow:inset 0 1px rgba(255,255,255,.5)}
-  .accountChoiceEyebrow{font-size:0.65625rem;font-weight:900;letter-spacing:.13em;color:var(--brand);margin-bottom:6px}
-  .accountChoiceCard h2{font-size:1.5rem;line-height:calc(1.35 * var(--reading-line-scale,1));margin:0 0 10px;font-weight:950;letter-spacing:-.02em}
-  .accountChoiceLead{font-size:0.8125rem;line-height:calc(1.8 * var(--reading-line-scale,1));color:var(--muted);margin:0 0 22px}
-  .accountChoiceActions{display:grid;gap:10px}
-  .accountChoiceLogin,.accountChoiceGuest{width:100%;min-height:52px;border-radius:14px;font-family:inherit;
-    font-size:0.875rem;font-weight:900;cursor:pointer;transition:var(--motion-ui) var(--ease-emph);transition-property:transform,border-color,box-shadow}
-  .accountChoiceLogin{border:1px solid #dadce0;color:#202124;background:#fff;
-    box-shadow:0 10px 24px rgba(25,45,75,.12);display:flex;align-items:center;justify-content:center;gap:10px}
-  .accountChoiceLogin svg{width:20px;height:20px;display:block}
-  .accountChoiceGuest{border:1px solid var(--line);color:var(--text);background:var(--card2)}
-  .accountChoiceLogin:hover,.accountChoiceGuest:hover{transform:translateY(-1px)}
-  .accountChoiceNote{font-size:0.65625rem;line-height:calc(1.65 * var(--reading-line-scale,1));color:var(--muted);text-align:center;margin:13px 4px 0}
-  @media(max-width:480px){.accountChoiceBackdrop{padding:14px}.accountChoiceCard{padding:24px 20px;border-radius:22px}.accountChoiceCard h2{font-size:1.3125rem}}
+  /* ===== スタート画面（開くたびに1回。キネシンの動き・名前・使い方ガイド） ===== */
+  .startScreen{position:fixed;inset:0;z-index:280;overflow-y:auto;display:flex;justify-content:center;
+    padding:calc(env(safe-area-inset-top) + 12px) 20px calc(env(safe-area-inset-bottom) + 24px);color:var(--text);
+    background:radial-gradient(900px 520px at 50% -12%,color-mix(in srgb,var(--brand) 18%,transparent),transparent 65%),
+      linear-gradient(180deg,var(--bg),var(--bg2))}
+  .startInner{width:min(520px,100%);margin:auto 0;display:flex;flex-direction:column;gap:20px}
+  .startStage{position:relative;height:230px;margin:0 -20px}
+  .startModel{display:block;width:100%;height:100%}
+  .startModelNote{margin:-14px 0 0;font-size:0.75rem;color:var(--muted);text-align:center;line-height:calc(1.6 * var(--reading-line-scale,1))}
+  .startModelNote b{color:var(--brand)}
+  .startPanel{display:flex;flex-direction:column;gap:18px}
+  .startEyebrow{margin:0 0 8px;font-size:0.75rem;font-weight:700;letter-spacing:.12em;color:var(--brand);font-variant-numeric:tabular-nums}
+  .startTitle{margin:0;font-size:2.25rem;font-weight:800;line-height:1.2;letter-spacing:-.01em}
+  .startTitle span{color:var(--brand)}
+  .startCatch{margin:10px 0 0;font-size:1.0625rem;color:var(--muted);line-height:calc(1.7 * var(--reading-line-scale,1))}
+  .startCatch em{font-style:normal;font-weight:700;color:var(--text)}
+  .startAction{display:flex;flex-direction:column;gap:14px}
+  .startAction.first .startGuide{order:-1}
+  .startForm{display:grid;gap:10px}
+  .startForm label{display:grid;gap:3px;font-size:0.9375rem;font-weight:700}
+  .startForm label small{font-size:0.75rem;font-weight:400;color:var(--muted)}
+  .startForm input{min-height:52px;padding:0 16px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);
+    color:var(--text);font:inherit;font-size:1rem;transition:var(--motion-ui) var(--ease-emph);transition-property:border-color,box-shadow}
+  .startForm input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 22%,transparent)}
+  .startForm input[aria-invalid="true"]{border-color:var(--bad)}
+  .startError{margin:0;font-size:0.8125rem;font-weight:700;color:var(--bad)}
+  .startGo{min-height:56px;border:0;border-radius:16px;background:linear-gradient(135deg,var(--brand),var(--brand2));
+    font:inherit;color:var(--on-fill,#fff);font-size:1.0625rem;font-weight:800;cursor:pointer;box-shadow:0 14px 30px color-mix(in srgb,var(--brand) 28%,transparent);
+    transition:transform var(--motion-press) var(--ease-emph)}
+  .startGo:active{transform:scale(.98)}
+  .startGo small{display:block;font-size:0.75rem;font-weight:600;opacity:.85}
+  .startPick{justify-self:center;border:0;background:none;color:var(--brand);font:inherit;font-size:0.875rem;font-weight:700;cursor:pointer;padding:6px}
+  .startLogin{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;border:1px solid var(--line);border-radius:14px;
+    background:var(--card);color:var(--text);font:inherit;font-size:0.875rem;font-weight:700;cursor:pointer}
+  .startLogin svg{width:18px;height:18px}
+  .startGuide{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;text-align:left;border:1.5px solid var(--line);
+    border-radius:16px;background:var(--card);color:var(--text);font:inherit;cursor:pointer;transition:border-color var(--motion-ui) var(--ease-emph)}
+  .startGuide:hover,.startAction.first .startGuide{border-color:color-mix(in srgb,var(--brand) 55%,var(--line))}
+  .startGuide .sgIcon{flex:0 0 auto;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1.125rem;font-weight:800;
+    color:var(--brand);background:color-mix(in srgb,var(--brand) 13%,var(--card2))}
+  .startGuide .sgBody{flex:1;min-width:0}
+  .startGuide b{display:block;font-size:0.9375rem}
+  .startGuide small{display:block;font-size:0.75rem;color:var(--muted)}
+  .startGuide .sgBadge{display:none;margin-bottom:3px;padding:2px 8px;border-radius:99px;width:max-content;
+    background:var(--brand);color:var(--on-fill,#fff);font-size:0.6875rem;font-weight:700}
+  .startAction.first .sgBadge{display:block}
+  .startGuide .sgGo{color:var(--brand);font-weight:800}
+  @media(min-width:900px){
+    .startInner{width:min(1040px,100%);display:grid;grid-template-columns:1.15fr 1fr;align-items:center;gap:8px 56px}
+    .startStage{height:380px;margin:0}
+    .startModelNote{grid-column:1;margin:0}
+    .startPanel{grid-column:2;grid-row:1 / span 2}
+    .startTitle{font-size:3rem}
+  }
 
   /* confetti */
   .confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:70;pointer-events:none;border-radius:2px;animation:fall linear forwards}
@@ -1533,18 +1563,33 @@
 </style>
 </head>
 <body>
-<div class="accountChoiceBackdrop hidden" id="accountChoiceBackdrop">
-  <div class="accountChoiceCard" role="dialog" aria-modal="true" aria-labelledby="accountChoiceTitle" aria-describedby="accountChoiceDescription">
-    <div class="accountChoiceGlow"></div>
-    <div class="accountChoiceMark" aria-hidden="true">◇</div>
-    <div class="accountChoiceEyebrow">WELCOME</div>
-    <h2 id="accountChoiceTitle">学習データの使い方を<br>選んでください</h2>
-    <p class="accountChoiceLead" id="accountChoiceDescription">Googleでログインすると学習記録をアカウントに保存できます。ログインせず、この端末だけで学習を続けることもできます。</p>
-    <div class="accountChoiceActions">
-      <button type="button" class="accountChoiceLogin" id="accountChoiceLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.46h5.52a4.78 4.78 0 0 1-2.05 3.05l-.02.12 2.98 2.31.2.02c1.83-1.69 2.97-4.18 2.97-7.16Z"/><path fill="#34A853" d="M12 22c2.69 0 4.94-.88 6.59-2.4l-3.16-2.45c-.85.58-1.98.99-3.43.99-2.59 0-4.79-1.75-5.58-4.17l-.12.01-3.1 2.4-.04.12A9.96 9.96 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.42 13.97A6.1 6.1 0 0 1 6.1 12c0-.69.12-1.35.31-1.97v-.13L3.28 7.46l-.1.05A10 10 0 0 0 2 12c0 1.61.38 3.13 1.16 4.49l3.26-2.52Z"/><path fill="#EA4335" d="M12 5.86c1.87 0 3.13.81 3.85 1.48l2.8-2.74C16.93 3 14.69 2 12 2a9.96 9.96 0 0 0-8.84 5.51l3.25 2.52C7.21 7.61 9.41 5.86 12 5.86Z"/></svg>Googleでログイン</button>
-      <button type="button" class="accountChoiceGuest" id="accountChoiceGuest">ゲストで進む</button>
+<!-- スタート画面：アプリを開くたびに1回（表示するかはスクリプトの先頭で決める） -->
+<div class="startScreen hidden" id="startScreen" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+  <div class="startInner">
+    <div class="startStage" aria-hidden="true"><canvas class="startModel" id="startModel"></canvas></div>
+    <p class="startModelNote">いま動いているのは<b>キネシン</b>。微小管の上を ATP 1分子で 8 nm ずつ歩き、小胞を運ぶモータータンパク質です。</p>
+    <div class="startPanel">
+      <div class="startCopy">
+        <p class="startEyebrow">BASIC MEDICINE · <span id="startCount">過去問・予想問題</span></p>
+        <h1 class="startTitle" id="startTitle">基礎医学<br><span>演習アプリ</span></h1>
+        <p class="startCatch">解いて、読んで、<br><em>忘れる前に</em>もう一度。</p>
+      </div>
+      <div class="startAction" id="startAction">
+        <form class="startForm" id="startForm" novalidate>
+          <label for="startName">お名前<small>ニックネームでもかまいません。管理者の利用者一覧に表示されます（24文字まで）</small></label>
+          <input id="startName" maxlength="24" autocomplete="nickname" placeholder="例：医学 太郎" aria-describedby="startError">
+          <p class="startError hidden" id="startError" role="alert">名前を入力してください</p>
+          <button type="submit" class="startGo" id="startGo">スタート</button>
+          <button type="button" class="startPick hidden" id="startPick">ほかの科目をえらぶ</button>
+        </form>
+        <button type="button" class="startLogin hidden" id="startLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.46h5.52a4.78 4.78 0 0 1-2.05 3.05l-.02.12 2.98 2.31.2.02c1.83-1.69 2.97-4.18 2.97-7.16Z"/><path fill="#34A853" d="M12 22c2.69 0 4.94-.88 6.59-2.4l-3.16-2.45c-.85.58-1.98.99-3.43.99-2.59 0-4.79-1.75-5.58-4.17l-.12.01-3.1 2.4-.04.12A9.96 9.96 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.42 13.97A6.1 6.1 0 0 1 6.1 12c0-.69.12-1.35.31-1.97v-.13L3.28 7.46l-.1.05A10 10 0 0 0 2 12c0 1.61.38 3.13 1.16 4.49l3.26-2.52Z"/><path fill="#EA4335" d="M12 5.86c1.87 0 3.13.81 3.85 1.48l2.8-2.74C16.93 3 14.69 2 12 2a9.96 9.96 0 0 0-8.84 5.51l3.25 2.52C7.21 7.61 9.41 5.86 12 5.86Z"/></svg>Googleでログインして始める</button>
+        <button type="button" class="startGuide" id="startGuideBtn">
+          <span class="sgIcon" aria-hidden="true">?</span>
+          <span class="sgBody"><span class="sgBadge">はじめての方へ</span><b>使い方ガイド</b><small>できることと使い方を、図でまとめています</small></span>
+          <span class="sgGo" aria-hidden="true">→</span>
+        </button>
+      </div>
     </div>
-    <p class="accountChoiceNote">どちらを選んでも、あとから「設定・データ」でログインやログアウトができます。</p>
   </div>
 </div>
 <div class="pwaBanner hidden" id="installBanner" role="dialog" aria-label="ホーム画面に追加">
@@ -1685,6 +1730,8 @@
         <a href="#communityView" data-menu-view="communityView"><span class="mi">◌</span>コミュニティ</a>
         <a href="#moreView" data-menu-view="moreView"><span class="mi">⚙</span>設定・データ</a>
         <button type="button" id="themeBtn" data-menu-action="theme"><span class="mi">◐</span>テーマ切替</button>
+        <button type="button" data-menu-action="guide"><span class="mi">?</span>使い方ガイド</button>
+        <button type="button" data-menu-action="start"><span class="mi">◎</span>スタート画面</button>
       </div>
     </div>
     <div class="logo" id="appLogo" aria-label="基礎医学演習アプリのロゴ">
@@ -2344,6 +2391,11 @@
 <script>
 (function(){
   "use strict";
+
+  // スタート画面はアプリを開くたびに1回（再読み込みと ?action= のショートカットでは出さない）。中身と操作は「スタート画面」の節。
+  const START_SEEN_KEY="startSeen_v1";
+  const startScreenOn=(()=>{ try{ return sessionStorage.getItem(START_SEEN_KEY)!=="1" && !/[?&]action=/.test(location.search); }catch(e){ return false; } })();
+  if(startScreenOn){ const el=document.getElementById("startScreen"); if(el) el.classList.remove("hidden"); }
 
   /* ---------- 設定 ---------- */
   const STORE_KEY   = "quizProgress_v1";
@@ -3551,7 +3603,8 @@
       {icon:"⌁",name:"学習状況",go:()=>openView("statsView")},
       {icon:"♜",name:"ランキング",go:()=>openView("rankView")},
       {icon:"◌",name:"コミュニティ",badge:cmUnread>0?(cmUnread>99?"99+":String(cmUnread)):null,go:()=>openView("communityView")},
-      {icon:"⚙",name:"設定・データ",go:()=>openView("moreView")}
+      {icon:"⚙",name:"設定・データ",go:()=>openView("moreView")},
+      {icon:"?",name:"使い方ガイド",go:()=>whenCore(core=>{ if(core.guide) core.guide.open(); })}
     ];
     utility.innerHTML=tools.map((it,i)=>`<button type="button" class="utilityBtn" data-i="${i}">
       <span class="utIcon">${it.icon}</span><span>${esc(it.name)}</span>${it.badge?`<span class="utBadge">${esc(it.badge)}</span>`:""}
@@ -5039,29 +5092,72 @@
     openView("moreView");
     setTimeout(()=>{ const block=$("#syncBlock"); if(block) block.scrollIntoView({behavior:"smooth",block:"center"}); },80);
   });
-  function hideAccountChoice(){ const modal=$("#accountChoiceBackdrop"); if(modal) modal.classList.add("hidden"); }
-  function maybeShowAccountChoice(){
-    const ac=AC(), modal=$("#accountChoiceBackdrop"); if(!ac||!modal||ac.entryChoice()) return;
-    const state=ac.state();
-    if(state.status==="loading") return;
-    if(state.status==="authenticated"||state.status==="migrating"||state.status==="conflict"){
-      ac.chooseEntry("login"); hideAccountChoice(); return;
-    }
-    modal.classList.remove("hidden");
-    setTimeout(()=>{ const button=$("#accountChoiceLogin"); if(button) button.focus(); },0);
+  /* ---------- スタート画面（アプリを開くたびに1回。名前を入れて始める） ---------- */
+  // 表示するかはスクリプトの先頭（startScreenOn）で決める。ここでは中身と操作を受け持つ。
+  // 2回目以降は主ボタンを「つづきから」にして、科目えらびの「前回のつづき」と同じ1タップで学習に戻れるようにする。
+  let stopStartModel=null;
+  function whenCore(fn){
+    if(window.STUDY_CORE) fn(window.STUDY_CORE);
+    else window.addEventListener("study:core-ready",()=>fn(window.STUDY_CORE),{once:true});
   }
-  $("#accountChoiceLogin").onclick=async()=>{
-    const ac=AC(); if(!ac) return;
-    ac.chooseEntry("login"); hideAccountChoice();
-    try{ await ac.signIn("google"); }
-    catch(e){ toast(syncErrText(e.message)); window.dispatchEvent(new Event("study:open-account-settings")); }
+  function startResumeSubject(){ const id=savedSubjectId(); return SUBJECTS.find(x=>x.id===id&&subjectTileStats(x).total>0)||null; }
+  function renderStartScreen(){
+    const total=SUBJECTS.reduce((n,x)=>n+(x.expectQuestions||0),0);
+    $("#startCount").textContent=`${SUBJECTS.filter(x=>!x.draft).length}科目 · ${total.toLocaleString("ja-JP")}問`;
+    const resume=startResumeSubject();
+    $("#startGo").innerHTML=resume?`<small>つづきから</small>${esc(resume.emoji||"📘")} ${esc(resume.name||resume.id)}`:"スタート";
+    $("#startPick").classList.toggle("hidden",!resume||SUBJECTS.length<2);
+    whenCore(core=>{
+      const ac=core.account, input=$("#startName");
+      if(ac&&!input.value) input.value=ac.publicName()||"";
+      const state=ac&&ac.state();
+      $("#startLogin").classList.toggle("hidden",!(state&&state.socialEnabled&&state.status!=="authenticated"));
+      // 初めての人には、名前の入力より先に使い方ガイドを勧める
+      $("#startAction").classList.toggle("first",!!core.guide&&!core.guide.seen());
+      if(core.start&&!stopStartModel) stopStartModel=core.start.mountModel($("#startModel"));
+    });
+  }
+  function closeStartScreen(then){
+    try{ sessionStorage.setItem(START_SEEN_KEY,"1"); }catch(e){}
+    const screen=$("#startScreen");
+    const finish=()=>{
+      screen.classList.add("hidden"); screen.classList.remove("leaving");
+      if(stopStartModel){ stopStartModel(); stopStartModel=null; }
+      if(then) then();
+    };
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches) finish();
+    else { screen.classList.add("leaving"); setTimeout(finish,240); }
+  }
+  // 名前が空なら止める。入っていれば端末・アカウント・管理画面の利用者一覧へ保存する（通信は待たない）
+  function takeStartName(){
+    const input=$("#startName"), name=input.value.trim();
+    if(name) input.removeAttribute("aria-invalid"); else input.setAttribute("aria-invalid","true");
+    $("#startError").classList.toggle("hidden",!!name);
+    if(!name){ input.focus(); return null; }
+    whenCore(core=>{ if(core.account) core.account.saveStartName(name); });
+    return name;
+  }
+  $("#startName").oninput=()=>{ $("#startName").removeAttribute("aria-invalid"); $("#startError").classList.add("hidden"); };
+  $("#startForm").onsubmit=e=>{
+    e.preventDefault();
+    if(!takeStartName()) return;
+    whenCore(core=>{ const ac=core.account; if(ac&&!ac.entryChoice()) ac.chooseEntry("guest"); });
+    const resume=startResumeSubject();
+    closeStartScreen(resume?()=>chooseSubject(resume.id,null):null);
   };
-  $("#accountChoiceGuest").onclick=()=>{
-    const ac=AC(); if(!ac) return;
-    ac.chooseEntry("guest"); hideAccountChoice();
+  $("#startPick").onclick=()=>{ if(takeStartName()) closeStartScreen(openSubjectPicker); };
+  $("#startLogin").onclick=()=>{
+    if(!takeStartName()) return;
+    closeStartScreen(()=>whenCore(async core=>{
+      const ac=core.account; if(!ac) return;
+      ac.chooseEntry("login");
+      try{ await ac.signIn("google"); }
+      catch(e){ toast(syncErrText(e.message)); window.dispatchEvent(new Event("study:open-account-settings")); }
+    }));
   };
-  window.addEventListener("study:auth-changed",maybeShowAccountChoice);
-  setTimeout(maybeShowAccountChoice,1800);
+  $("#startGuideBtn").onclick=()=>whenCore(core=>{ if(core.guide) core.guide.open(); });
+  // メニューの「スタート画面」：名前を変えたいときや、ガイドを開き直したいときに
+  function openStartScreen(){ $("#startScreen").classList.remove("hidden"); renderStartScreen(); }
 
   /* ---------- カード学習ホーム ---------- */
   let cardHomeRenderToken=0;
@@ -8175,6 +8271,8 @@
     else if(e.target.closest('[data-menu-action="browse"]')){ closeMenu(); openBrowse(); }
     else if(e.target.closest('[data-menu-action="qbrowse"]')){ closeMenu(); openQBrowse(); }
     else if(e.target.closest('[data-menu-action="subjects"]')){ closeMenu(); openSubjectPicker(); }
+    else if(e.target.closest('[data-menu-action="guide"]')){ closeMenu(); whenCore(core=>{ if(core.guide) core.guide.open(); }); }
+    else if(e.target.closest('[data-menu-action="start"]')){ closeMenu(); openStartScreen(); }
   });
   // 科目が1つしかないときはメニューの「科目をえらぶ」も出さない
   (function(){ const b=$("#menuSubjects"); if(b && SUBJECTS.length<2) b.classList.add("hidden"); })();
@@ -8270,7 +8368,8 @@
       renderHome();
       if(!DATA.length) $("#subtitle").textContent="問題データがありません";
     }
-    if(!firstLaunch && unreadUpdatesCount()>0) openUpdatesModal();
+    if(startScreenOn) renderStartScreen();
+    else if(!firstLaunch && unreadUpdatesCount()>0) openUpdatesModal();
   })();
 
   /* ---------- PWA：Service Worker / 更新通知 / インストール導線 ---------- */

@@ -106,7 +106,9 @@ import { syncAccountData, syncSnapshotWithRetry } from "./account-sync";
 import { getAccountEntryChoice, saveAccountEntryChoice } from "./account-choice";
 import { getCardHomeSnapshot } from "./card-home";
 import { renderMemoryCards } from "./memory-cards";
-import { syncAccountIdentity } from "./account-profile";
+import { getPublicName, saveStartName, syncAccountIdentity } from "./account-profile";
+import { mountKinesin } from "./start-model";
+import { guideSeen, openGuide } from "./guide";
 import { countUsage, setUsageSubject, startUsagePing } from "./usage";
 import type { LegacyProgress, ReviewRating } from "./types";
 
@@ -217,6 +219,8 @@ window.STUDY_CORE = {
     setMigrating: setAccountMigrationState,
     entryChoice: getAccountEntryChoice,
     chooseEntry: saveAccountEntryChoice,
+    publicName: getPublicName,
+    saveStartName,
     signOut: signOutAccount,
     deleteAccount,
     bindCurrent: bindCurrentAccount,
@@ -226,6 +230,8 @@ window.STUDY_CORE = {
       return resolveAccountSwitch(action);
     },
   },
+  start: { mountModel: mountKinesin },
+  guide: { open: openGuide, seen: guideSeen },
   undoLastReview,
   usage: { setSubject: setUsageSubject, count: countUsage },
   memory: {

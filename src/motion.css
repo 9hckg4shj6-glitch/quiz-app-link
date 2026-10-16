@@ -110,7 +110,17 @@ header.app{view-transition-name:app-header}
 .hubGrid>:nth-child(n+6),.spGrid>:nth-child(n+6){animation-delay:220ms}
 @keyframes focusIn{from{opacity:0;filter:blur(6px);transform:scale(.97)}}
 
-/* 6. お祝い：結果の点数は着地するように大きさが落ち着く（数字は countUp が数える） */
+/* 6. スタート画面：モデルがゆっくり現れ、文字と入力が順にせり上がる。閉じるときは加速して上へ抜ける */
+.startScreen:not(.hidden) .startStage{animation:fadeIn var(--motion-celebrate) var(--ease-emph) backwards}
+.startScreen:not(.hidden) :is(.startCopy,.startAction,.startModelNote){animation:riseIn var(--motion-screen) var(--ease-emph) backwards}
+.startScreen:not(.hidden) .startAction{animation-delay:90ms}
+.startScreen:not(.hidden) .startModelNote{animation-delay:180ms}
+.startScreen.leaving{animation:startLeave var(--motion-move) var(--ease-accel) forwards;pointer-events:none}
+.startForm input[aria-invalid="true"]{animation:nudge var(--motion-move) var(--ease-emph)}
+@keyframes startLeave{to{opacity:0;transform:translateY(-16px)}}
+@keyframes nudge{35%{transform:translateX(-3px)}70%{transform:translateX(3px)}}
+
+/* 7. お祝い：結果の点数は着地するように大きさが落ち着く（数字は countUp が数える） */
 .result .score{animation:scoreSettle var(--motion-celebrate) var(--ease-spring) backwards}
 @keyframes scoreSettle{from{opacity:0;transform:scale(.7)}}
 
@@ -124,8 +134,8 @@ header.app{view-transition-name:app-header}
 /* 動きを減らす設定では、位置の動きをやめて、必要なところだけフェードに置き換える */
 @media(prefers-reduced-motion:reduce){
   .ink{display:none}
-  .reveal .choice,.reveal .choice::before,.reveal .choice .key,.reveal .choice .choiceStatus,.qtop .streak b,.quizNav #nextBtn{animation:none!important}
-  .reveal .explain,.qcard.q-in-fwd,.qcard.q-in-back{animation-name:fadeIn}
+  .reveal .choice,.reveal .choice::before,.reveal .choice .key,.reveal .choice .choiceStatus,.qtop .streak b,.quizNav #nextBtn,.startForm input{animation:none!important}
+  .reveal .explain,.qcard.q-in-fwd,.qcard.q-in-back,.startScreen :is(.startCopy,.startAction,.startModelNote){animation-name:fadeIn}
   .xpFloat{animation-name:savedFlash}
   ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
 }

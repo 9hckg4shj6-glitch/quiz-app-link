@@ -1,0 +1,83 @@
+/* ===== 使い方ガイド（src/guide.ts）。スマホでは全画面、PCでは中央のパネル ===== */
+.guideDialog{width:min(760px,100%);max-width:100%;height:100%;max-height:100%;margin:0 auto;padding:0;border:0;
+  background:var(--bg2);color:var(--text);overflow-y:auto;overscroll-behavior:contain}
+.guideDialog[open]{animation:riseIn var(--motion-screen) var(--ease-emph)}
+.guideDialog::backdrop{background:rgba(8,15,30,.5);animation:fadeIn var(--motion-screen) var(--ease-emph)}
+@media(min-width:800px){.guideDialog{height:calc(100% - 48px);margin:24px auto;border-radius:22px;border:1px solid var(--line)}}
+
+.guideBar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:calc(env(safe-area-inset-top) + 10px) 18px 10px;border-bottom:1px solid var(--line);
+  background:color-mix(in srgb,var(--bg2) 88%,transparent);backdrop-filter:blur(14px)}
+.guideBar b{font-size:0.9375rem}
+.guideClose{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--muted);font:inherit;cursor:pointer}
+.guideBody{padding:20px 18px calc(env(safe-area-inset-bottom) + 40px);display:flex;flex-direction:column;gap:28px}
+
+.guideEyebrow{margin:0 0 6px;font-size:0.6875rem;font-weight:700;letter-spacing:.14em;color:var(--brand)}
+.guideHero h1{margin:0 0 8px;font-size:1.625rem;line-height:1.3}
+.guideHero p:last-child{margin:0;color:var(--muted);line-height:calc(1.8 * var(--reading-line-scale,1))}
+.guideToc{display:flex;flex-wrap:wrap;gap:8px}
+.guideChip{padding:8px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--text);
+  font:inherit;font-size:0.8125rem;font-weight:600;cursor:pointer;transition:border-color var(--motion-ui) var(--ease-emph)}
+.guideChip:hover{border-color:var(--brand)}
+.guideChip.recommended{border-color:color-mix(in srgb,var(--brand) 55%,var(--line));color:var(--brand)}
+
+.guideSection{scroll-margin-top:70px}
+.guideSection h2{margin:0 0 12px;font-size:1.25rem;line-height:1.4;outline:none}
+.guideSection>p{margin:0 0 10px;line-height:calc(1.8 * var(--reading-line-scale,1))}
+.guideQuick{display:grid;gap:10px;margin-bottom:6px}
+@media(min-width:640px){.guideQuick{grid-template-columns:repeat(3,1fr)}}
+.guideQuick>div{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.guideQuick b{display:inline-grid;place-items:center;width:24px;height:24px;margin-right:8px;border-radius:50%;background:var(--brand);color:var(--on-fill,#fff);font-size:0.8125rem}
+.guideQuick strong{font-size:0.9375rem}
+.guideQuick p{margin:8px 0 0;font-size:0.8125rem;color:var(--muted);line-height:calc(1.7 * var(--reading-line-scale,1))}
+.guideSteps{margin:0;padding:0;list-style:none;counter-reset:step;display:grid;gap:10px}
+.guideSteps li{position:relative;padding-left:34px;line-height:calc(1.75 * var(--reading-line-scale,1));counter-increment:step}
+.guideSteps li::before{content:counter(step);position:absolute;left:0;top:1px;display:grid;place-items:center;width:22px;height:22px;
+  border-radius:50%;background:var(--warn);color:var(--on-fill,#fff);font-size:0.75rem;font-weight:800}
+.guideTips{margin:12px 0 0;padding:12px 14px 12px 30px;border-radius:12px;background:var(--card2);color:var(--muted);font-size:0.875rem;
+  line-height:calc(1.75 * var(--reading-line-scale,1))}
+.guideTips li+li{margin-top:6px}
+.guideDefs{margin:0;display:grid;gap:10px}
+.guideDefs>div{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.guideDefs dt{font-weight:700;margin-bottom:4px}
+.guideDefs dd{margin:0;color:var(--muted);font-size:0.875rem;line-height:calc(1.75 * var(--reading-line-scale,1))}
+
+/* 図：画面を簡略化したイラスト。色はアプリの変数から取るので、ライト／ダークに合う */
+.guideFig{display:block;width:100%;max-width:380px;height:auto;margin:6px auto 16px}
+.guideFig text{fill:var(--text);font-size:10px;font-family:inherit}
+.guideFig .f-screen{fill:var(--bg);stroke:var(--line)}
+.guideFig .f-card{fill:var(--card);stroke:var(--line)}
+.guideFig .f-chip{fill:var(--card2);stroke:var(--line)}
+.guideFig .f-soft{fill:var(--line)}
+.guideFig .f-on{fill:color-mix(in srgb,var(--brand) 12%,var(--card));stroke:var(--brand)}
+.guideFig .f-primary{fill:var(--brand)}
+.guideFig .f-good{fill:var(--good-bg);stroke:var(--good)}
+.guideFig .f-good-key{fill:var(--good)}
+.guideFig .f-bad{fill:var(--bad-bg);stroke:var(--bad)}
+.guideFig .f-bad-key{fill:var(--bad)}
+.guideFig .f-exam{fill:color-mix(in srgb,var(--warn) 10%,var(--card));stroke:color-mix(in srgb,var(--warn) 50%,var(--line))}
+.guideFig .f-streak{fill:color-mix(in srgb,var(--warn) 22%,var(--card2))}
+.guideFig .f-axis{fill:none;stroke:var(--muted);stroke-width:1}
+.guideFig .f-forget{fill:none;stroke:var(--warn);stroke-width:1;stroke-dasharray:4 3}
+.guideFig .f-curve{fill:none;stroke:var(--brand);stroke-width:2.2;stroke-linejoin:round}
+.guideFig .f-dot{fill:var(--brand)}
+.guideFig .f-hl{fill:none;stroke:var(--warn);stroke-width:1.6;stroke-dasharray:5 3}
+.guideFig .f-badge circle{fill:var(--warn)}
+.guideFig .f-badge text{fill:var(--on-fill,#fff);font-size:10px;font-weight:800}
+.guideFig .f-pulse{transform-box:fill-box;transform-origin:center;animation:figPulse 1.8s var(--ease-emph) infinite}
+@keyframes figPulse{from{opacity:.55;transform:scale(1)}to{opacity:0;transform:scale(2.1)}}
+.guideFig .t-title{font-size:12.5px;font-weight:800}
+.guideFig .t-mid{font-size:12px}
+.guideFig .t-big{font-size:15px;font-weight:800}
+.guideFig .t-label{font-size:9px;font-weight:700;fill:var(--muted)}
+.guideFig .t-strong{font-weight:700}
+.guideFig .t-small{font-size:8.5px;fill:var(--muted)}
+.guideFig .t-tiny{font-size:7.5px;fill:var(--muted)}
+.guideFig .t-dark{fill:var(--text)}
+.guideFig .t-brand{fill:var(--brand);font-weight:700}
+.guideFig .t-good{fill:var(--good);font-weight:700}
+.guideFig .t-bad{fill:var(--bad);font-weight:700}
+.guideFig .t-warn{fill:var(--warn);font-weight:700}
+.guideFig .t-on{fill:var(--on-fill,#fff);font-weight:700}
+
+@media(prefers-reduced-motion:reduce){.guideFig .f-pulse{animation:none;opacity:0}}

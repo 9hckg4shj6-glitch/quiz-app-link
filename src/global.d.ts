@@ -58,12 +58,19 @@ declare global {
         setMigrating: (active: boolean) => AccountState;
         entryChoice: () => "login" | "guest" | null;
         chooseEntry: (choice: "login" | "guest") => void;
+        publicName: () => string;
+        /** スタート画面の名前を端末・アカウント・管理画面の利用者一覧へ保存する */
+        saveStartName: (raw: string) => Promise<string>;
         signOut: () => Promise<void>;
         deleteAccount: () => Promise<void>;
         bindCurrent: () => Promise<AccountState>;
         syncIdentity: (fallbackName?: string) => Promise<{ ok: boolean; error?: string }>;
         resolveSwitch: (action: "replace" | "cancel") => Promise<AccountState>;
       };
+      /** スタート画面の動くモデル（src/start-model.ts）。戻り値で止める */
+      start: { mountModel: (canvas: HTMLCanvasElement) => () => void };
+      /** 使い方ガイド（src/guide.ts）。section で開く章を指定する */
+      guide: { open: (section?: string) => void; seen: () => boolean };
       undoLastReview: (cardId: string) => Promise<StoredSchedule | null>;
       memory: {
         retrievability: (progress: Record<string, unknown>, atMs?: number) => number | null;
