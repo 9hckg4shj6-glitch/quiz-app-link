@@ -1519,7 +1519,7 @@
   .startCatch{margin:10px 0 0;font-size:1.0625rem;color:var(--muted);line-height:calc(1.7 * var(--reading-line-scale,1))}
   .startCatch em{font-style:normal;font-weight:700;color:var(--text)}
   .startAction{display:flex;flex-direction:column;gap:14px}
-  .startAction.first .startGuide{order:-1}
+  .startAction.first .guideEntry{order:-1}
   .startForm{display:grid;gap:10px}
   .startForm label{display:grid;gap:3px;font-size:0.9375rem;font-weight:700}
   .startForm label small{font-size:0.75rem;font-weight:400;color:var(--muted)}
@@ -1535,18 +1535,20 @@
   .startLogin{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;border:1px solid var(--line);border-radius:14px;
     background:var(--card);color:var(--text);font:inherit;font-size:0.875rem;font-weight:700;cursor:pointer}
   .startLogin svg{width:18px;height:18px}
-  .startGuide{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;text-align:left;border:1.5px solid var(--line);
+  /* 使い方ガイドの入口（スタート画面と各科目のホームで共通）。初めての人には「はじめての方へ」を出す */
+  .guideEntry{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;text-align:left;border:1.5px solid var(--line);
     border-radius:16px;background:var(--card);color:var(--text);font:inherit;cursor:pointer;transition:border-color var(--motion-ui) var(--ease-emph)}
-  .startGuide:hover,.startAction.first .startGuide{border-color:color-mix(in srgb,var(--brand) 55%,var(--line))}
-  .startGuide .sgIcon{flex:0 0 auto;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1.125rem;font-weight:800;
+  .guideEntry:hover,.guideEntry.first{border-color:color-mix(in srgb,var(--brand) 55%,var(--line))}
+  .guideEntry .sgIcon{flex:0 0 auto;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1.125rem;font-weight:800;
     color:var(--brand);background:color-mix(in srgb,var(--brand) 13%,var(--card2))}
-  .startGuide .sgBody{flex:1;min-width:0}
-  .startGuide b{display:block;font-size:0.9375rem}
-  .startGuide small{display:block;font-size:0.75rem;color:var(--muted)}
-  .startGuide .sgBadge{display:none;margin-bottom:3px;padding:2px 8px;border-radius:99px;width:max-content;
+  .guideEntry .sgBody{flex:1;min-width:0}
+  .guideEntry b{display:block;font-size:0.9375rem}
+  .guideEntry small{display:block;font-size:0.75rem;color:var(--muted)}
+  .guideEntry .sgBadge{display:none;margin-bottom:3px;padding:2px 8px;border-radius:99px;width:max-content;
     background:var(--brand);color:var(--on-fill,#fff);font-size:0.6875rem;font-weight:700}
-  .startAction.first .sgBadge{display:block}
-  .startGuide .sgGo{color:var(--brand);font-weight:800}
+  .guideEntry.first .sgBadge{display:block}
+  .guideEntry .sgGo{color:var(--brand);font-weight:800}
+  .homeGuide{margin-top:14px}
   @media(min-width:900px){
     .startInner{width:min(1040px,100%);display:grid;grid-template-columns:1.15fr 1fr;align-items:center;gap:8px 56px}
     .startStage{height:380px;margin:0}
@@ -1580,7 +1582,7 @@
           <button type="submit" class="startGo" id="startGo">スタートして科目を選ぶ</button>
         </form>
         <button type="button" class="startLogin hidden" id="startLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.46h5.52a4.78 4.78 0 0 1-2.05 3.05l-.02.12 2.98 2.31.2.02c1.83-1.69 2.97-4.18 2.97-7.16Z"/><path fill="#34A853" d="M12 22c2.69 0 4.94-.88 6.59-2.4l-3.16-2.45c-.85.58-1.98.99-3.43.99-2.59 0-4.79-1.75-5.58-4.17l-.12.01-3.1 2.4-.04.12A9.96 9.96 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.42 13.97A6.1 6.1 0 0 1 6.1 12c0-.69.12-1.35.31-1.97v-.13L3.28 7.46l-.1.05A10 10 0 0 0 2 12c0 1.61.38 3.13 1.16 4.49l3.26-2.52Z"/><path fill="#EA4335" d="M12 5.86c1.87 0 3.13.81 3.85 1.48l2.8-2.74C16.93 3 14.69 2 12 2a9.96 9.96 0 0 0-8.84 5.51l3.25 2.52C7.21 7.61 9.41 5.86 12 5.86Z"/></svg>Googleでログインして始める</button>
-        <button type="button" class="startGuide" id="startGuideBtn">
+        <button type="button" class="guideEntry" id="startGuideBtn">
           <span class="sgIcon" aria-hidden="true">?</span>
           <span class="sgBody"><span class="sgBadge">はじめての方へ</span><b>使い方ガイド</b><small>できることと使い方を、図でまとめています</small></span>
           <span class="sgGo" aria-hidden="true">→</span>
@@ -1841,6 +1843,11 @@
 
     <div class="homeMainLabel"><b>学習メニュー</b><span>目的を選んで始める</span></div>
     <div class="hubGrid" id="hubGrid"></div>
+    <button type="button" class="guideEntry homeGuide" id="homeGuideBtn">
+      <span class="sgIcon" aria-hidden="true">?</span>
+      <span class="sgBody"><span class="sgBadge">はじめての方へ</span><b>使い方ガイド</b><small>できることと使い方を、図でまとめています</small></span>
+      <span class="sgGo" aria-hidden="true">→</span>
+    </button>
     <div class="homeUtility" id="homeUtility" aria-label="その他の機能"></div>
   </section>
 
@@ -3600,13 +3607,13 @@
       {icon:"⌁",name:"学習状況",go:()=>openView("statsView")},
       {icon:"♜",name:"ランキング",go:()=>openView("rankView")},
       {icon:"◌",name:"コミュニティ",badge:cmUnread>0?(cmUnread>99?"99+":String(cmUnread)):null,go:()=>openView("communityView")},
-      {icon:"⚙",name:"設定・データ",go:()=>openView("moreView")},
-      {icon:"?",name:"使い方ガイド",go:()=>whenCore(core=>{ if(core.guide) core.guide.open(); })}
+      {icon:"⚙",name:"設定・データ",go:()=>openView("moreView")}
     ];
     utility.innerHTML=tools.map((it,i)=>`<button type="button" class="utilityBtn" data-i="${i}">
       <span class="utIcon">${it.icon}</span><span>${esc(it.name)}</span>${it.badge?`<span class="utBadge">${esc(it.badge)}</span>`:""}
     </button>`).join("");
     utility.querySelectorAll(".utilityBtn").forEach(el=>{ el.onclick=tools[+el.dataset.i].go; });
+    whenCore(core=>{ $("#homeGuideBtn").classList.toggle("first",!!core.guide&&!core.guide.seen()); });
   }
 
   /* ---------- 公開ランキング（解いた問題数） ---------- */
@@ -5106,7 +5113,8 @@
       const state=ac&&ac.state();
       $("#startLogin").classList.toggle("hidden",!(state&&state.socialEnabled&&state.status!=="authenticated"));
       // 初めての人には、名前の入力より先に使い方ガイドを勧める
-      $("#startAction").classList.toggle("first",!!core.guide&&!core.guide.seen());
+      const first=!!core.guide&&!core.guide.seen();
+      $("#startAction").classList.toggle("first",first); $("#startGuideBtn").classList.toggle("first",first);
       if(core.start&&!stopStartModel) stopStartModel=core.start.mountModel($("#startModel"));
     });
   }
@@ -5147,7 +5155,9 @@
       catch(e){ toast(syncErrText(e.message)); window.dispatchEvent(new Event("study:open-account-settings")); }
     }));
   };
-  $("#startGuideBtn").onclick=()=>whenCore(core=>{ if(core.guide) core.guide.open(); });
+  function openGuideFrom(btn){ btn.classList.remove("first"); whenCore(core=>{ if(core.guide) core.guide.open(); }); }
+  $("#startGuideBtn").onclick=()=>openGuideFrom($("#startGuideBtn"));
+  $("#homeGuideBtn").onclick=()=>openGuideFrom($("#homeGuideBtn"));
   // メニューの「スタート画面」：名前を変えたいときや、ガイドを開き直したいときに
   function openStartScreen(){ $("#startScreen").classList.remove("hidden"); renderStartScreen(); }
 

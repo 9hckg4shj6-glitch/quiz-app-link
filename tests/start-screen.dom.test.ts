@@ -64,4 +64,13 @@ describe("スタート画面", () => {
     $("#startGuideBtn").click();
     expect(guide.open).toHaveBeenCalled();
   });
+
+  it("各科目のホームにも使い方ガイドの入口を出し、押すとガイドを開く", async () => {
+    const { $, guide } = boot();
+    await tick(20);
+    expect($("#homeGuideBtn").classList.contains("first")).toBe(true);
+    $("#homeGuideBtn").click();
+    expect(guide.open).toHaveBeenCalled();
+    expect($("#homeGuideBtn").classList.contains("first")).toBe(false);
+  });
 });

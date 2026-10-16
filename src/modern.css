@@ -451,7 +451,6 @@ body.focus-mode header.app{display:none}
   .hubBtn.searchHub{min-height:96px;display:flex}
   .hubBtn.searchHub .hubIcon{margin:0 13px 0 0}
   .homeUtility{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:16px;padding-top:14px}
-  .homeUtility .utilityBtn:last-child:nth-child(odd){grid-column:1 / -1}
   .utilityBtn{min-height:48px;padding:8px}
   .reviewTop{margin-bottom:14px}
   .reviewTop .pill{font-size:1.0625rem}
