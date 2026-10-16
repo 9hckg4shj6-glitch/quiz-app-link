@@ -6055,7 +6055,7 @@
     if(!hasSlides(q)) return "";
     const n=q.slideRefs.reduce((s,r)=>s+(r.pages?r.pages.length:0),0);
     // 同じスライドを扱う学習編の項目（1問が2つの論点にまたがることがあるので2件まで）
-    const lessons=lessonSectsForQuestion(q).slice(0,2).map(h=>`<button type="button" class="moreExpl lessonLink" data-lesson-link="${esc(h.d.deck)}" data-lesson-sect="${h.i}"><span class="meLabel">📗 学習編で読む</span><span class="meChev">${esc(lessonKicker(h.d))}「${esc(h.sc.heading||`項目 ${h.i+1}`)}」 ›</span></button>`).join("");
+    const lessons=(lessonLinksEnabled()?lessonSectsForQuestion(q).slice(0,2):[]).map(h=>`<button type="button" class="moreExpl lessonLink" data-lesson-link="${esc(h.d.deck)}" data-lesson-sect="${h.i}"><span class="meLabel">📗 学習編で読む</span><span class="meChev">${esc(lessonKicker(h.d))}「${esc(h.sc.heading||`項目 ${h.i+1}`)}」 ›</span></button>`).join("");
     return lessons+`<button type="button" class="moreExpl" data-more="${esc(q.id)}"><span class="meLabel">📖 解説をさらに見る</span><span class="meChev">・根拠スライド ${n}枚 ›</span></button>`;
   }
   // 「解説をさらに見る」ボタンを配線する（描画のたびに呼ぶ）
@@ -6263,6 +6263,10 @@
      問題の slideRefs と項目の slides は同じスライドを指すので、対応表は別に持たない。
      キーは "08a:15" の形（枝番デッキのページも区別できる）。科目を切り替えると DATA と LESSONS が差し替わるので作り直す。 */
   let lessonLinkCache=null;
+  /* 解説→学習編と、学習編→関連問題の行き来は、決まった表示名の人にだけ出す。
+     表示名は端末で変えられるので鍵ではない（見せ分けのため）。全角数字でも一致するよう NFKC でそろえる。 */
+  const LESSON_LINK_USERS=new Set(["シマエナガ1号","シマエナガ2号"]);
+  function lessonLinksEnabled(){ const cm=CM(); return !!cm && LESSON_LINK_USERS.has(cm.getName().normalize("NFKC")); }
   function questionSlideKeys(q){ return (q.slideRefs||[]).flatMap(r=>(r.pages||[]).map(p=>`${r.deck}:${Number(p)}`)); }
   function lessonSectSlideKeys(d,sc){ return (sc.slides||[]).map(e=>{ const r=lessonSlideRef(d.deck,e); return `${r.deck}:${r.page}`; }); }
   function lessonLinks(){
@@ -6617,8 +6621,9 @@
           <span class="lqCurrent" id="lessonQuickCurrent">章のはじめ</span></span>
         <span class="lqProgress" id="lessonQuickCount">0 / ${sects.length}</span><span class="lqChev" aria-hidden="true">⌄</span>
       </button></div>`:"";
+    const showPractice=lessonLinksEnabled();
     const sectHTML=sects.map((sc,i)=>{ const done=!!(read&&isLessonRead(lessonReadKey(d.deck,sc,i)));
-      const qn=questionsForLessonSect(d,sc).length;
+      const qn=showPractice?questionsForLessonSect(d,sc).length:0;
       const practice=qn?`<button type="button" class="lsPracticeBtn" data-sect-practice="${i}">✏️ この論点を${Math.min(3,qn)}問解く</button>`:"";
       const readBtn=read?`<button type="button" class="lsReadBtn" data-read="${i}" aria-pressed="${done}">${done?"✓ 学習済み":"学習済みにする"}</button>`:"";
       return `<div class="lsSect${done?" isRead":""}" id="${lessonSectionId(d.deck,i)}" tabindex="-1">
