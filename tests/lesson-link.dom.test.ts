@@ -21,7 +21,7 @@ async function until(check: () => boolean): Promise<void> {
 }
 function click(win: any, selector: string) { const el = win.document.querySelector(selector); expect(el, selector).toBeTruthy(); el.click(); }
 function shown(win: any, selector: string) { return !win.document.querySelector(selector).classList.contains("hidden"); }
-async function boot(): Promise<any> {
+async function boot(name = "シマエナガ1号"): Promise<any> {
   const dom = new JSDOM(html, { url: "http://localhost/", runScripts: "outside-only", pretendToBeVisual: true, virtualConsole: new VirtualConsole() });
   doms.push(dom);
   const win = dom.window as any;
@@ -33,7 +33,7 @@ async function boot(): Promise<any> {
   win.SUBJECTS = [{ id: "test", name: "テスト", learningMode: "lessons" }];
   win.APP_UPDATES = [];
   win.STUDY_CORE = { practiceSessions: { save: savePracticeSession, get: getPracticeSession, delete: deletePracticeSession, clear: clearPracticeSessions },
-    scheduleReview: scheduled };
+    scheduleReview: scheduled, community: { enabled: () => false, getName: () => name } };
   win.localStorage.setItem("quizCustomData_v1", JSON.stringify([question]));
   win.eval(script);
   await until(() => win.document.querySelector("#appTitle").textContent === "テスト");
@@ -74,6 +74,18 @@ describe("解く→分かる の導線", () => {
     expect(shown(win, "#lessonView")).toBe(false);
     expect(win.document.querySelector("#qBlocks .explain.ng")).toBeTruthy();
     expect(win.document.querySelector("#lessonBack").textContent).toBe("← 授業回一覧");
+  });
+
+  it("決まった表示名でない人には、解説→学習編・学習編→問題のボタンを出さない", async () => {
+    const win = await boot("テスト太郎"); await start(win);
+    choose(win, "違う答え");
+    expect(win.document.querySelectorAll("#qBlocks .lessonLink")).toHaveLength(0);
+    const other = await boot("テスト太郎");
+    click(other, '#primaryNav [data-primary="learn"]');
+    await until(() => !!other.document.querySelector('[data-deck="01"]'));
+    click(other, '[data-deck="01"]');
+    await until(() => shown(other, "#lessonView") && !!other.document.querySelector("#lesson-section-01-2"));
+    expect(other.document.querySelector("#lesson-section-01-2 [data-sect-practice]")).toBeNull();
   });
 
   it("学習編の項目から、同じスライドを根拠に持つ問題だけを解ける", async () => {
