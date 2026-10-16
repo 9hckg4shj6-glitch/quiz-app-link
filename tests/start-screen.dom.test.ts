@@ -52,8 +52,8 @@ describe("スタート画面", () => {
     expect(account.chooseEntry).toHaveBeenCalledWith("guest");
     await tick(300);
     expect($("#startScreen").classList.contains("hidden")).toBe(true);
-    expect(win.sessionStorage.getItem("startSeen_v1")).toBe("1");
-    const again = boot({ startSeen_v1: "1" });
+    expect(win.sessionStorage.getItem("startSeen_v2")).toBe("1");
+    const again = boot({ startSeen_v2: "1" });
     expect(again.$("#startScreen").classList.contains("hidden")).toBe(true);
   });
 

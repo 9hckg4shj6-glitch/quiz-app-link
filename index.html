@@ -2406,7 +2406,7 @@
   "use strict";
 
   // スタート画面はアプリを開くたびに1回（再読み込みと ?action= のショートカットでは出さない）。中身と操作は「スタート画面」の節。
-  const START_SEEN_KEY="startSeen_v1";
+  const START_SEEN_KEY="startSeen_v2";   // 版を上げると、全員の次の起動でもう一度出す（v2＝2026-10-16の大型更新）
   const startScreenOn=(()=>{ try{ return sessionStorage.getItem(START_SEEN_KEY)!=="1" && !/[?&]action=/.test(location.search); }catch(e){ return false; } })();
   if(startScreenOn){ const el=document.getElementById("startScreen"); if(el) el.classList.remove("hidden"); }
 
