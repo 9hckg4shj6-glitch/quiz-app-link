@@ -8,6 +8,7 @@ const mainTs = readFileSync(new URL("../src/main.ts", import.meta.url), "utf8");
  * 「機能の利用中に勝手にホーム画面へ戻される」不具合の回帰テスト。
  * 原因は (1) 自動同期・カード編集後の再描画が renderHome() を呼んでいたこと、
  * (2) Service Worker の新版が有効化された瞬間にページを再読み込みしていたこと。
+ * (2) は古い版の端末が残り続けたため、2026-10-17 から意図してその場で再読み込みする方針に戻した。
  */
 describe("利用中に画面を奪われない", () => {
   const legacyRefresh = html.slice(
@@ -25,12 +26,8 @@ describe("利用中に画面を奪われない", () => {
     expect(html).toContain('if(!$("#home").classList.contains("hidden")){ renderHomeContent(); return; }');
   });
 
-  it("演習中は新バージョンの再読み込みを保留し、ホームへ戻ったとき・裏へ回ったときに適用する", () => {
-    expect(html).toContain("window.__studyAppUpdateReady=()=>{");
-    expect(html).toContain('["home","subjectPicker"].includes(pendingScreenId||currentScreenId)');
-    expect(html).toContain("if(!force && !idleForAppUpdate()) return;");
-    expect(html).toContain("if(document.hidden) applyAppUpdateIfIdle(true);");
-    expect(mainTs).toContain("onNeedReload()");
-    expect(mainTs).toContain("window.__studyAppUpdateReady");
+  it("新バージョンは保留せず、どの画面にいてもその場で再読み込みする（古い版を残さない）", () => {
+    expect(html).not.toContain("__studyAppUpdateReady");
+    expect(mainTs).not.toContain("onNeedReload");
   });
 });

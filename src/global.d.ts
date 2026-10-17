@@ -22,8 +22,6 @@ declare global {
       cards: Array<{ id: string; front: string; back: string; explanation?: string; tags?: string[] }>;
     }>;
     __legacyAppRefresh?: () => void;
-    /** 新版の Service Worker が有効化されたときに呼ぶ。再読み込みのタイミングは旧UI側が決める。 */
-    __studyAppUpdateReady?: () => void;
     STUDY_CORE?: {
       practiceSessions: {
         save: (snapshot: unknown) => Promise<void>;

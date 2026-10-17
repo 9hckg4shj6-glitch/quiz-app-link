@@ -3535,8 +3535,6 @@
     saveCurrentPractice();
     stopExamTimer(); closeFcLightbox();
     transitionToScreen("home",direction||"back",renderHomeContent);
-    // 科目えらびから入った直後（"forward"）だけは、再読み込みすると科目えらびへ戻るので見送る
-    if(direction!=="forward") applyAppUpdateIfIdle(true);
   }
   /* 採点途中で閉じた試験を、ホームから再開できるようにする（§9.2） */
   function refreshPendingExam(){
@@ -8385,30 +8383,6 @@
       else { if(ch==='"')q=true; else if(ch===','){row.push(cell);cell="";} else if(ch==='\n'){row.push(cell);rows.push(row);row=[];cell="";} else cell+=ch; } }
     if(cell!==""||row.length){ row.push(cell); rows.push(row); } return rows;
   }
-
-  /* ---------- 新しいバージョンの適用タイミング ---------- */
-  /* Service Worker が新版を有効化すると、既定ではその場でページが再読み込みされる。
-     演習や学習の途中でも起きるため「いつのまにかホームに戻された」ように見えていた。
-     利用者がホームか科目えらびにいる／ホームへ戻る／アプリを裏へ回すまで待ってから適用する。 */
-  let appUpdatePending=false;
-  // 起動直後は科目えらびにいるので、ここも手すき扱いにする（でないと開きっぱなしの端末が古いまま残る）。
-  // スタート画面で名前を入れている間は、入力が消えるので保留する。
-  const idleForAppUpdate=()=>["home","subjectPicker"].includes(pendingScreenId||currentScreenId) && $("#startScreen").classList.contains("hidden");
-  // 演習・学習・一覧の途中では保留しておく。force はホームへ戻るとき・裏へ回るとき。
-  function applyAppUpdateIfIdle(force){
-    if(!appUpdatePending) return;
-    if(!force && !idleForAppUpdate()) return;
-    appUpdatePending=false;
-    location.reload();
-  }
-  window.__studyAppUpdateReady=()=>{
-    appUpdatePending=true;
-    if(idleForAppUpdate()){ applyAppUpdateIfIdle(); return; }
-    toast("🆕 新しいバージョンがあります。ホームに戻るか、アプリを閉じたときに更新します");
-  };
-  // 保留したまま裏へ回ったら、その場で読み直しておく。スマホのアプリは閉じても裏で生きているので、
-  // こうしないと次に開いたときも古い画面のまま出る（演習の途中経過は pagehide で保存される）。
-  document.addEventListener("visibilitychange",()=>{ if(document.hidden) applyAppUpdateIfIdle(true); });
 
   /* ---------- 起動 ---------- */
   // 科目データは非同期で読むため、DATAが入るまで renderHome() を待つ。

@@ -318,12 +318,8 @@ window.dispatchEvent(new Event("study:core-ready"));
 
 registerSW({
   immediate: true,
-  // 既定では新版が有効になった瞬間にページを再読み込みするため、演習や学習の途中でも
-  // ホーム画面へ戻されてしまう。再読み込みは旧UI側へ委ね、手が空いてから適用する。
-  onNeedReload() {
-    if (window.__studyAppUpdateReady) window.__studyAppUpdateReady();
-    else window.location.reload();
-  },
+  // 新版が有効になったら、演習や学習の途中でもその場で再読み込みする（古い版を残さない。
+  // 演習の途中経過は pagehide で保存される）。古い版のタブは public/sw-force-reload.js が読み直させる。
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
     // 短時間に何度も叩かないよう最低30秒はあける（タブ切り替えのたびに走るため）。
@@ -336,10 +332,10 @@ registerSW({
       lastCheck = now;
       void registration.update();
     };
-    // 開きっぱなしのPWAも更新を取りこぼさないよう、オンライン時に定期確認する。
-    window.setInterval(check, 60 * 60 * 1000);
+    // 開きっぱなしのPWAも古い版のまま残らないよう、オンライン時に5分ごとに確認する（sw.js は数KB）。
+    window.setInterval(check, 5 * 60 * 1000);
     // スマホでは「ホームに戻す→また開く」がほとんどで、その場合ページは再読み込み
-    // されない。定期確認だけだと最大1時間、古い内容（更新履歴など）が出たままになるので、
+    // されない。定期確認だけだと最大5分、古い内容（更新履歴など）が出たままになるので、
     // 画面がふたたび見えたときと、回線が戻ったときにも確認する。
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") check();
