@@ -14,7 +14,7 @@ const supabase = url && key
 
 interface SubjectRow { subject: string; online: number; today: number; d7: number; d30: number; total: number; answers_today: number; answers_d7: number; cards_today: number; cards_d7: number; }
 interface UserSubject { subject: string; last_day: string; answers: number; cards: number; }
-interface User { id: string; device_id: string; blocked: boolean; name: string | null; account: boolean; subject: string | null; online: boolean; last_seen: string; first_seen: string; answers_today: number; answers: number; subjects: UserSubject[]; }
+interface User { id: string; device_id: string; blocked: boolean; name: string | null; account: boolean; subject: string | null; online: boolean; last_seen: string; first_seen: string; app_version?: string | null; answers_today: number; answers: number; subjects: UserSubject[]; }
 interface Dashboard {
   online: number;
   active: { h1: number; today: number; d7: number; total: number; new_today: number; new_d7: number };
@@ -270,12 +270,15 @@ function renderUsers(d: Dashboard): string {
       <td><span class="state ${u.online ? "on" : ""}"><i></i>${u.online ? (u.subject ? esc(subjectLabel(u.subject)) : "科目えらび") : "オフライン"}</span></td>
       <td data-label="最終利用">${esc(ago(u.last_seen))}</td>
       <td data-label="初回">${esc(fmtTime.format(new Date(u.first_seen)))}</td>
+      <td data-label="版">${u.app_version === __APP_VERSION__ ? `<span class="muted">${esc(u.app_version)}</span>` : `<span class="badge stop">古い${u.app_version ? ` ${esc(u.app_version)}` : ""}</span>`}</td>
       <td data-label="使った科目"><span class="subj-list">${u.subjects.map(s => `<span title="${esc(`${subjectLabel(s.subject)}：解答${s.answers}問・カード${s.cards}枚・最終${s.last_day}`)}">${esc(subjectEmoji(s.subject))}</span>`).join("") || "—"}</span></td>
       <td data-label="今日の解答" class="n">${num(u.answers_today)}</td>
       <td data-label="累計の解答" class="n">${num(u.answers)}</td>
       <td>${u.device_id ? `<button class="btn small ${u.blocked ? "" : "danger"}" data-block="${esc(u.device_id)}" data-name="${esc(u.name ?? u.id)}" data-blocked="${u.blocked}">${u.blocked ? "停止を解除" : "利用を停止"}</button>` : ""}</td></tr>`).join("");
-  return `<p class="muted users-count">${num(list.length)}人${list.length > shown.length ? `（先頭${shown.length}人を表示）` : ""}</p>
-    ${shown.length ? `<div class="table-wrap"><table class="users"><thead><tr><th>名前</th><th>状態</th><th>最終利用</th><th>初回</th><th>使った科目</th><th class="n">今日の解答</th><th class="n">累計の解答</th><th>利用</th></tr></thead><tbody>${rows}</tbody></table></div>`
+  // 版はこの管理画面と同じビルドなら最新。版を送らない旧版の端末は空なので「古い」になる（018_app_version.sql）。
+  const latest = list.filter(u => u.app_version === __APP_VERSION__).length;
+  return `<p class="muted users-count">${num(list.length)}人（最新版 ${num(latest)}人）${list.length > shown.length ? `（先頭${shown.length}人を表示）` : ""}</p>
+    ${shown.length ? `<div class="table-wrap"><table class="users"><thead><tr><th>名前</th><th>状態</th><th>最終利用</th><th>初回</th><th>版</th><th>使った科目</th><th class="n">今日の解答</th><th class="n">累計の解答</th><th>利用</th></tr></thead><tbody>${rows}</tbody></table></div>`
       : '<p class="empty">該当する利用者はいません。</p>'}`;
 }
 

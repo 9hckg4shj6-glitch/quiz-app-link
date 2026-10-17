@@ -350,6 +350,13 @@ registerSW({
   },
 });
 
+// 画像のキャッシュ名は画像の中身が変わるたびに変わる（vite.config.ts）。使われなくなった古い名前の分は消す。
+if ("caches" in window) {
+  void caches.keys().then((keys) => Promise.all(keys
+    .filter((key) => key.startsWith("study-images-") && key !== __IMAGE_CACHE__)
+    .map((key) => caches.delete(key))));
+}
+
 void bootstrap().catch((error) => {
   console.error("学習データ基盤の初期化に失敗しました", error);
   document.documentElement.dataset.studyInitError = "1";

@@ -1,8 +1,26 @@
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+// 図は同じファイル名のまま差し替えることがある（誤りの修正など）。画像は CacheFirst なので、
+// 名前が同じだと一度見た端末に古い図が残り続ける。中身が1枚でも変わったらキャッシュ名ごと変え、
+// 全端末で取り直させる（古い名前のキャッシュは src/main.ts が消す）。
+const imageHash = createHash("sha1");
+for (const file of readdirSync("public/images", { recursive: true, withFileTypes: true })
+  .filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name)).sort()) {
+  imageHash.update(file).update(readFileSync(file));
+}
+const IMAGE_CACHE = `study-images-${imageHash.digest("hex").slice(0, 10)}`;
+
 export default defineConfig({
   base: process.env.GITHUB_ACTIONS ? "/quiz-app-link/" : "/",
+  define: {
+    // 管理画面の利用者一覧で、端末ごとにどの版を開いているかを見分ける（src/usage.ts → 018_app_version.sql）。
+    __APP_VERSION__: JSON.stringify((process.env.GITHUB_SHA ?? "dev").slice(0, 7)),
+    __IMAGE_CACHE__: JSON.stringify(IMAGE_CACHE),
+  },
   build: {
     target: "es2022",
     sourcemap: true,
@@ -73,7 +91,7 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname.includes("/images/"),
             handler: "CacheFirst",
             options: {
-              cacheName: "study-images-v3",
+              cacheName: IMAGE_CACHE,
               // 科目が増えると図も増える。上限が総枚数を下回ると、
               // 古い科目の図がキャッシュから追い出されてオフラインで見られなくなる。
               expiration: { maxEntries: 3000, maxAgeSeconds: 60 * 60 * 24 * 90 },

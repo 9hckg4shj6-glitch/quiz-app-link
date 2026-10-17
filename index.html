@@ -8389,20 +8389,26 @@
   /* ---------- 新しいバージョンの適用タイミング ---------- */
   /* Service Worker が新版を有効化すると、既定ではその場でページが再読み込みされる。
      演習や学習の途中でも起きるため「いつのまにかホームに戻された」ように見えていた。
-     利用者がホームにいる／ホームへ戻るまで待ってから適用する。 */
+     利用者がホームか科目えらびにいる／ホームへ戻る／アプリを裏へ回すまで待ってから適用する。 */
   let appUpdatePending=false;
-  // ホームにいる／ホームへ戻るときだけ適用する。演習・学習・一覧の途中では保留しておく。
-  function applyAppUpdateIfIdle(goingHome){
+  // 起動直後は科目えらびにいるので、ここも手すき扱いにする（でないと開きっぱなしの端末が古いまま残る）。
+  // スタート画面で名前を入れている間は、入力が消えるので保留する。
+  const idleForAppUpdate=()=>["home","subjectPicker"].includes(pendingScreenId||currentScreenId) && $("#startScreen").classList.contains("hidden");
+  // 演習・学習・一覧の途中では保留しておく。force はホームへ戻るとき・裏へ回るとき。
+  function applyAppUpdateIfIdle(force){
     if(!appUpdatePending) return;
-    if(!goingHome && (pendingScreenId||currentScreenId)!=="home") return;
+    if(!force && !idleForAppUpdate()) return;
     appUpdatePending=false;
     location.reload();
   }
   window.__studyAppUpdateReady=()=>{
     appUpdatePending=true;
-    if((pendingScreenId||currentScreenId)==="home"){ applyAppUpdateIfIdle(); return; }
-    toast("🆕 新しいバージョンがあります。ホームに戻ったときに更新します");
+    if(idleForAppUpdate()){ applyAppUpdateIfIdle(); return; }
+    toast("🆕 新しいバージョンがあります。ホームに戻るか、アプリを閉じたときに更新します");
   };
+  // 保留したまま裏へ回ったら、その場で読み直しておく。スマホのアプリは閉じても裏で生きているので、
+  // こうしないと次に開いたときも古い画面のまま出る（演習の途中経過は pagehide で保存される）。
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden) applyAppUpdateIfIdle(true); });
 
   /* ---------- 起動 ---------- */
   // 科目データは非同期で読むため、DATAが入るまで renderHome() を待つ。

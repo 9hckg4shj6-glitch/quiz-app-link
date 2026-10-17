@@ -11,3 +11,8 @@ declare module "virtual:pwa-register" {
     onRegisterError?: (error: unknown) => void;
   }): (reloadPage?: boolean) => Promise<void>;
 }
+
+/** ビルドしたコミットの先頭7文字（ローカルでは "dev"）。vite.config.ts の define */
+declare const __APP_VERSION__: string;
+/** 画像の実行時キャッシュ名。画像の中身が変わると変わる。vite.config.ts の define */
+declare const __IMAGE_CACHE__: string;

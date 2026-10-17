@@ -223,6 +223,19 @@ describe("利用中にホーム画面へ戻されない（実動作）", () => {
     expect(app.reloads.length).toBe(1);
   });
 
+  it("新バージョンを保留したままアプリを裏へ回したら、次に開くときのためにその場で更新する", async () => {
+    app = await bootApp();
+    await startQuiz(app);
+    app.win.__studyAppUpdateReady();
+    await tick(20);
+    expect(app.reloads).toEqual([]);
+
+    Object.defineProperty(app.win.document, "hidden", { value: true, configurable: true });
+    app.win.document.dispatchEvent(new app.win.Event("visibilitychange"));
+    await tick(20);
+    expect(app.reloads.length).toBe(1);
+  });
+
   it("ホームから別画面へ遷移を始めた直後の更新でも、再読み込みしない", async () => {
     app = await bootApp();
     const updates: Array<() => void> = [];

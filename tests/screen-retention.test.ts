@@ -25,10 +25,11 @@ describe("利用中に画面を奪われない", () => {
     expect(html).toContain('if(!$("#home").classList.contains("hidden")){ renderHomeContent(); return; }');
   });
 
-  it("演習中は新バージョンの再読み込みを保留し、ホームへ戻ったときに適用する", () => {
+  it("演習中は新バージョンの再読み込みを保留し、ホームへ戻ったとき・裏へ回ったときに適用する", () => {
     expect(html).toContain("window.__studyAppUpdateReady=()=>{");
-    expect(html).toContain('if(!goingHome && (pendingScreenId||currentScreenId)!=="home") return;');
-    expect(html).toContain('if((pendingScreenId||currentScreenId)==="home")');
+    expect(html).toContain('["home","subjectPicker"].includes(pendingScreenId||currentScreenId)');
+    expect(html).toContain("if(!force && !idleForAppUpdate()) return;");
+    expect(html).toContain("if(document.hidden) applyAppUpdateIfIdle(true);");
     expect(mainTs).toContain("onNeedReload()");
     expect(mainTs).toContain("window.__studyAppUpdateReady");
   });

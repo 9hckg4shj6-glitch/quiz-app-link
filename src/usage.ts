@@ -1,5 +1,6 @@
 // 管理画面（admin.html）の利用状況のため、表示中は1分ごと（と科目を切り替えたとき）にサーバーへ知らせる。
 // 送るのは端末ID・開いている科目ID・前回からの解答数／カード枚数だけ（014_admin_dashboard.sql の usage_ping）。
+// ほかに、開いたときに1回だけアプリの版を送る（018_app_version.sql の set_device_version）。
 // Supabase 未設定のときは何もしない。失敗したら数を持ち越して次の回に送る。
 // 管理画面で停止された端末には blocked=true が返るので、全面の「停止中」画面で操作できなくする（015_device_block.sql）。
 // オフラインで開いても止まるよう、停止中は端末に印を残す。解除が返ったら印を消して開き直す。
@@ -63,6 +64,14 @@ async function ping(): Promise<void> {
 
 export function startUsagePing(): void {
   void ping();
+  // 古い版のまま残っている端末を管理画面で見分けるため、開くたびに版を1回知らせる
+  // （018_app_version.sql。未適用・通信失敗でも利用状況の記録には影響しない）。
+  if (supabase) {
+    const client = supabase;
+    void getDeviceId()
+      .then((deviceId) => client.rpc("set_device_version", { p_device_id: deviceId, p_version: __APP_VERSION__ }))
+      .catch(() => { /* noop */ });
+  }
   setInterval(() => void ping(), HEARTBEAT_MS);
   document.addEventListener("visibilitychange", () => void ping());
 }
