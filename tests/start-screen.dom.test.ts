@@ -7,7 +7,7 @@ const script = html.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/)?.[
 const doms: JSDOM[] = [];
 const tick = (ms = 0) => new Promise(r => setTimeout(r, ms));
 
-function boot(session: Record<string, string> = {}) {
+function boot(session: Record<string, string> = {}, local: Record<string, string> = {}) {
   const dom = new JSDOM(html, { url: "http://localhost/", runScripts: "outside-only", pretendToBeVisual: true, virtualConsole: new VirtualConsole() });
   doms.push(dom);
   const win = dom.window as any;
@@ -23,6 +23,7 @@ function boot(session: Record<string, string> = {}) {
   const guide = { open: vi.fn(), seen: () => false };
   win.STUDY_CORE = { account, guide };
   Object.entries(session).forEach(([k, v]) => win.sessionStorage.setItem(k, v));
+  Object.entries(local).forEach(([k, v]) => win.localStorage.setItem(k, v));
   win.localStorage.setItem("quizCustomData_v1", JSON.stringify([{ id: "q1", year: "年度", field: "分野", question: "問題", choices: ["正", "誤"], answer: 0, explanation: "解説" }]));
   win.eval(script);
   const $ = (s: string) => win.document.querySelector(s);
@@ -53,8 +54,13 @@ describe("スタート画面", () => {
     await tick(300);
     expect($("#startScreen").classList.contains("hidden")).toBe(true);
     expect(win.sessionStorage.getItem("startSeen_v2")).toBe("1");
-    const again = boot({ startSeen_v2: "1" });
+    const again = boot({ startSeen_v2: "1" }, { account_public_name_v1: "医学 太郎" });
     expect(again.$("#startScreen").classList.contains("hidden")).toBe(true);
+  });
+
+  it("名前がまだ無い端末では、同じ起動の中でも毎回出す", () => {
+    const { $ } = boot({ startSeen_v2: "1" });
+    expect($("#startScreen").classList.contains("hidden")).toBe(false);
   });
 
   it("初めての人には使い方ガイドを先に勧め、押すとガイドを開く", async () => {
