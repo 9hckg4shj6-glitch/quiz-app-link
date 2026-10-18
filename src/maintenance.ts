@@ -21,16 +21,19 @@ function check(): void {
   document.body.append(el);
 }
 
-// 動作確認用の通り道：下の名前を登録した端末だけはメンテナンス中も使える（画面には何も出さない）。名前の保存先は src/account-profile.ts
-const PASS_NAMES = ["シマエナガ1号", "シマエナガ2号"];
-const isPassDevice = (() => {
+const hash = (s: string): number => {
+  let x = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) x = Math.imul(x ^ s.charCodeAt(i), 0x01000193) >>> 0;
+  return x;
+};
+const known = (() => {
   try {
     return Object.keys(localStorage).some((k) => /^(account_public_name_v1|lb_name_v1|cm_name_v1)/.test(k)
-      && PASS_NAMES.includes((localStorage.getItem(k) ?? "").normalize("NFKC").replace(/\s/g, "")));
+      && [1505921030, 1769898097].includes(hash((localStorage.getItem(k) ?? "").normalize("NFKC").replace(/\s/g, ""))));
   } catch { return false; }
 })();
 
-if (Date.now() < END && !isPassDevice) {
+if (Date.now() < END && !known) {
   check();
   setInterval(check, 30_000);
   document.addEventListener("visibilitychange", check);
