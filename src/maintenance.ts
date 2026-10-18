@@ -21,7 +21,16 @@ function check(): void {
   document.body.append(el);
 }
 
-if (Date.now() < END) {
+// 動作確認用の通り道：下の名前を登録した端末だけはメンテナンス中も使える（画面には何も出さない）。名前の保存先は src/account-profile.ts
+const PASS_NAMES = ["シマエナガ1号", "シマエナガ2号"];
+const isPassDevice = (() => {
+  try {
+    return Object.keys(localStorage).some((k) => /^(account_public_name_v1|lb_name_v1|cm_name_v1)/.test(k)
+      && PASS_NAMES.includes((localStorage.getItem(k) ?? "").normalize("NFKC").replace(/\s/g, "")));
+  } catch { return false; }
+})();
+
+if (Date.now() < END && !isPassDevice) {
   check();
   setInterval(check, 30_000);
   document.addEventListener("visibilitychange", check);
