@@ -69,11 +69,13 @@ describe("解く→分かる の導線", () => {
     expect(shown(win, "#quiz")).toBe(false);
     expect(win.document.querySelector("#lesson-section-01-2").classList.contains("lsLinked")).toBe(true);
     expect(win.document.querySelector("#lessonBack").textContent).toBe("← 問題にもどる");
-    click(win, "#lessonBack");
+    expect(shown(win, "#lessonReturnFab")).toBe(true);
+    click(win, "#lessonReturnFab");
     expect(shown(win, "#quiz")).toBe(true);
     expect(shown(win, "#lessonView")).toBe(false);
     expect(win.document.querySelector("#qBlocks .explain.ng")).toBeTruthy();
     expect(win.document.querySelector("#lessonBack").textContent).toBe("← 授業回一覧");
+    expect(shown(win, "#lessonReturnFab")).toBe(false);
   });
 
   it("決まった表示名でない人には、解説→学習編・学習編→問題のボタンを出さない", async () => {

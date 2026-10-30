@@ -901,6 +901,11 @@
 
   /* 戻るバー（検索画面などで共用） */
   .reviewTop{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  /* 解説から学習編へ来たときだけ出す。上の「← 問題にもどる」が読み進めると見えなくなるため、画面下に固定する */
+  .lessonReturnFab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));z-index:84;
+    padding:12px 22px;border-radius:999px;border:0;background:var(--brand);color:#fff;font-weight:800;font-size:0.9375rem;
+    box-shadow:0 12px 30px rgba(29,45,68,.28);cursor:pointer}
+  #lessonView:has(.lessonReturnFab:not(.hidden)) #lessonBody{padding-bottom:72px}
 
   /* ===== achievements ===== */
   .ach-scroll{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px}
@@ -1835,6 +1840,7 @@
       <span class="pill">学習</span>
     </div>
     <div id="lessonBody"></div>
+    <button type="button" class="lessonReturnFab hidden" id="lessonReturnFab">← 問題にもどる</button>
   </section>
 
   <!-- ===== 科目えらび（起動時の入口） ===== -->
@@ -6498,7 +6504,7 @@
     if(!d){ openView("inputView"); return; }
     lessonGroupOpen=d.group||null;   // 戻ったときに元のフォルダを開いておく
     stopExamTimer(); closeFcLightbox();
-    lessonReturnTarget=null; $("#lessonBack").textContent="← 授業回一覧";
+    lessonReturnTarget=null; $("#lessonBack").textContent="← 授業回一覧"; $("#lessonReturnFab").classList.add("hidden");
     transitionToScreen("lessonView",at?"back":"forward",()=>{
       renderLesson(d);
       const anchor=at&&at.section>0&&lessonQuickState.elements[at.section-1]; if(!anchor) return;
@@ -6515,7 +6521,7 @@
     lessonReturnScroll=window.scrollY;
     closeFcLightbox(); hideAllScreens();
     renderLesson(d);
-    $("#lessonBack").textContent="← 問題にもどる";
+    $("#lessonBack").textContent="← 問題にもどる"; $("#lessonReturnFab").classList.remove("hidden");
     $("#lessonView").classList.remove("hidden");
     const target=document.getElementById(lessonSectionId(d.deck,index));
     // 章全体を流してスクロールすると時間がかかるので、まず瞬時に該当項目へ移り、位置の微調整だけ既存のジャンプに任せる
@@ -6525,7 +6531,7 @@
   function closeLessonToQuestion(){
     $("#lessonView").classList.add("hidden");
     const el=$(lessonReturnTarget); if(el) el.classList.remove("hidden");
-    lessonReturnTarget=null; $("#lessonBack").textContent="← 授業回一覧";
+    lessonReturnTarget=null; $("#lessonBack").textContent="← 授業回一覧"; $("#lessonReturnFab").classList.add("hidden");
     // html は scroll-behavior:smooth なので、明示しないと問題画面が流れて見える
     window.scrollTo({top:lessonReturnScroll,behavior:"instant"});
   }
@@ -8059,6 +8065,7 @@
   $("#lessonGroupBack").onclick=()=>{ lessonGroupOpen=null; renderLessonList(); window.scrollTo({top:0,behavior:"smooth"}); };
   $("#lessonBack").onclick=()=>{ closeLessonIndex(false); closeLessonSlides(false); lessonQuickState=null;
     if(lessonReturnTarget) closeLessonToQuestion(); else openView("inputView"); };
+  $("#lessonReturnFab").onclick=()=>$("#lessonBack").click();
   $("#lessonIndexClose").onclick=()=>closeLessonIndex();
   $("#lessonIndexBackdrop").onclick=()=>closeLessonIndex();
   $("#lessonSlidesBack").onclick=()=>closeLessonSlides();
