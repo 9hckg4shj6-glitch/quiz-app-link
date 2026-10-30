@@ -6404,7 +6404,7 @@
   let lessonLinkCache=null;
   /* 解説→学習編と、学習編→関連問題の行き来は、決まった表示名の人にだけ出す。
      表示名は端末で変えられるので鍵ではない（見せ分けのため）。全角数字でも一致するよう NFKC でそろえる。 */
-  const LESSON_LINK_USERS=new Set(["シマエナガ1号","シマエナガ2号"]);
+  const LESSON_LINK_USERS=new Set(["シマエナガ1号","シマエナガ2号","ひよこ"]);
   function lessonLinksEnabled(){ const cm=CM(); return !!cm && LESSON_LINK_USERS.has(cm.getName().normalize("NFKC")); }
   function questionSlideKeys(q){ return (q.slideRefs||[]).flatMap(r=>(r.pages||[]).map(p=>`${r.deck}:${Number(p)}`)); }
   function lessonSectSlideKeys(d,sc){ return (sc.slides||[]).map(e=>{ const r=lessonSlideRef(d.deck,e); return `${r.deck}:${r.page}`; }); }
