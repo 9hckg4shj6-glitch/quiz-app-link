@@ -29,6 +29,11 @@ interface Dashboard {
   server_now: string;
 }
 
+// からだ見聞録（解剖学アプリ）の利用者（019_anatomy_profiles.sql の get_admin_anatomy）
+interface AnatomyCount { label: string; users: number; }
+interface AnatomyUser { id: string; name: string; university: string; faculty: string; grade: string; first_seen: string; last_seen: string; }
+interface Anatomy { total: number; today: number; d7: number; new_d7: number; universities: AnatomyCount[]; faculties: AnatomyCount[]; grades: AnatomyCount[]; users: AnatomyUser[]; }
+
 // 科目の名前・絵文字・並び順は、アプリと同じ subjects.js（admin.html が先に読む）から取る。
 const MANIFEST = ((window as unknown as { SUBJECTS?: { id: string; name?: string; emoji?: string }[] }).SUBJECTS ?? []);
 const subjectLabel = (id: string): string => { const s = MANIFEST.find(m => m.id === id); return s ? `${s.emoji ?? ""} ${s.name ?? id}`.trim() : id; };
@@ -39,6 +44,8 @@ const REFRESH_MS = 20000;
 const root = document.querySelector<HTMLElement>("#admin")!;
 let session: Session | null = null;
 let data: Dashboard | null = null;
+let anatomy: Anatomy | null = null;
+let anatomyError = "";
 let loadError = "";
 let loading = false;
 let loginError = "";
@@ -168,6 +175,12 @@ async function load(): Promise<void> {
     const { data: d, error } = await supabase.rpc("get_admin_dashboard");
     if (error) throw new Error(error.message);
     data = d as Dashboard; loadError = "";
+    // からだ見聞録の欄は別に取る。まだ 019 を適用していなくても、ほかの欄はそのまま出す
+    const { data: a, error: ae } = await supabase.rpc("get_admin_anatomy");
+    if (ae) anatomyError = /get_admin_anatomy|could not find the function/i.test(ae.message)
+      ? "サーバーの準備がまだです。supabase/migrations/019_anatomy_profiles.sql を SQL Editor で適用してください。"
+      : "からだ見聞録の利用者を取得できませんでした。";
+    else { anatomy = a as Anatomy; anatomyError = ""; }
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
     loadError = /ADMIN_ONLY/.test(m) ? "ADMIN_ONLY"
@@ -282,6 +295,34 @@ function renderUsers(d: Dashboard): string {
       : '<p class="empty">該当する利用者はいません。</p>'}`;
 }
 
+// 人数の多い順の小さな表（大学・学部学科・学年）
+function countTable(title: string, rows: AnatomyCount[], limit = 0): string {
+  const shown = limit ? rows.slice(0, limit) : rows;
+  return `<div class="table-wrap"><table class="users"><thead><tr><th>${esc(title)}</th><th class="n">人数</th></tr></thead><tbody>${
+    shown.map(r => `<tr><td>${esc(r.label)}</td><td class="n">${num(r.users)}</td></tr>`).join("") || '<tr><td colspan="2" class="muted">まだいません</td></tr>'
+  }</tbody></table></div>${rows.length > shown.length ? `<p class="muted">ほか ${num(rows.length - shown.length)}校</p>` : ""}`;
+}
+function renderAnatomy(): string {
+  if (!anatomy) return `<p class="muted">${esc(anatomyError || "読み込み中…")}</p>`;
+  const a = anatomy;
+  const rows = a.users.slice(0, 500).map(u => `<tr>
+      <td class="name"><strong>${esc(u.name)}</strong><small>${esc(u.id)}</small></td>
+      <td data-label="大学">${esc(u.university)}</td>
+      <td data-label="学部・学科">${esc(u.faculty)}</td>
+      <td data-label="学年">${esc(u.grade)}</td>
+      <td data-label="最終利用">${esc(ago(u.last_seen))}</td>
+      <td data-label="登録">${esc(fmtTime.format(new Date(u.first_seen)))}</td></tr>`).join("");
+  return `${anatomyError ? `<p class="error" role="status">${esc(anatomyError)}</p>` : ""}
+    <div class="tiles">
+      ${tile("登録した人", a.total)}
+      ${tile("今日開いた人", a.today)}
+      ${tile("直近7日に開いた人", a.d7)}
+      ${tile("直近7日に登録", a.new_d7)}
+    </div>
+    <div class="charts">${countTable("大学", a.universities, 15)}${countTable("学部・学科", a.faculties)}${countTable("学年", a.grades)}</div>
+    ${rows ? `<div class="table-wrap"><table class="users"><thead><tr><th>名前</th><th>大学</th><th>学部・学科</th><th>学年</th><th>最終利用</th><th>登録</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="empty">まだ登録した人はいません。</p>'}`;
+}
+
 function render(): void {
   if (!supabase) { root.innerHTML = '<p class="loading">サーバーの設定がありません。</p>'; return; }
   if (!session || mode === "recovery") { renderLogin(); return; }
@@ -325,6 +366,10 @@ function render(): void {
       </div>
       <div id="users">${renderUsers(d)}</div>
       <p class="muted">名前はアカウントの表示名か、ランキングに参加したときの名前です。この端末で登録していなくても、同じアカウントでログインしたことのある別の端末で登録した名前を出します（どれもなければ「名前なし」）。1台の端末を1人として数えるため、スマホとPCを使い分ける人は2人と数えます。「利用を停止」した端末は、次にアプリを開いたとき（開いている端末は1分以内）に「利用は停止されています」の画面になり、操作できなくなります。その端末がアカウントにログインしていれば、そのアカウントも別の端末で止まります。ただし、ゲストが端末のサイトデータを消すと、新しい端末として使えてしまいます。この記録は管理画面の公開（2026年10月）以降のものです。</p>
+    </section>
+    <section class="card" id="anatomy-card"><h2>からだ見聞録（解剖学アプリ）の利用者</h2>
+      ${renderAnatomy()}
+      <p class="muted">からだ見聞録のスタート画面で入れた名前と所属です（端末ごとに1人。学習の記録は送られません）。「開いた」は、その日にはじめてアプリを開いたときに記録します。</p>
     </section>
     <div class="tip" id="tip" role="tooltip" hidden></div>`;
   if (focused) { const s = document.querySelector<HTMLInputElement>("#user-search"); s?.focus(); s?.setSelectionRange(s.value.length, s.value.length); }
